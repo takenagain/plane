@@ -5,7 +5,6 @@
 # Python imports
 import json
 
-
 # Third Party imports
 from celery import shared_task
 
@@ -13,13 +12,13 @@ from celery import shared_task
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 
-
 # Module imports
 from plane.app.serializers import IssueActivitySerializer
 from plane.bgtasks.notification_task import notifications
 from plane.db.models import (
     CommentReaction,
     Cycle,
+    EstimatePoint,
     Issue,
     IssueActivity,
     IssueComment,
@@ -30,7 +29,6 @@ from plane.db.models import (
     Project,
     State,
     User,
-    EstimatePoint,
 )
 from plane.settings.redis import redis_instance
 from plane.utils.exception_logger import log_exception
@@ -1499,6 +1497,121 @@ def create_intake_activity(
         )
 
 
+def create_worklog_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    requested_data = json.loads(requested_data) if requested_data is not None else {}
+    duration = requested_data.get("duration", 0)
+    hours = duration // 60
+    minutes = duration % 60
+    time_str = f"{hours}h {minutes}m" if hours else f"{minutes}m"
+
+    issue_activities.append(
+        IssueActivity(
+            issue_id=issue_id,
+            actor_id=actor_id,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            comment=f"logged {time_str}",
+            verb="created",
+            field="worklog",
+            new_value=time_str,
+            new_identifier=requested_data.get("id"),
+            old_value=requested_data.get("description", ""),
+            epoch=epoch,
+        )
+    )
+
+
+def update_worklog_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    requested_data = json.loads(requested_data) if requested_data is not None else {}
+    current_instance = json.loads(current_instance) if current_instance is not None else {}
+
+    if "duration" in requested_data:
+        old_dur = current_instance.get("duration", 0)
+        new_dur = requested_data.get("duration", old_dur)
+        old_h, old_m = old_dur // 60, old_dur % 60
+        new_h, new_m = new_dur // 60, new_dur % 60
+
+        issue_activities.append(
+            IssueActivity(
+                issue_id=issue_id,
+                actor_id=actor_id,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                comment="updated a worklog",
+                verb="updated",
+                field="worklog",
+                old_value=f"{old_h}h {old_m}m",
+                new_value=f"{new_h}h {new_m}m",
+                new_identifier=current_instance.get("id"),
+                epoch=epoch,
+            )
+        )
+    else:
+        issue_activities.append(
+            IssueActivity(
+                issue_id=issue_id,
+                actor_id=actor_id,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                comment="updated a worklog",
+                verb="updated",
+                field="worklog",
+                new_identifier=current_instance.get("id"),
+                epoch=epoch,
+            )
+        )
+
+
+def delete_worklog_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    current_instance = json.loads(current_instance) if current_instance is not None else {}
+    duration = current_instance.get("duration", 0)
+    hours = duration // 60
+    minutes = duration % 60
+    time_str = f"{hours}h {minutes}m" if hours else f"{minutes}m"
+
+    issue_activities.append(
+        IssueActivity(
+            issue_id=issue_id,
+            actor_id=actor_id,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            comment=f"removed a worklog of {time_str}",
+            verb="deleted",
+            field="worklog",
+            old_value=time_str,
+            old_identifier=current_instance.get("id"),
+            epoch=epoch,
+        )
+    )
+
+
 # Receive message from room group
 @shared_task
 def issue_activity(
@@ -1565,6 +1678,9 @@ def issue_activity(
             "issue_draft.activity.updated": update_draft_issue_activity,
             "issue_draft.activity.deleted": delete_draft_issue_activity,
             "intake.activity.created": create_intake_activity,
+            "worklog.activity.created": create_worklog_activity,
+            "worklog.activity.updated": update_worklog_activity,
+            "worklog.activity.deleted": delete_worklog_activity,
         }
 
         func = ACTIVITY_MAPPER.get(type)
