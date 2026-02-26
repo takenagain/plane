@@ -15,32 +15,30 @@ import { formatDuration } from "@/plane-web/helpers/worklog.helpers";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 
 type TIssueWorklogProperty = {
-    workspaceSlug: string;
-    projectId: string;
-    issueId: string;
-    disabled: boolean;
+  workspaceSlug: string;
+  projectId: string;
+  issueId: string;
+  disabled: boolean;
 };
 
 export const IssueWorklogProperty = observer(function IssueWorklogProperty(props: TIssueWorklogProperty) {
-    const { workspaceSlug, projectId, issueId, disabled } = props;
-    const rootStore = useContext(StoreContext);
-    const worklogStore = (rootStore as any).worklogStore;
+  const { workspaceSlug, projectId, issueId, disabled } = props;
+  const rootStore = useContext(StoreContext);
+  const worklogStore = (rootStore as any).worklogStore;
 
-    useEffect(() => {
-        if (workspaceSlug && projectId && issueId && worklogStore) {
-            worklogStore.fetchTotal(workspaceSlug, projectId, issueId);
-        }
-    }, [workspaceSlug, projectId, issueId, worklogStore]);
+  useEffect(() => {
+    if (workspaceSlug && projectId && issueId && worklogStore) {
+      worklogStore.fetchTotal(workspaceSlug, projectId, issueId);
+    }
+  }, [workspaceSlug, projectId, issueId, worklogStore]);
 
-    if (!worklogStore) return <></>;
+  if (!worklogStore) return <></>;
 
-    const totalMinutes = worklogStore.totalByIssue[issueId] ?? 0;
+  const totalMinutes = worklogStore.totalByIssue[issueId] ?? 0;
 
-    return (
-        <SidebarPropertyListItem icon={Clock} label="Time Logged">
-            <span className="text-body-xs-regular text-secondary">
-                {formatDuration(totalMinutes)}
-            </span>
-        </SidebarPropertyListItem>
-    );
+  return (
+    <SidebarPropertyListItem icon={Clock} label="Time Logged">
+      <span className="text-body-xs-regular text-secondary">{formatDuration(totalMinutes)}</span>
+    </SidebarPropertyListItem>
+  );
 });

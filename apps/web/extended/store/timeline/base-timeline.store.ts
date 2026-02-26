@@ -24,7 +24,7 @@ import {
 } from "@/components/gantt-chart/views/helpers";
 // helpers
 // store
-import type { RootStore } from "@/plane-web/store/root.store";
+import type { CoreRootStore } from "@/store/root.store";
 
 // types
 type BlockData = {
@@ -80,11 +80,11 @@ export class BaseTimeLineStore implements IBaseTimelineStore {
   activeBlockId: string | null = null;
   renderView: any = [];
 
-  rootStore: RootStore;
+  rootStore: CoreRootStore;
 
   isDependencyEnabled = false;
 
-  constructor(_rootStore: RootStore) {
+  constructor(_rootStore: CoreRootStore) {
     makeObservable(this, {
       // observables
       blocksMap: observable,

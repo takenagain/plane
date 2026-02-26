@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { RootStore } from "@/plane-web/store/root.store";
+import type { CoreRootStore } from "@/store/root.store";
 import { IssuesTimeLineStore } from "@/store/timeline/issues-timeline.store";
 import type { IIssuesTimeLineStore } from "@/store/timeline/issues-timeline.store";
 import { ModulesTimeLineStore } from "@/store/timeline/modules-timeline.store";
@@ -25,7 +25,7 @@ export class TimeLineStore implements ITimelineStore {
   projectTimeLineStore: IBaseTimelineStore;
   groupedTimeLineStore: IBaseTimelineStore;
 
-  constructor(rootStore: RootStore) {
+  constructor(rootStore: CoreRootStore) {
     this.issuesTimeLineStore = new IssuesTimeLineStore(rootStore);
     this.modulesTimeLineStore = new ModulesTimeLineStore(rootStore);
     // Dummy store

@@ -12,13 +12,13 @@ import type { IWorklogStore } from "./worklog.store";
 import { WorklogStore } from "./worklog.store";
 
 export class RootStore extends CoreRootStore {
-    timelineStore: ITimelineStore;
-    worklogStore: IWorklogStore;
+  timelineStore: ITimelineStore;
+  worklogStore: IWorklogStore;
 
-    constructor() {
-        super();
+  constructor() {
+    super();
 
-        this.timelineStore = new TimeLineStore(this);
-        this.worklogStore = new WorklogStore();
-    }
+    this.timelineStore = new TimeLineStore(this);
+    this.worklogStore = new WorklogStore();
+  }
 }
