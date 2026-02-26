@@ -35,4 +35,4 @@ python manage.py clear_cache
 # Collect static files
 python manage.py collectstatic --noinput
 
-exec gunicorn -w "$GUNICORN_WORKERS" -k uvicorn.workers.UvicornWorker plane.asgi:application --bind 0.0.0.0:"${PORT:-8000}" --max-requests 1200 --max-requests-jitter 1000 --access-logfile -
+exec uvicorn plane.asgi:application --host 0.0.0.0 --port "${PORT:-8000}" --access-logfile -
