@@ -8,7 +8,16 @@ on:
     branches: ["preview", "canary", "master"]
 
 jobs:
+  skip-on-forks:
+    if: ${{ github.repository != 'makeplane/plane' }}
+    name: Skip on forks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain skip
+        run: echo "Skipping CodeQL on fork ${GITHUB_REPOSITORY}; code scanning uploads require upstream repository permissions."
+
   analyze:
+    if: ${{ github.repository == 'makeplane/plane' }}
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
@@ -59,4 +68,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{ matrix.language }}"
