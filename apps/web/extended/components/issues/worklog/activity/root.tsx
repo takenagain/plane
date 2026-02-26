@@ -8,12 +8,13 @@ import { useState, useEffect, useContext } from "react";
 import { observer } from "mobx-react";
 import { Clock, Pencil, Trash2 } from "lucide-react";
 // plane imports
+import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { Tooltip } from "@plane/propel/tooltip";
 import { renderFormattedTime, renderFormattedDate, calculateTimeAgo } from "@plane/utils";
 import type { TIssueActivityComment } from "@plane/types";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
-import { useUser } from "@/hooks/store/user";
+import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // store
 import { StoreContext } from "@/lib/store-context";
@@ -35,6 +36,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     activity: { getActivityById },
   } = useIssueDetail();
   const { data: currentUser } = useUser();
+  const { allowPermissions } = useUserPermissions();
   const { isMobile } = usePlatformOS();
 
   const rootStore = useContext(StoreContext);
@@ -46,15 +48,19 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
   const activity = getActivityById(activityComment.id);
 
   const isOwner = currentUser?.id === activity?.actor;
-  // For now, allow edit/delete for the owner. Admin check would require additional role check.
-  const canModify = isOwner;
+  const isProjectAdmin = allowPermissions(
+    [EUserPermissions.ADMIN],
+    EUserPermissionsLevel.PROJECT,
+    workspaceSlug,
+    projectId
+  );
+  const isWorkspaceAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE, workspaceSlug);
+  const canModify = isOwner || isProjectAdmin || isWorkspaceAdmin;
 
   // Resolve the worklog object from the store when editing
   const worklogFromActivity =
     isEditing && activity?.new_identifier
-      ? (worklogStore?.worklogsByIssue?.[issueId] ?? []).find(
-          (w: any) => w.id === activity.new_identifier
-        )
+      ? (worklogStore?.worklogsByIssue?.[issueId] ?? []).find((w: any) => w.id === activity.new_identifier)
       : undefined;
 
   // If we\u2019re in editing mode but can\u2019t find the worklog in the store,
@@ -85,8 +91,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
         if (activity.old_value && activity.new_value) {
           return (
             <>
-              updated worklog from{" "}
-              <span className="font-medium">{activity.old_value}</span>
+              updated worklog from <span className="font-medium">{activity.old_value}</span>
               {" to "}
               <span className="font-medium">{activity.new_value}</span>
             </>
@@ -96,8 +101,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
       case "deleted":
         return (
           <>
-            removed a worklog of{" "}
-            <span className="font-medium">{activity.old_value}</span>
+            removed a worklog of <span className="font-medium">{activity.old_value}</span>
           </>
         );
       default:
@@ -109,12 +113,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     if (!worklogStore || !activity.new_identifier) return;
     setIsDeleting(true);
     try {
-      await worklogStore.deleteWorklog(
-        workspaceSlug,
-        projectId,
-        issueId,
-        activity.new_identifier
-      );
+      await worklogStore.deleteWorklog(workspaceSlug, projectId, issueId, activity.new_identifier);
     } catch {
       // Error is handled by the store; the activity entry remains
     } finally {
@@ -158,19 +157,14 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
       </div>
       <div className="w-full flex items-center justify-between gap-2">
         <div className="truncate text-secondary">
-          <span className="font-medium text-primary">
-            {activity.actor_detail?.display_name ?? "Someone"}
-          </span>{" "}
+          <span className="font-medium text-primary">{activity.actor_detail?.display_name ?? "Someone"}</span>{" "}
           <span>{getActivityMessage()}</span>
           <span>
             <Tooltip
               isMobile={isMobile}
               tooltipContent={`${renderFormattedDate(activity.created_at)}, ${renderFormattedTime(activity.created_at)}`}
             >
-              <span className="whitespace-nowrap text-tertiary">
-                {" "}
-                {calculateTimeAgo(activity.created_at)}
-              </span>
+              <span className="whitespace-nowrap text-tertiary"> {calculateTimeAgo(activity.created_at)}</span>
             </Tooltip>
           </span>
         </div>

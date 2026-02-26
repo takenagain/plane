@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import WorklogSerializer
 from plane.bgtasks.issue_activities_task import issue_activity
-from plane.db.models import Worklog
+from plane.db.models import Issue, Worklog
 from plane.utils.host import base_host
 
 # Module imports
@@ -48,6 +48,17 @@ class WorklogViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def create(self, request, slug, project_id, issue_id):
+        issue_exists = Issue.objects.filter(
+            pk=issue_id,
+            project_id=project_id,
+            workspace__slug=slug,
+        ).exists()
+        if not issue_exists:
+            return Response(
+                {"error": "Issue does not belong to the specified project/workspace."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         serializer = WorklogSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(

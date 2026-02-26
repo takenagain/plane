@@ -19,7 +19,7 @@ import { test, expect, APIRequestContext } from "@playwright/test";
  * Run with: cd e2e && pnpm install && pnpm test
  */
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:8000";
+const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "TestPass123!";
 
