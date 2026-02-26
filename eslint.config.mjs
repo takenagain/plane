@@ -152,6 +152,7 @@ export default defineConfig([
     settings: {
       "import/ignore": ["next/link", "next/navigation", "next/script"],
       "import/resolver": {
+        node: true,
         typescript: {
           alwaysTryTypes: true,
           project: "{apps,packages}/*/tsconfig.json",

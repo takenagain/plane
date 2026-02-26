@@ -28,3 +28,4 @@
 - **State Management**: MobX stores in `packages/shared-state`, reactive patterns
 - **Testing**: All features require unit tests, use existing test framework per package
 - **Components**: Build in `@plane/ui` with Storybook for isolated development
+- Before committing and pushing to remote, ensure there are no lint errors in frontend or backend

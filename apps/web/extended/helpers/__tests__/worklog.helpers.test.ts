@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import { describe, it, expect } from "vitest";
 import { formatDuration, parseDuration } from "../worklog.helpers";
 
 describe("formatDuration", () => {
