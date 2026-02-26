@@ -368,7 +368,7 @@ class TestWorklogTotal(TestWorklogBase):
     def test_total_updates_after_delete(self, member_client, test_workspace, test_project, test_issue, create_worklog):
         """FR-3 / AC-8: Total updates after deleting a worklog."""
         wl1 = create_worklog(duration=60)
-        wl2 = create_worklog(duration=90)
+        create_worklog(duration=90)
 
         total_url = self.get_worklogs_total_url(test_workspace.slug, test_project.id, test_issue.id)
 
@@ -650,7 +650,7 @@ class TestWorklogDelete(TestWorklogBase):
     ):
         """FR-5 / AC-8: Deleting a worklog updates the total time."""
         wl1 = create_worklog(duration=60)
-        wl2 = create_worklog(duration=120)
+        create_worklog(duration=120)
 
         total_url = self.get_worklogs_total_url(test_workspace.slug, test_project.id, test_issue.id)
 

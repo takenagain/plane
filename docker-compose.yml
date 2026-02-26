@@ -45,6 +45,11 @@ services:
     command: ./bin/docker-entrypoint-api.sh
     env_file:
       - ./apps/api/.env
+    environment:
+      - WEB_URL=http://localhost:8081
+      - ADMIN_BASE_URL=http://localhost:8081
+      - APP_BASE_URL=http://localhost:8081
+      - SPACE_BASE_URL=http://localhost:8081
     depends_on:
       - plane-db
       - plane-redis
@@ -88,7 +93,7 @@ services:
       dockerfile: Dockerfile.api
       args:
         DOCKER_BUILDKIT: 1
-    restart: no
+    restart: "no"
     command: ./bin/docker-entrypoint-migrator.sh
     env_file:
       - ./apps/api/.env

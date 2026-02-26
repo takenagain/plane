@@ -35,4 +35,4 @@ python manage.py clear_cache
 # Collect static files
 python manage.py collectstatic --noinput
 
-exec uvicorn plane.asgi:application --host 0.0.0.0 --port "${PORT:-8000}" --access-log -
+exec uvicorn plane.asgi:application --host 0.0.0.0 --port "${PORT:-8000}" --access-log

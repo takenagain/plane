@@ -11,6 +11,12 @@
 - `pnpm turbo run <command> --filter=<package>` - Target specific package/app
 - `pnpm --filter=@plane/ui storybook` - Start Storybook on port 6006
 
+## Container Runtime
+
+- Check whether `podman`/`podman-compose` or `docker`/`docker compose` are available before running container commands
+- Prefer `podman` and `podman-compose` even if both Podman and Docker are installed
+- On this system (CachyOS), use `podman` and `podman-compose` for local stack startup and E2E prerequisites
+
 ## Code Style
 
 - **Imports**: Use `workspace:*` for internal packages, `catalog:` for external deps

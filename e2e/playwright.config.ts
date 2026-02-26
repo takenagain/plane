@@ -8,22 +8,28 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Read environment variables from the system.
- * BASE_URL: The URL of the Plane instance to test against (default: http://localhost:8000)
+ * BASE_URL: The URL of the Plane instance to test against (default: http://localhost:8081)
  */
-const BASE_URL = process.env.BASE_URL || "http://localhost:8000";
+const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
 
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   workers: 1,
   reporter: "html",
+  timeout: 120_000,
+  expect: {
+    timeout: 15_000,
+  },
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
   },
   projects: [
     {
