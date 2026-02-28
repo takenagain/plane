@@ -7,13 +7,14 @@
 import { useState, useEffect, useContext } from "react";
 import { observer } from "mobx-react";
 import { Clock, Pencil, Trash2 } from "lucide-react";
+import { EUserPermissions } from "@plane/constants";
 // plane imports
 import { Tooltip } from "@plane/propel/tooltip";
 import { renderFormattedTime, renderFormattedDate, calculateTimeAgo } from "@plane/utils";
 import type { IWorklog, TIssueActivityComment } from "@plane/types";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
-import { useUser } from "@/hooks/store/user";
+import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // store
 import { StoreContext } from "@/lib/store-context";
@@ -37,6 +38,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     activity: { getActivityById },
   } = useIssueDetail();
   const { data: currentUser } = useUser();
+  const { getProjectRoleByWorkspaceSlugAndProjectId } = useUserPermissions();
   const { isMobile } = usePlatformOS();
 
   const rootStore = useContext(StoreContext);
@@ -48,9 +50,10 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
 
   const activity = getActivityById(activityComment.id);
 
+  const currentUserProjectRole = getProjectRoleByWorkspaceSlugAndProjectId(workspaceSlug, projectId);
+  const isAdmin = currentUserProjectRole === EUserPermissions.ADMIN;
   const isOwner = currentUser?.id === activity?.actor;
-  // For now, allow edit/delete for the owner. Admin check would require additional role check.
-  const canModify = isOwner;
+  const canModify = isOwner || isAdmin;
 
   const linkedWorklog = activity?.new_identifier
     ? (worklogStore?.worklogsByIssue?.[issueId] ?? []).find(
@@ -77,8 +80,6 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     }
   }, [isEditing, activity?.new_identifier, worklogFromActivity]);
 
-  if (!activity) return <></>;
-
   const isActiveTracking = linkedWorklog?.duration === 0;
 
   useEffect(() => {
@@ -90,6 +91,8 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
 
     return () => window.clearInterval(intervalId);
   }, [isActiveTracking]);
+
+  if (!activity) return <></>;
 
   const getWorklogDurationLabel = () => {
     if (!linkedWorklog) return activity.new_value ?? "0m";
@@ -153,9 +156,10 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
   const handleEdit = () => {
     // Ensure worklogs are fetched so we can find the record for the edit form
     if (worklogStore && !worklogStore.worklogsByIssue[issueId]) {
-      void worklogStore.fetchWorklogs(workspaceSlug, projectId, issueId).then(() => {
+      void (async () => {
+        await worklogStore.fetchWorklogs(workspaceSlug, projectId, issueId);
         setIsEditing(true);
-      });
+      })();
     } else {
       setIsEditing(true);
     }
@@ -209,7 +213,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
             </button>
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => void handleDelete()}
               disabled={isDeleting}
               className="rounded p-1 text-tertiary hover:text-red-500 hover:bg-layer-3 transition-colors disabled:opacity-50"
               aria-label="Delete worklog"

@@ -154,6 +154,17 @@ class WorklogViewSet(BaseViewSet):
     @action(detail=False, methods=["post"], url_path="start")
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def start(self, request, slug, project_id, issue_id):
+        issue_exists = Issue.objects.filter(
+            pk=issue_id,
+            project_id=project_id,
+            workspace__slug=slug,
+        ).exists()
+        if not issue_exists:
+            return Response(
+                {"error": "Issue does not belong to the specified project/workspace."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         try:
             with transaction.atomic():
                 worklog, created = Worklog.objects.get_or_create(

@@ -439,6 +439,38 @@ class TestWorklogTracking(TestWorklogBase):
         assert response.status_code == status.HTTP_409_CONFLICT
 
     @pytest.mark.django_db
+    def test_start_tracking_rejects_issue_from_different_project(
+        self, member_client, test_workspace, test_project, admin_user
+    ):
+        other_project = Project.objects.create(
+            name="Other Project",
+            workspace=test_workspace,
+            created_by=admin_user,
+            updated_by=admin_user,
+        )
+        other_state = State.objects.create(
+            name="Todo",
+            project=other_project,
+            workspace=test_workspace,
+            created_by=admin_user,
+            updated_by=admin_user,
+        )
+        other_issue = Issue.objects.create(
+            name="Other Project Issue",
+            project=other_project,
+            workspace=test_workspace,
+            state=other_state,
+            created_by=admin_user,
+            updated_by=admin_user,
+        )
+
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, other_issue.id)
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not Worklog.objects.filter(project_id=test_project.id, issue_id=other_issue.id).exists()
+
+    @pytest.mark.django_db
     def test_stop_tracking_finalizes_duration(self, member_client, test_workspace, test_project, test_issue):
         start_url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
         stop_url = self.get_worklogs_stop_url(test_workspace.slug, test_project.id, test_issue.id)
