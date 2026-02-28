@@ -733,6 +733,7 @@ class IssueStateSerializer(DynamicBaseSerializer):
     sub_issues_count = serializers.IntegerField(read_only=True)
     attachment_count = serializers.IntegerField(read_only=True)
     link_count = serializers.IntegerField(read_only=True)
+    time_logged = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Issue
@@ -770,6 +771,7 @@ class IssueSerializer(DynamicBaseSerializer):
     sub_issues_count = serializers.IntegerField(read_only=True)
     attachment_count = serializers.IntegerField(read_only=True)
     link_count = serializers.IntegerField(read_only=True)
+    time_logged = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Issue
@@ -797,6 +799,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "updated_by",
             "attachment_count",
             "link_count",
+            "time_logged",
             "is_draft",
             "archived_at",
         ]
@@ -857,6 +860,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "sub_issues_count": instance.sub_issues_count,
             "attachment_count": instance.attachment_count,
             "link_count": instance.link_count,
+            "time_logged": getattr(instance, "time_logged", 0),
         }
 
         # Handle expanded fields only when requested - using direct field access

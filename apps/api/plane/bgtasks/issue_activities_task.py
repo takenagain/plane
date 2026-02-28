@@ -1512,6 +1512,7 @@ def create_worklog_activity(
     hours = duration // 60
     minutes = duration % 60
     time_str = f"{hours}h {minutes}m" if hours else f"{minutes}m"
+    issue_name = Issue.objects.filter(pk=issue_id).values_list("name", flat=True).first() or "work item"
 
     issue_activities.append(
         IssueActivity(
@@ -1519,7 +1520,7 @@ def create_worklog_activity(
             actor_id=actor_id,
             project_id=project_id,
             workspace_id=workspace_id,
-            comment=f"logged {time_str}",
+            comment=f"Logged {time_str} on {issue_name}",
             verb="created",
             field="worklog",
             new_value=time_str,

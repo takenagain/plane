@@ -32,6 +32,7 @@ export enum EIssueGroupByToServerOptions {
   "assignees" = "assignees__id",
   "cycle" = "cycle_id",
   "module" = "issue_module__module_id",
+  "time_logged" = "time_logged",
   "target_date" = "target_date",
   "project" = "project_id",
   "created_by" = "created_by",
@@ -47,6 +48,7 @@ export enum EIssueGroupBYServerToProperty {
   "assignees__id" = "assignee_ids",
   "cycle_id" = "cycle_id",
   "issue_module__module_id" = "module_ids",
+  "time_logged" = "time_logged",
   "target_date" = "target_date",
   "project_id" = "project_id",
   "created_by" = "created_by",
@@ -121,6 +123,7 @@ export const ISSUE_GROUP_BY_OPTIONS: {
   { key: "project", titleTranslationKey: "common.project" }, // required this on my issues
   { key: "cycle", titleTranslationKey: "common.cycle" }, // required this on my issues
   { key: "module", titleTranslationKey: "common.module" }, // required this on my issues
+  { key: "time_logged", titleTranslationKey: "common.time_logged" },
   { key: "labels", titleTranslationKey: "common.labels" },
   { key: "assignees", titleTranslationKey: "common.assignees" },
   { key: "created_by", titleTranslationKey: "common.created_by" },
@@ -137,6 +140,7 @@ export const ISSUE_ORDER_BY_OPTIONS: {
   { key: "start_date", titleTranslationKey: "common.order_by.start_date" },
   { key: "target_date", titleTranslationKey: "common.order_by.due_date" },
   { key: "-priority", titleTranslationKey: "common.priority" },
+  { key: "-time_logged", titleTranslationKey: "common.time_logged" },
 ];
 
 export const ISSUE_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)[] = [

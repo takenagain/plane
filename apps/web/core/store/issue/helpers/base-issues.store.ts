@@ -118,6 +118,7 @@ export const ISSUE_GROUP_BY_KEY: Record<TIssueDisplayFilterOptions, keyof TIssue
   state: "state_id",
   "state_detail.group": "state_id", // state_detail.group is only being used for state_group display,
   priority: "priority",
+  time_logged: "time_logged",
   labels: "label_ids",
   created_by: "created_by",
   assignees: "assignee_ids",
@@ -134,6 +135,7 @@ export const ISSUE_FILTER_DEFAULT_DATA: Record<TIssueDisplayFilterOptions, keyof
   state: "state_id",
   "state_detail.group": "state__group", // state_detail.group is only being used for state_group display,
   priority: "priority",
+  time_logged: "time_logged",
   labels: "label_ids",
   created_by: "created_by",
   assignees: "assignee_ids",
@@ -172,6 +174,8 @@ const ISSUE_ORDERBY_KEY: Record<TIssueOrderByOptions, keyof TIssue> = {
   "-attachment_count": "attachment_count",
   sub_issues_count: "sub_issues_count",
   "-sub_issues_count": "sub_issues_count",
+  time_logged: "time_logged",
+  "-time_logged": "time_logged",
 };
 
 export abstract class BaseIssuesStore implements IBaseIssuesStore {
@@ -1517,8 +1521,18 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     // if unGrouped, then return the path as ALL_ISSUES along with orderByUpdates
     if (!this.issueGroupKey) return action ? [{ path: [ALL_ISSUES], action }, ...orderByUpdates] : orderByUpdates;
 
-    const issueGroupKeyValue = issue?.[this.issueGroupKey] as string | string[] | null | undefined;
-    const issueBeforeUpdateGroupKey = issueBeforeUpdate?.[this.issueGroupKey] as string | string[] | null | undefined;
+    const issueGroupKeyValue = issue?.[this.issueGroupKey] as
+      | string
+      | number
+      | Array<string | number>
+      | null
+      | undefined;
+    const issueBeforeUpdateGroupKey = issueBeforeUpdate?.[this.issueGroupKey] as
+      | string
+      | number
+      | Array<string | number>
+      | null
+      | undefined;
     // if grouped, the get the Difference between the two issue properties (this.issueGroupKey) on which groupBy is performed
     const groupActionsArray = getDifference(
       this.getArrayStringArray(issue, issueGroupKeyValue, this.groupBy),
@@ -1536,7 +1550,12 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
         ...orderByUpdates,
       ];
 
-    const issueSubGroupKey = issue?.[this.issueSubGroupKey] as string | string[] | null | undefined;
+    const issueSubGroupKey = issue?.[this.issueSubGroupKey] as
+      | string
+      | number
+      | Array<string | number>
+      | null
+      | undefined;
     const issueBeforeUpdateSubGroupKey = issueBeforeUpdate?.[this.issueSubGroupKey] as
       | string
       | string[]
@@ -1585,7 +1604,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     // if they are not equal and issues are not grouped then, provide path as ALL_ISSUES
     if (!this.issueGroupKey) return [{ path: [ALL_ISSUES], action: EIssueGroupedAction.REORDER }];
 
-    const issueGroupKey = issue?.[this.issueGroupKey] as string | string[] | null | undefined;
+    const issueGroupKey = issue?.[this.issueGroupKey] as string | number | Array<string | number> | null | undefined;
     // if they are grouped then identify the paths based on props on which group by is dependent on
     const issueKeyActions: { path: string[]; action: EIssueGroupedAction.REORDER }[] = [];
     const groupByValues = this.getArrayStringArray(issue, issueGroupKey);
@@ -1599,7 +1618,12 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       return issueKeyActions;
     }
 
-    const issueSubGroupKey = issue?.[this.issueSubGroupKey] as string | string[] | null | undefined;
+    const issueSubGroupKey = issue?.[this.issueSubGroupKey] as
+      | string
+      | number
+      | Array<string | number>
+      | null
+      | undefined;
     // if they are grouped then identify the paths based on props on which sub group by is dependent on
     const subGroupByValues = this.getArrayStringArray(issue, issueSubGroupKey);
 
@@ -1622,15 +1646,18 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   //  */
   getArrayStringArray = (
     issueObject: Partial<TIssue> | undefined,
-    value: string | string[] | undefined | null,
+    value: string | number | Array<string | number> | undefined | null,
     groupByKey?: TIssueGroupByOptions
   ): string[] => {
     // if issue object is undefined return empty array
     if (!issueObject) return [];
     // if value is not defined, return None value in array
-    if (!value || isEmpty(value)) return ["None"];
+    if (value === null || value === undefined) return ["None"];
+    if (Array.isArray(value) && isEmpty(value)) return ["None"];
+    if (typeof value === "string" && !value.trim()) return ["None"];
     // if array return the array
-    if (Array.isArray(value)) return value;
+    if (Array.isArray(value)) return value.map(String);
+    if (typeof value === "number") return [String(value)];
 
     return this.getDefaultGroupValue(issueObject, value, groupByKey);
   };
@@ -1643,15 +1670,15 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   //  */
   private getDefaultGroupValue = (
     issueObject: Partial<TIssue>,
-    value: string,
+    value: string | number,
     groupByKey?: TIssueGroupByOptions
   ): string[] => {
     // Handle special case for state group
     if (groupByKey === "state_detail.group") {
-      return [this.rootIssueStore.rootStore.state.stateMap?.[value]?.group ?? issueObject.state__group];
+      return [this.rootIssueStore.rootStore.state.stateMap?.[String(value)]?.group ?? issueObject.state__group];
     }
 
-    return [value];
+    return [String(value)];
   };
 
   /**
@@ -1844,6 +1871,10 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
         return getIssueIds(orderBy(array, "sub_issues_count"));
       case "-sub_issues_count":
         return getIssueIds(orderBy(array, "sub_issues_count", ["desc"]));
+      case "time_logged":
+        return getIssueIds(orderBy(array, "time_logged"));
+      case "-time_logged":
+        return getIssueIds(orderBy(array, "time_logged", ["desc"]));
 
       // Array
       case "labels__name":

@@ -14,6 +14,8 @@ import {
   getDatePickerConfig,
   getDateRangePickerConfig,
   getMultiSelectConfig,
+  getNumberConfig,
+  getNumberRangeConfig,
 } from "../../../rich-filters";
 
 // ------------ Date filter ------------
@@ -23,6 +25,23 @@ export const getSupportedDateOperators = (params: TCreateDateFilterParams): TOpe
     createOperatorConfigEntry(EQUALITY_OPERATOR.EXACT, params, (updatedParams) => getDatePickerConfig(updatedParams)),
     createOperatorConfigEntry(COMPARISON_OPERATOR.RANGE, params, (updatedParams) =>
       getDateRangePickerConfig(updatedParams)
+    ),
+  ]);
+
+// ------------ Numeric filters ------------
+
+export type TCreateNumberFilterParams = TCreateFilterConfigParams &
+  IFilterIconConfig<number> & {
+    min?: number;
+    max?: number;
+    step?: number;
+  };
+
+export const getSupportedNumericOperators = (params: TCreateNumberFilterParams): TOperatorConfigMap =>
+  new Map([
+    createOperatorConfigEntry(EQUALITY_OPERATOR.EXACT, params, (updatedParams) => getNumberConfig(updatedParams)),
+    createOperatorConfigEntry(COMPARISON_OPERATOR.RANGE, params, (updatedParams) =>
+      getNumberRangeConfig(updatedParams)
     ),
   ]);
 

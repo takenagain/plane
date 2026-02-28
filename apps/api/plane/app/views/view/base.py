@@ -43,6 +43,7 @@ from plane.db.models import (
 from plane.utils.issue_filters import issue_filters
 from plane.utils.order_queryset import order_issue_queryset
 from plane.bgtasks.recent_visited_task import recent_visited_task
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 from .. import BaseViewSet
 from plane.db.models import UserFavorite
 from plane.utils.filters import ComplexFilterBackend
@@ -162,7 +163,7 @@ class WorkspaceViewIssuesViewSet(BaseViewSet):
         )
 
     def apply_annotations(self, issues):
-        return (
+        return annotate_issue_queryset_with_time_logged(
             issues.annotate(
                 cycle_id=Subquery(
                     CycleIssue.objects.filter(issue=OuterRef("id"), deleted_at__isnull=True).values("cycle_id")[:1]

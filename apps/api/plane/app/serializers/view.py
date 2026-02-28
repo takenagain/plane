@@ -43,6 +43,7 @@ class ViewIssueListSerializer(serializers.Serializer):
             "updated_by": instance.updated_by_id,
             "attachment_count": instance.attachment_count,
             "link_count": instance.link_count,
+            "time_logged": getattr(instance, "time_logged", 0),
             "is_draft": instance.is_draft,
             "archived_at": instance.archived_at,
             "state__group": instance.state.group if instance.state else None,

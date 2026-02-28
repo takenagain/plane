@@ -28,6 +28,10 @@ export interface IWorklogStore {
     data: IWorklogCreatePayload
   ) => Promise<IWorklog>;
 
+  startTracking: (workspaceSlug: string, projectId: string, issueId: string) => Promise<IWorklog>;
+
+  stopTracking: (workspaceSlug: string, projectId: string, issueId: string) => Promise<IWorklog>;
+
   updateWorklog: (
     workspaceSlug: string,
     projectId: string,
@@ -52,6 +56,8 @@ export class WorklogStore implements IWorklogStore {
       fetchWorklogs: action,
       fetchTotal: action,
       createWorklog: action,
+      startTracking: action,
+      stopTracking: action,
       updateWorklog: action,
       deleteWorklog: action,
     });
@@ -101,6 +107,46 @@ export class WorklogStore implements IWorklogStore {
         this.totalByIssue[issueId] = (this.totalByIssue[issueId] ?? 0) + worklog.duration;
       });
       return worklog;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  startTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
+    try {
+      const worklog = await worklogService.startTracking(workspaceSlug, projectId, issueId);
+      runInAction(() => {
+        const existing = this.worklogsByIssue[issueId] ?? [];
+        const existingIndex = existing.findIndex((w) => w.id === worklog.id);
+        if (existingIndex !== -1) {
+          existing[existingIndex] = worklog;
+          this.worklogsByIssue[issueId] = [...existing];
+        } else {
+          this.worklogsByIssue[issueId] = [worklog, ...existing];
+        }
+      });
+      await this.fetchTotal(workspaceSlug, projectId, issueId);
+      return worklog;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  stopTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
+    try {
+      const updated = await worklogService.stopTracking(workspaceSlug, projectId, issueId);
+      runInAction(() => {
+        const existing = this.worklogsByIssue[issueId] ?? [];
+        const existingIndex = existing.findIndex((w) => w.id === updated.id);
+        if (existingIndex !== -1) {
+          existing[existingIndex] = updated;
+          this.worklogsByIssue[issueId] = [...existing];
+        } else if (existing.length > 0) {
+          this.worklogsByIssue[issueId] = [updated, ...existing];
+        }
+      });
+      await this.fetchTotal(workspaceSlug, projectId, issueId);
+      return updated;
     } catch (error) {
       throw error;
     }
