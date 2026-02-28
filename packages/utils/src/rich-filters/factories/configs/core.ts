@@ -115,6 +115,24 @@ export type TDateRangeConfig = TBaseFilterFieldConfig & {
 };
 
 /**
+ * Number filter configuration
+ */
+export type TNumberConfig = TBaseFilterFieldConfig & {
+  min?: number;
+  max?: number;
+  step?: number;
+};
+
+/**
+ * Number range filter configuration
+ */
+export type TNumberRangeConfig = TBaseFilterFieldConfig & {
+  min?: number;
+  max?: number;
+  step?: number;
+};
+
+/**
  * Helper to get the date picker config
  * @param config - Date-specific configuration
  * @returns The date picker config
@@ -133,5 +151,27 @@ export const getDatePickerConfig = (config: TDateConfig) =>
 export const getDateRangePickerConfig = (config: TDateRangeConfig) =>
   createFilterFieldConfig<typeof FILTER_FIELD_TYPE.DATE_RANGE, Date>({
     type: FILTER_FIELD_TYPE.DATE_RANGE,
+    ...config,
+  });
+
+/**
+ * Helper to get the number input config
+ * @param config - Number-specific configuration
+ * @returns The number input config
+ */
+export const getNumberConfig = (config: TNumberConfig) =>
+  createFilterFieldConfig<typeof FILTER_FIELD_TYPE.NUMBER, number>({
+    type: FILTER_FIELD_TYPE.NUMBER,
+    ...config,
+  });
+
+/**
+ * Helper to get the number range input config
+ * @param config - Number range-specific configuration
+ * @returns The number range input config
+ */
+export const getNumberRangeConfig = (config: TNumberRangeConfig) =>
+  createFilterFieldConfig<typeof FILTER_FIELD_TYPE.NUMBER_RANGE, number>({
+    type: FILTER_FIELD_TYPE.NUMBER_RANGE,
     ...config,
   });

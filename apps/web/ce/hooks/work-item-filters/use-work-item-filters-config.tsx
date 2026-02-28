@@ -49,6 +49,7 @@ import {
   getStateFilterConfig,
   getStateGroupFilterConfig,
   getSubscriberFilterConfig,
+  getTimeLoggedFilterConfig,
   getTargetDateFilterConfig,
   getUpdatedAtFilterConfig,
   isLoaderReady,
@@ -349,6 +350,16 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     [operatorConfigs]
   );
 
+  // time logged filter config
+  const timeLoggedFilterConfig = useMemo(
+    () =>
+      getTimeLoggedFilterConfig<TWorkItemFilterProperty>("time_logged")({
+        isEnabled: isFilterEnabled("time_logged"),
+        ...operatorConfigs,
+      }),
+    [isFilterEnabled, operatorConfigs]
+  );
+
   // project filter config
   const projectFilterConfig = useMemo(
     () =>
@@ -378,6 +389,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       targetDateFilterConfig,
       createdAtFilterConfig,
       updatedAtFilterConfig,
+      timeLoggedFilterConfig,
       createdByFilterConfig,
       subscriberFilterConfig,
     ],
@@ -397,6 +409,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       target_date: targetDateFilterConfig,
       created_at: createdAtFilterConfig,
       updated_at: updatedAtFilterConfig,
+      time_logged: timeLoggedFilterConfig,
     },
     isFilterEnabled,
     members: members ?? [],

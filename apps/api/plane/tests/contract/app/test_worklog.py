@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+import json
 import uuid
 from datetime import date, timedelta
 
@@ -42,11 +43,18 @@ class TestWorklogBase:
     ) -> str:
         return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/worklogs/{worklog_id}/"
 
+    def get_issue_detail_url(self, workspace_slug: str, project_id: uuid.UUID) -> str:
+        return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues-detail/"
+
+    def get_issues_url(self, workspace_slug: str, project_id: uuid.UUID) -> str:
+        return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/"
+
 
 @pytest.fixture
 def admin_user(db):
     """Create an admin user."""
     user = User.objects.create(
+        username="admin-user",
         email="admin@plane.so",
         first_name="Admin",
         last_name="User",
@@ -60,6 +68,7 @@ def admin_user(db):
 def member_user(db):
     """Create a regular member user."""
     user = User.objects.create(
+        username="member-user",
         email="member@plane.so",
         first_name="Member",
         last_name="User",
@@ -73,6 +82,7 @@ def member_user(db):
 def other_member_user(db):
     """Create another regular member user."""
     user = User.objects.create(
+        username="other-member-user",
         email="other-member@plane.so",
         first_name="Other",
         last_name="Member",
@@ -86,6 +96,7 @@ def other_member_user(db):
 def guest_user(db):
     """Create a guest user."""
     user = User.objects.create(
+        username="guest-user",
         email="guest@plane.so",
         first_name="Guest",
         last_name="User",
@@ -240,7 +251,7 @@ def create_worklog(test_workspace, test_project, test_issue, setup_member, membe
     def _create(duration=60, description="Test worklog", logged_at=None):
         if logged_at is None:
             logged_at = date.today()
-        return Worklog.objects.create(
+        worklog = Worklog(
             issue=test_issue,
             project=test_project,
             workspace=test_workspace,
@@ -248,9 +259,9 @@ def create_worklog(test_workspace, test_project, test_issue, setup_member, membe
             duration=duration,
             description=description,
             logged_at=logged_at,
-            created_by=member_user,
-            updated_by=member_user,
         )
+        worklog.save(created_by_id=member_user.id)
+        return worklog
 
     return _create
 
@@ -262,7 +273,7 @@ def create_worklog_for_admin(test_workspace, test_project, test_issue, setup_adm
     def _create(duration=60, description="Admin worklog", logged_at=None):
         if logged_at is None:
             logged_at = date.today()
-        return Worklog.objects.create(
+        worklog = Worklog(
             issue=test_issue,
             project=test_project,
             workspace=test_workspace,
@@ -270,9 +281,9 @@ def create_worklog_for_admin(test_workspace, test_project, test_issue, setup_adm
             duration=duration,
             description=description,
             logged_at=logged_at,
-            created_by=admin_user,
-            updated_by=admin_user,
         )
+        worklog.save(created_by_id=admin_user.id)
+        return worklog
 
     return _create
 
@@ -409,7 +420,7 @@ class TestWorklogTracking(TestWorklogBase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["duration"] == 0
-        assert response.data["issue"] == str(test_issue.id)
+        assert str(response.data["issue"]) == str(test_issue.id)
         assert response.data["actor"] is not None
 
         worklog = Worklog.objects.get(pk=response.data["id"])
@@ -435,9 +446,7 @@ class TestWorklogTracking(TestWorklogBase):
         assert start_response.status_code == status.HTTP_201_CREATED
 
         worklog_id = start_response.data["id"]
-        Worklog.objects.filter(pk=worklog_id).update(
-            created_at=timezone.now() - timedelta(minutes=25, seconds=10)
-        )
+        Worklog.objects.filter(pk=worklog_id).update(created_at=timezone.now() - timedelta(minutes=25, seconds=10))
 
         stop_response = member_client.post(stop_url, format="json")
 
@@ -446,6 +455,26 @@ class TestWorklogTracking(TestWorklogBase):
 
         worklog = Worklog.objects.get(pk=worklog_id)
         assert worklog.duration >= 25
+
+    @pytest.mark.django_db
+    def test_stop_tracking_immediately_sets_minimum_duration(
+        self, member_client, test_workspace, test_project, test_issue
+    ):
+        start_url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        stop_url = self.get_worklogs_stop_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        start_response = member_client.post(start_url, format="json")
+        assert start_response.status_code == status.HTTP_201_CREATED
+
+        worklog_id = start_response.data["id"]
+        stop_response = member_client.post(stop_url, format="json")
+
+        assert stop_response.status_code == status.HTTP_200_OK
+        assert stop_response.data["duration"] == 1
+
+        worklog = Worklog.objects.get(pk=worklog_id)
+        assert worklog.duration == 1
+        assert not Worklog.objects.filter(pk=worklog_id, duration=0).exists()
 
     @pytest.mark.django_db
     def test_total_includes_elapsed_minutes_for_active_timer(
@@ -519,6 +548,250 @@ class TestWorklogTracking(TestWorklogBase):
         test_issue.refresh_from_db()
         assert test_issue.state is not None
         assert test_issue.state.name == "Todo"
+
+
+# ==============================================================================
+# FR-3B: Work Item time_logged sort/group/filter
+# ==============================================================================
+
+
+@pytest.mark.contract
+class TestWorkItemTimeLogged(TestWorklogBase):
+    """Contract tests for time_logged support in issue/work-item list APIs."""
+
+    def _create_issue(self, *, test_workspace, test_project, test_issue, admin_user, name):
+        return Issue.objects.create(
+            name=name,
+            project=test_project,
+            workspace=test_workspace,
+            state=test_issue.state,
+            created_by=admin_user,
+            updated_by=admin_user,
+        )
+
+    @pytest.mark.django_db
+    def test_issue_detail_orders_by_time_logged_desc(
+        self,
+        member_client,
+        test_workspace,
+        test_project,
+        test_issue,
+        admin_user,
+        member_user,
+    ):
+        second_issue = self._create_issue(
+            test_workspace=test_workspace,
+            test_project=test_project,
+            test_issue=test_issue,
+            admin_user=admin_user,
+            name="Second issue",
+        )
+
+        Worklog.objects.create(
+            issue=test_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=15,
+            description="Issue one",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.create(
+            issue=second_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=45,
+            description="Issue two",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+
+        response = member_client.get(
+            self.get_issues_url(test_workspace.slug, test_project.id),
+            {"order_by": "-time_logged"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert str(response.data["results"][0]["id"]) == str(second_issue.id)
+        assert response.data["results"][0]["time_logged"] == 45
+
+    @pytest.mark.django_db
+    def test_issue_detail_groups_by_time_logged(
+        self,
+        member_client,
+        test_workspace,
+        test_project,
+        test_issue,
+        admin_user,
+        member_user,
+    ):
+        second_issue = self._create_issue(
+            test_workspace=test_workspace,
+            test_project=test_project,
+            test_issue=test_issue,
+            admin_user=admin_user,
+            name="Grouped issue",
+        )
+
+        Worklog.objects.create(
+            issue=test_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=30,
+            description="Issue one",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.create(
+            issue=second_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=20,
+            description="Issue two",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+
+        response = member_client.get(
+            self.get_issues_url(test_workspace.slug, test_project.id),
+            {"group_by": "time_logged", "order_by": "-created_at"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "30" in response.data["results"]
+        assert "20" in response.data["results"]
+        assert str(test_issue.id) in {str(issue["id"]) for issue in response.data["results"]["30"]["results"]}
+        assert str(second_issue.id) in {str(issue["id"]) for issue in response.data["results"]["20"]["results"]}
+
+    @pytest.mark.django_db
+    def test_issue_detail_filters_time_logged_exact(
+        self,
+        member_client,
+        test_workspace,
+        test_project,
+        test_issue,
+        admin_user,
+        member_user,
+    ):
+        second_issue = self._create_issue(
+            test_workspace=test_workspace,
+            test_project=test_project,
+            test_issue=test_issue,
+            admin_user=admin_user,
+            name="Filter exact issue",
+        )
+
+        Worklog.objects.create(
+            issue=test_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=30,
+            description="Issue one",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.create(
+            issue=second_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=60,
+            description="Issue two",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+
+        response = member_client.get(
+            self.get_issues_url(test_workspace.slug, test_project.id),
+            {"filters": json.dumps({"time_logged__exact": 30})},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert {str(issue["id"]) for issue in response.data["results"]} == {str(test_issue.id)}
+        assert response.data["results"][0]["time_logged"] == 30
+
+    @pytest.mark.django_db
+    def test_issue_detail_filters_time_logged_range(
+        self,
+        member_client,
+        test_workspace,
+        test_project,
+        test_issue,
+        admin_user,
+        member_user,
+    ):
+        second_issue = self._create_issue(
+            test_workspace=test_workspace,
+            test_project=test_project,
+            test_issue=test_issue,
+            admin_user=admin_user,
+            name="Filter in range",
+        )
+        third_issue = self._create_issue(
+            test_workspace=test_workspace,
+            test_project=test_project,
+            test_issue=test_issue,
+            admin_user=admin_user,
+            name="Filter out of range",
+        )
+
+        Worklog.objects.create(
+            issue=test_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=10,
+            description="Issue low",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.create(
+            issue=second_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=30,
+            description="Issue mid",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.create(
+            issue=third_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=60,
+            description="Issue high",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+
+        response = member_client.get(
+            self.get_issues_url(test_workspace.slug, test_project.id),
+            {"filters": json.dumps({"time_logged__range": "20,40"})},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert {str(issue["id"]) for issue in response.data["results"]} == {str(second_issue.id)}
+        assert response.data["results"][0]["time_logged"] == 30
 
 
 # ==============================================================================

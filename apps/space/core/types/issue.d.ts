@@ -55,6 +55,7 @@ export interface IIssue extends Pick<
   | "attachment_count"
   | "sub_issues_count"
   | "link_count"
+  | "time_logged"
   | "estimate_point"
 > {
   comments: TIssuePublicComment[];

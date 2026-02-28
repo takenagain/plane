@@ -11,4 +11,5 @@ export * from "./module";
 export * from "./priority";
 export * from "./project";
 export * from "./state";
+export * from "./time-logged";
 export * from "./user";

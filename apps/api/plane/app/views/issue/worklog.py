@@ -6,6 +6,7 @@
 import json
 
 from django.core.serializers.json import DjangoJSONEncoder
+
 # Django imports
 from django.utils import timezone
 from rest_framework import status
@@ -53,15 +54,10 @@ class WorklogViewSet(BaseViewSet):
         )
 
     def _get_active_worklog_for_actor(self):
-        return (
-            self.get_queryset()
-            .filter(actor=self.request.user, duration=0)
-            .order_by("-created_at")
-            .first()
-        )
+        return self.get_queryset().filter(actor=self.request.user, duration=0).order_by("-created_at").first()
 
     def _get_total_duration_with_active_tracking(self) -> int:
-        queryset = self.get_queryset().only("duration", "created_at")
+        queryset = self.get_queryset().select_related(None).only("duration", "created_at")
         now = timezone.now()
         total_duration = 0
 
@@ -86,9 +82,7 @@ class WorklogViewSet(BaseViewSet):
         if issue is None or issue.state is None:
             return
 
-        normalized_state_name = "".join(
-            ch for ch in issue.state.name.lower() if ch.isalnum()
-        )
+        normalized_state_name = "".join(ch for ch in issue.state.name.lower() if ch.isalnum())
         if normalized_state_name not in {"backlog", "todo"}:
             return
 
@@ -97,16 +91,10 @@ class WorklogViewSet(BaseViewSet):
             return
 
         target_state = (
-            State.objects.filter(project_id=project_id, name__iexact="In Progress")
-            .order_by("sequence")
-            .first()
+            State.objects.filter(project_id=project_id, name__iexact="In Progress").order_by("sequence").first()
         )
         if target_state is None:
-            target_state = (
-                State.objects.filter(project_id=project_id, group="started")
-                .order_by("sequence")
-                .first()
-            )
+            target_state = State.objects.filter(project_id=project_id, group="started").order_by("sequence").first()
 
         if target_state is None or target_state.id == issue.state_id:
             return
@@ -210,7 +198,8 @@ class WorklogViewSet(BaseViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        active_worklog.duration = _elapsed_minutes_from_created_at(active_worklog.created_at)
+        elapsed_minutes = _elapsed_minutes_from_created_at(active_worklog.created_at)
+        active_worklog.duration = max(1, elapsed_minutes)
         active_worklog.updated_by = request.user
         active_worklog.save(update_fields=["duration", "updated_by", "updated_at"])
 

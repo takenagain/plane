@@ -4,14 +4,17 @@
  * See the LICENSE file for details.
  */
 
+import type { TFilterValue } from "../expression";
+import type { TNumberFilterFieldConfig, TNumberRangeFilterFieldConfig } from "../field-types";
+
 // ----------------------------- EXACT Operator -----------------------------
-export type TExtendedExactOperatorConfigs = never;
+export type TExtendedExactOperatorConfigs = TNumberFilterFieldConfig<TFilterValue>;
 
 // ----------------------------- IN Operator -----------------------------
 export type TExtendedInOperatorConfigs = never;
 
 // ----------------------------- RANGE Operator -----------------------------
-export type TExtendedRangeOperatorConfigs = never;
+export type TExtendedRangeOperatorConfigs = TNumberRangeFilterFieldConfig<TFilterValue>;
 
 // ----------------------------- Extended Operator Specific Configs -----------------------------
-export type TExtendedOperatorSpecificConfigs = unknown;
+export type TExtendedOperatorSpecificConfigs = Record<never, never>;

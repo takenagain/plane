@@ -8,16 +8,17 @@ import { useState, useEffect, useContext } from "react";
 import { observer } from "mobx-react";
 import { Clock, Pencil, Trash2 } from "lucide-react";
 // plane imports
-import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { Tooltip } from "@plane/propel/tooltip";
 import { renderFormattedTime, renderFormattedDate, calculateTimeAgo } from "@plane/utils";
-import type { TIssueActivityComment } from "@plane/types";
+import type { IWorklog, TIssueActivityComment } from "@plane/types";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
-import { useUser, useUserPermissions } from "@/hooks/store/user";
+import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // store
 import { StoreContext } from "@/lib/store-context";
+// helpers
+import { formatDuration } from "@/plane-web/helpers/worklog.helpers";
 // components
 import { WorklogForm } from "./worklog-form";
 
@@ -36,34 +37,39 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     activity: { getActivityById },
   } = useIssueDetail();
   const { data: currentUser } = useUser();
-  const { allowPermissions } = useUserPermissions();
   const { isMobile } = usePlatformOS();
 
   const rootStore = useContext(StoreContext);
-  const worklogStore = (rootStore as any).worklogStore;
+  const { worklogStore } = rootStore;
 
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
 
   const activity = getActivityById(activityComment.id);
 
   const isOwner = currentUser?.id === activity?.actor;
-  const isProjectAdmin = allowPermissions(
-    [EUserPermissions.ADMIN],
-    EUserPermissionsLevel.PROJECT,
-    workspaceSlug,
-    projectId
-  );
-  const isWorkspaceAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE, workspaceSlug);
-  const canModify = isOwner || isProjectAdmin || isWorkspaceAdmin;
+  // For now, allow edit/delete for the owner. Admin check would require additional role check.
+  const canModify = isOwner;
+
+  const linkedWorklog = activity?.new_identifier
+    ? (worklogStore?.worklogsByIssue?.[issueId] ?? []).find(
+        (worklog: IWorklog) => worklog.id === activity.new_identifier
+      )
+    : undefined;
 
   // Resolve the worklog object from the store when editing
-  const worklogFromActivity =
-    isEditing && activity?.new_identifier
-      ? (worklogStore?.worklogsByIssue?.[issueId] ?? []).find((w: any) => w.id === activity.new_identifier)
-      : undefined;
+  const worklogFromActivity = isEditing ? linkedWorklog : undefined;
 
-  // If we\u2019re in editing mode but can\u2019t find the worklog in the store,
+  useEffect(() => {
+    if (!activity?.new_identifier || !worklogStore || worklogStore.worklogsByIssue[issueId] !== undefined) {
+      return;
+    }
+
+    void worklogStore.fetchWorklogs(workspaceSlug, projectId, issueId);
+  }, [activity?.new_identifier, issueId, projectId, workspaceSlug, worklogStore]);
+
+  // If we're in editing mode but can't find the worklog in the store,
   // reset edit state safely via useEffect (never call setState during render).
   useEffect(() => {
     if (isEditing && activity?.new_identifier && !worklogFromActivity) {
@@ -73,18 +79,41 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
 
   if (!activity) return <></>;
 
+  const isActiveTracking = linkedWorklog?.duration === 0;
+
+  useEffect(() => {
+    if (!isActiveTracking) return;
+
+    const intervalId = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isActiveTracking]);
+
+  const getWorklogDurationLabel = () => {
+    if (!linkedWorklog) return activity.new_value ?? "0m";
+
+    if (linkedWorklog.duration === 0) {
+      const createdAtMs = new Date(linkedWorklog.created_at).getTime();
+      if (!Number.isFinite(createdAtMs)) return "0h 0m";
+      const elapsedMinutes = Math.max(0, Math.floor((nowTick - createdAtMs) / 60000));
+      return formatDuration(elapsedMinutes);
+    }
+
+    return formatDuration(linkedWorklog.duration);
+  };
+
+  const workItemName = activity.issue_detail?.name ?? "work item";
+
   const getActivityMessage = () => {
     switch (activity.verb) {
       case "created":
         return (
           <>
-            logged <span className="font-medium">{activity.new_value}</span>
-            {activity.old_value ? (
-              <>
-                {" \u2014 "}
-                <span className="text-tertiary italic">{activity.old_value}</span>
-              </>
-            ) : null}
+            Logged <span className="font-medium">{getWorklogDurationLabel()}</span>
+            {" on "}
+            <span className="font-medium">{workItemName}</span>
           </>
         );
       case "updated":
@@ -124,7 +153,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
   const handleEdit = () => {
     // Ensure worklogs are fetched so we can find the record for the edit form
     if (worklogStore && !worklogStore.worklogsByIssue[issueId]) {
-      worklogStore.fetchWorklogs(workspaceSlug, projectId, issueId).then(() => {
+      void worklogStore.fetchWorklogs(workspaceSlug, projectId, issueId).then(() => {
         setIsEditing(true);
       });
     } else {

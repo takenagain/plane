@@ -42,6 +42,28 @@ export class WorklogService extends APIService {
   }
 
   /**
+   * Start an active worklog timer for an issue.
+   */
+  async startTracking(workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> {
+    return this.post(`${this.basePath(workspaceSlug, projectId, issueId)}start/`, {})
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  /**
+   * Stop the active worklog timer for an issue.
+   */
+  async stopTracking(workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> {
+    return this.post(`${this.basePath(workspaceSlug, projectId, issueId)}stop/`, {})
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  /**
    * List all worklogs for an issue.
    * @param {string} workspaceSlug - The workspace identifier
    * @param {string} projectId - The project identifier

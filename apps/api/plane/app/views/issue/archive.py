@@ -43,6 +43,7 @@ from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPagina
 from plane.app.permissions import allow_permission, ROLE
 from plane.utils.error_codes import ERROR_CODES
 from plane.utils.host import base_host
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 
 # Module imports
 from .. import BaseViewSet, BaseAPIView
@@ -58,7 +59,7 @@ class IssueArchiveViewSet(BaseViewSet):
     filterset_class = IssueFilterSet
 
     def apply_annotations(self, issues):
-        return (
+        return annotate_issue_queryset_with_time_logged(
             issues.annotate(
                 cycle_id=Subquery(
                     CycleIssue.objects.filter(issue=OuterRef("id"), deleted_at__isnull=True).values("cycle_id")[:1]
@@ -220,7 +221,7 @@ class IssueArchiveViewSet(BaseViewSet):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def retrieve(self, request, slug, project_id, pk=None):
         issue = (
-            self.get_queryset()
+            self.apply_annotations(self.get_queryset())
             .filter(pk=pk)
             .prefetch_related(
                 Prefetch(

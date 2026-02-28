@@ -4,21 +4,16 @@
  * See the LICENSE file for details.
  */
 
-import assert from "node:assert/strict";
+type TExpectMatcher = {
+  toBe: (expected: string | number) => void;
+  toBeNaN: () => void;
+};
+
+declare const describe: (name: string, callback: () => void) => void;
+declare const it: (name: string, callback: () => void) => void;
+declare const expect: (received: unknown) => TExpectMatcher;
+
 import { formatDuration, parseDuration } from "../worklog.helpers";
-
-declare const describe: (name: string, fn: () => void) => void;
-declare const it: (name: string, fn: () => void) => void;
-
-const expect = (received: unknown) => ({
-  toBe: (expected: unknown) => {
-    assert.strictEqual(received, expected);
-  },
-  toBeNaN: () => {
-    assert.equal(typeof received, "number");
-    assert.ok(Number.isNaN(received));
-  },
-});
 
 describe("formatDuration", () => {
   it("formats 150 minutes as 2h 30m", () => {
