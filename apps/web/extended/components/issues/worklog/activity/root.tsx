@@ -36,6 +36,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
   // hooks
   const {
     activity: { getActivityById },
+    fetchIssue,
   } = useIssueDetail();
   const { data: currentUser } = useUser();
   const { getProjectRoleByWorkspaceSlugAndProjectId } = useUserPermissions();
@@ -146,6 +147,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     setIsDeleting(true);
     try {
       await worklogStore.deleteWorklog(workspaceSlug, projectId, issueId, activity.new_identifier);
+      await fetchIssue(workspaceSlug, projectId, issueId);
     } catch {
       // Error is handled by the store; the activity entry remains
     } finally {
@@ -165,6 +167,11 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     }
   };
 
+  const handleEditFormClose = () => {
+    setIsEditing(false);
+    void fetchIssue(workspaceSlug, projectId, issueId);
+  };
+
   // Render the edit form when editing and the worklog data is available
   if (isEditing && worklogFromActivity) {
     return (
@@ -173,7 +180,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
           workspaceSlug={workspaceSlug}
           projectId={projectId}
           issueId={issueId}
-          onClose={() => setIsEditing(false)}
+          onClose={handleEditFormClose}
           existingWorklog={worklogFromActivity}
         />
       </div>

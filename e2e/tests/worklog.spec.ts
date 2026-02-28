@@ -1,3 +1,4 @@
+/* eslint-disable turbo/no-undeclared-env-vars */
 /**
  * Copyright (c) 2023-present Plane Software, Inc. and contributors
  * SPDX-License-Identifier: AGPL-3.0-only
@@ -5,7 +6,8 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import type { APIRequestContext } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
@@ -25,6 +27,12 @@ type WorklogResponse = {
   id: string;
   duration: number;
   description?: string;
+};
+
+type IssueResponse = {
+  state_id?: string;
+  start_date?: string | null;
+  assignee_ids?: string[];
 };
 
 function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
@@ -192,6 +200,100 @@ function getWorklogBaseUrl(): string {
   return `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}/worklogs/`;
 }
 
+function getIssueUrl(): string {
+  return `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}/`;
+}
+
+function resetIssueTrackingDefaults(): {
+  todoStateId: string;
+  inProgressStateId: string;
+  userId: string;
+  today: string;
+} {
+  const resetScript = `
+from django.utils import timezone
+from plane.db.models.user import User
+from plane.db.models.issue import Issue, IssueAssignee
+from plane.db.models import IssueActivity
+from plane.db.models.state import State
+from plane.db.models.worklog import Worklog
+
+issue = Issue.issue_objects.get(pk="${issueId}", project_id="${projectId}", workspace__slug="${workspaceSlug}")
+user = User.objects.get(email="${ADMIN_EMAIL}".strip().lower())
+
+todo_state = State.all_state_objects.filter(
+    project_id=issue.project_id,
+    name__iexact="Todo",
+    deleted_at__isnull=True,
+).order_by("sequence").first()
+if todo_state is None:
+    todo_state = State.all_state_objects.filter(
+        project_id=issue.project_id,
+        group="unstarted",
+        deleted_at__isnull=True,
+    ).order_by("sequence").first()
+if todo_state is None:
+    todo_state = State.all_state_objects.filter(project_id=issue.project_id, deleted_at__isnull=True).order_by("sequence").first()
+
+in_progress_state = State.all_state_objects.filter(
+    project_id=issue.project_id,
+    name__iexact="In Progress",
+    deleted_at__isnull=True,
+).order_by("sequence").first()
+if in_progress_state is None:
+    in_progress_state = State.all_state_objects.filter(
+        project_id=issue.project_id,
+        group="started",
+        deleted_at__isnull=True,
+    ).order_by("sequence").first()
+if in_progress_state is None:
+    in_progress_state = State.all_state_objects.create(
+        project_id=issue.project_id,
+        workspace_id=issue.workspace_id,
+        name="In Progress",
+        group="started",
+        color="#f59e0b",
+        sequence=1024,
+        created_by=user,
+        updated_by=user,
+    )
+
+if todo_state is not None:
+    issue.state_id = todo_state.id
+issue.start_date = None
+issue.updated_by = user
+issue.save(update_fields=["state", "start_date", "updated_by", "updated_at"])
+
+IssueAssignee.objects.filter(issue=issue).delete()
+IssueActivity.objects.filter(issue=issue, field="state").delete()
+Worklog.objects.filter(
+    workspace_id=issue.workspace_id,
+    project_id=issue.project_id,
+    issue_id=issue.id,
+    actor_id=user.id,
+    duration=0,
+    deleted_at__isnull=True,
+).delete()
+
+print(f"WORKLOG_RESET_RESULT:{todo_state.id if todo_state else ''}|{in_progress_state.id}|{user.id}|{timezone.localdate()}")
+`;
+
+  const output = execFileSync("podman", ["exec", "api", "python", "manage.py", "shell", "-c", resetScript], {
+    encoding: "utf-8",
+  });
+  const match = output.match(/WORKLOG_RESET_RESULT:([^\n\r]+)/);
+  if (!match?.[1]) {
+    throw new Error(`Unable to parse reset output: ${output}`);
+  }
+
+  const [todoStateId, inProgressStateId, userId, today] = match[1].trim().split("|");
+  if (!inProgressStateId || !userId || !today) {
+    throw new Error(`Incomplete reset output: ${match[1]}`);
+  }
+
+  return { todoStateId, inProgressStateId, userId, today };
+}
+
 async function createWorklog(
   request: APIRequestContext,
   duration: number,
@@ -210,7 +312,7 @@ async function createWorklog(
 }
 
 test.describe("Worklog API Tests", () => {
-  test.beforeAll(async () => {
+  test.beforeAll(() => {
     const seeded = ensureE2ESeedData();
     workspaceSlug = seeded.workspaceSlug;
     projectId = seeded.projectId;
@@ -301,5 +403,57 @@ test.describe("Worklog API Tests", () => {
       },
     });
     expect(response.status()).toBe(400);
+  });
+
+  test("FR-6: start tracking auto-sets state/start date/assignee when missing", async ({ request }) => {
+    const { inProgressStateId, userId, today } = resetIssueTrackingDefaults();
+
+    const startResponse = await request.post(`${getWorklogBaseUrl()}start/`);
+    expect(startResponse.status()).toBe(201);
+
+    const issueResponse = await request.get(getIssueUrl());
+    expect(issueResponse.status()).toBe(200);
+    const issue = (await issueResponse.json()) as IssueResponse;
+
+    expect(issue.state_id).toBe(inProgressStateId);
+    expect(issue.start_date).toBe(today);
+    expect(issue.assignee_ids ?? []).toContain(userId);
+
+    const activeWorklogsResponse = await request.get(getWorklogBaseUrl());
+    expect(activeWorklogsResponse.status()).toBe(200);
+    const activeWorklogs = (await activeWorklogsResponse.json()) as Array<{
+      id: string;
+      duration: number;
+      actor: string;
+    }>;
+    const activeForActor = activeWorklogs.find((item) => item.actor === userId && item.duration === 0);
+    if (activeForActor) {
+      const stopResponse = await request.post(`${getWorklogBaseUrl()}stop/`);
+      expect(stopResponse.status()).toBe(200);
+    }
+  });
+
+  test("FR-7: logging time auto-sets state/start date/assignee when missing", async ({ request }) => {
+    const { inProgressStateId, userId, today } = resetIssueTrackingDefaults();
+    const createResponse = await request.post(getWorklogBaseUrl(), {
+      data: {
+        duration: 15,
+        logged_at: today,
+        description: "Auto defaults test worklog",
+      },
+    });
+    expect(createResponse.status()).toBe(201);
+    const createdWorklog = (await createResponse.json()) as WorklogResponse;
+
+    const issueResponse = await request.get(getIssueUrl());
+    expect(issueResponse.status()).toBe(200);
+    const issue = (await issueResponse.json()) as IssueResponse;
+
+    expect(issue.state_id).toBe(inProgressStateId);
+    expect(issue.start_date).toBe(today);
+    expect(issue.assignee_ids ?? []).toContain(userId);
+
+    const deleteResponse = await request.delete(`${getWorklogBaseUrl()}${createdWorklog.id}/`);
+    expect(deleteResponse.status()).toBe(204);
   });
 });

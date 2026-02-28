@@ -453,7 +453,7 @@ async function completeOnboarding(page: Page) {
   }
 }
 test.describe.serial("Time Tracking E2E Flow", () => {
-  test.beforeAll(async () => {
+  test.beforeAll(() => {
     const seeded = ensureE2ESeedData();
     workspaceSlug = seeded.workspaceSlug;
     projectId = seeded.projectId;
@@ -937,6 +937,21 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await expect(startStopButton).toHaveText(/start/i, { timeout: 15_000 });
       await expect(startStopButton.locator("svg.lucide-play")).toBeVisible({ timeout: 15_000 });
       await expect(sessionTimer).toHaveCount(0);
+    });
+
+    await test.step("sub-test: logging time refreshes issue and activity without reopening", async () => {
+      const openLogButton = trackingActions.getByTestId("issue-time-log-button");
+      await expect(openLogButton).toBeVisible({ timeout: 15_000 });
+      await openLogButton.click();
+
+      const form = trackingActions.locator("form").first();
+      await expect(form).toBeVisible({ timeout: 15_000 });
+      await form.getByLabel("Hours").fill("0");
+      await form.getByLabel("Minutes").fill("5");
+
+      await form.getByRole("button", { name: /^log time$/i }).click();
+
+      await expect(form).toHaveCount(0);
     });
   });
 });

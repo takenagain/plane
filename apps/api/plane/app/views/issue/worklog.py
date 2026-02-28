@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import WorklogSerializer
 from plane.bgtasks.issue_activities_task import issue_activity
-from plane.db.models import Issue, IssueActivity, State, Worklog
+from plane.db.models import Issue, IssueActivity, IssueAssignee, State, Worklog
 from plane.utils.host import base_host
 
 # Module imports
@@ -70,7 +70,7 @@ class WorklogViewSet(BaseViewSet):
 
         return total_duration
 
-    def _maybe_auto_transition_issue_state_on_tracking_start(self, issue_id, project_id):
+    def _get_tracking_target_state(self, issue_id, project_id):
         issue = (
             Issue.issue_objects.select_related("state")
             .filter(
@@ -81,15 +81,15 @@ class WorklogViewSet(BaseViewSet):
             .first()
         )
         if issue is None or issue.state is None:
-            return
+            return None
 
         normalized_state_name = "".join(ch for ch in issue.state.name.lower() if ch.isalnum())
         if normalized_state_name not in {"backlog", "todo"}:
-            return
+            return None
 
         # Skip auto-transition if state was explicitly changed after issue creation.
         if IssueActivity.objects.filter(issue_id=issue.id, field="state").exists():
-            return
+            return None
 
         target_state = (
             State.objects.filter(project_id=project_id, name__iexact="In Progress").order_by("sequence").first()
@@ -98,20 +98,72 @@ class WorklogViewSet(BaseViewSet):
             target_state = State.objects.filter(project_id=project_id, group="started").order_by("sequence").first()
 
         if target_state is None or target_state.id == issue.state_id:
+            return None
+
+        return target_state
+
+    def _apply_tracking_issue_defaults(self, issue_id, project_id):
+        issue = (
+            Issue.issue_objects.select_related("state")
+            .prefetch_related("issue_assignee")
+            .filter(
+                pk=issue_id,
+                project_id=project_id,
+                workspace__slug=self.kwargs.get("slug"),
+            )
+            .first()
+        )
+        if issue is None:
             return
 
-        previous_state = issue.state
-        issue.state = target_state
+        requested_data = {}
+        current_instance = {}
+        issue_update_fields = []
+
+        target_state = self._get_tracking_target_state(issue_id=issue_id, project_id=project_id)
+        if target_state is not None:
+            requested_data["state"] = str(target_state.id)
+            current_instance["state_id"] = str(issue.state_id) if issue.state_id else None
+            issue.state = target_state
+            issue_update_fields.append("state")
+
+        if issue.start_date is None:
+            start_date = timezone.localdate()
+            requested_data["start_date"] = str(start_date)
+            current_instance["start_date"] = None
+            issue.start_date = start_date
+            issue_update_fields.append("start_date")
+
+        current_assignee_ids = [str(assignee.assignee_id) for assignee in issue.issue_assignee.all()]
+        if not current_assignee_ids:
+            try:
+                IssueAssignee.objects.create(
+                    issue=issue,
+                    assignee=self.request.user,
+                    project_id=project_id,
+                    workspace_id=issue.workspace_id,
+                    created_by=self.request.user,
+                    updated_by=self.request.user,
+                )
+                requested_data["assignee_ids"] = [str(self.request.user.id)]
+                current_instance["assignee_ids"] = []
+            except IntegrityError:
+                pass
+
+        if not requested_data:
+            return
+
         issue.updated_by = self.request.user
-        issue.save(update_fields=["state", "updated_by", "updated_at"])
+        issue_update_fields.extend(["updated_by", "updated_at"])
+        issue.save(update_fields=issue_update_fields)
 
         issue_activity.delay(
             type="issue.activity.updated",
-            requested_data=json.dumps({"state": str(target_state.id)}, cls=DjangoJSONEncoder),
+            requested_data=json.dumps(requested_data, cls=DjangoJSONEncoder),
             actor_id=str(self.request.user.id),
             issue_id=str(issue.id),
             project_id=str(project_id),
-            current_instance=json.dumps({"state_id": str(previous_state.id)}, cls=DjangoJSONEncoder),
+            current_instance=json.dumps(current_instance, cls=DjangoJSONEncoder),
             epoch=int(timezone.now().timestamp()),
             notification=False,
             origin=base_host(request=self.request, is_app=True),
@@ -137,6 +189,7 @@ class WorklogViewSet(BaseViewSet):
                 issue_id=issue_id,
                 actor=request.user,
             )
+            self._apply_tracking_issue_defaults(issue_id=issue_id, project_id=project_id)
             issue_activity.delay(
                 type="worklog.activity.created",
                 requested_data=json.dumps(serializer.data, cls=DjangoJSONEncoder),
@@ -188,7 +241,7 @@ class WorklogViewSet(BaseViewSet):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        self._maybe_auto_transition_issue_state_on_tracking_start(issue_id=issue_id, project_id=project_id)
+        self._apply_tracking_issue_defaults(issue_id=issue_id, project_id=project_id)
 
         serialized_worklog = WorklogSerializer(worklog).data
         issue_activity.delay(

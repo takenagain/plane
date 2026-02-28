@@ -13,6 +13,7 @@ from rest_framework import status
 
 from plane.db.models import (
     Issue,
+    IssueAssignee,
     IssueActivity,
     Project,
     ProjectMember,
@@ -581,6 +582,62 @@ class TestWorklogTracking(TestWorklogBase):
         test_issue.refresh_from_db()
         assert test_issue.state is not None
         assert test_issue.state.name == "Todo"
+
+    @pytest.mark.django_db
+    def test_start_tracking_sets_start_date_and_assignee_when_missing(
+        self, member_client, test_workspace, test_project, test_issue, member_user
+    ):
+        State.objects.create(
+            name="In Progress",
+            group="started",
+            project=test_project,
+            workspace=test_workspace,
+            created_by=test_issue.created_by,
+            updated_by=test_issue.updated_by,
+        )
+        IssueAssignee.objects.filter(issue=test_issue).delete()
+        Issue.issue_objects.filter(pk=test_issue.id).update(start_date=None)
+
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        test_issue.refresh_from_db()
+        assert test_issue.start_date == timezone.localdate()
+        assert test_issue.state is not None
+        assert test_issue.state.name == "In Progress"
+        assert IssueAssignee.objects.filter(issue=test_issue, assignee=member_user).exists()
+
+    @pytest.mark.django_db
+    def test_create_worklog_sets_start_date_and_assignee_when_missing(
+        self, member_client, test_workspace, test_project, test_issue, member_user
+    ):
+        State.objects.create(
+            name="In Progress",
+            group="started",
+            project=test_project,
+            workspace=test_workspace,
+            created_by=test_issue.created_by,
+            updated_by=test_issue.updated_by,
+        )
+        IssueAssignee.objects.filter(issue=test_issue).delete()
+        Issue.issue_objects.filter(pk=test_issue.id).update(start_date=None)
+
+        url = self.get_worklogs_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.post(
+            url,
+            {"duration": 20, "logged_at": str(timezone.localdate()), "description": "Focus block"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        test_issue.refresh_from_db()
+        assert test_issue.start_date == timezone.localdate()
+        assert test_issue.state is not None
+        assert test_issue.state.name == "In Progress"
+        assert IssueAssignee.objects.filter(issue=test_issue, assignee=member_user).exists()
 
 
 # ==============================================================================

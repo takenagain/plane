@@ -35,6 +35,7 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
   const { getProjectRoleByWorkspaceSlugAndProjectId } = useUserPermissions();
   const {
     issue: { getIssueById },
+    fetchIssue,
   } = useIssueDetail();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -89,11 +90,16 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
     return `${hours}:${minutes}:${seconds}`;
   };
 
+  const refreshIssueDetails = async () => {
+    await fetchIssue(workspaceSlug, projectId, issueId);
+  };
+
   const handleStart = async () => {
     setError(null);
     setIsSubmitting(true);
     try {
       await worklogStore.startTracking(workspaceSlug, projectId, issueId);
+      await refreshIssueDetails();
     } catch {
       setError("Failed to start tracking time.");
     } finally {
@@ -106,11 +112,17 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
     setIsSubmitting(true);
     try {
       await worklogStore.stopTracking(workspaceSlug, projectId, issueId);
+      await refreshIssueDetails();
     } catch {
       setError("Failed to stop tracking time.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    void refreshIssueDetails();
   };
 
   if (!isWorklogButtonEnabled || disabled) return <></>;
@@ -161,12 +173,7 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
       </div>
 
       {isFormOpen && (
-        <WorklogForm
-          workspaceSlug={workspaceSlug}
-          projectId={projectId}
-          issueId={issueId}
-          onClose={() => setIsFormOpen(false)}
-        />
+        <WorklogForm workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} onClose={handleFormClose} />
       )}
 
       {error && <p className="text-caption-sm-regular text-red-500">{error}</p>}
