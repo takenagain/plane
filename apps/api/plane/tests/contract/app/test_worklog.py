@@ -6,10 +6,12 @@ import uuid
 from datetime import date, timedelta
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 
 from plane.db.models import (
     Issue,
+    IssueActivity,
     Project,
     ProjectMember,
     State,
@@ -28,6 +30,12 @@ class TestWorklogBase:
 
     def get_worklogs_total_url(self, workspace_slug: str, project_id: uuid.UUID, issue_id: uuid.UUID) -> str:
         return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/worklogs/total/"
+
+    def get_worklogs_start_url(self, workspace_slug: str, project_id: uuid.UUID, issue_id: uuid.UUID) -> str:
+        return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/worklogs/start/"
+
+    def get_worklogs_stop_url(self, workspace_slug: str, project_id: uuid.UUID, issue_id: uuid.UUID) -> str:
+        return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/worklogs/stop/"
 
     def get_worklog_detail_url(
         self, workspace_slug: str, project_id: uuid.UUID, issue_id: uuid.UUID, worklog_id: uuid.UUID
@@ -382,6 +390,135 @@ class TestWorklogTotal(TestWorklogBase):
         # Total should now reflect only the second worklog
         response = member_client.get(total_url, format="json")
         assert response.data["total_duration"] == 90
+
+
+# ==============================================================================
+# FR-3A: Start/Stop Time Tracking
+# ==============================================================================
+
+
+@pytest.mark.contract
+class TestWorklogTracking(TestWorklogBase):
+    """Tests for active timer start/stop behavior using schema-compatible worklogs."""
+
+    @pytest.mark.django_db
+    def test_start_tracking_creates_active_worklog(self, member_client, test_workspace, test_project, test_issue):
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["duration"] == 0
+        assert response.data["issue"] == str(test_issue.id)
+        assert response.data["actor"] is not None
+
+        worklog = Worklog.objects.get(pk=response.data["id"])
+        assert worklog.duration == 0
+
+    @pytest.mark.django_db
+    def test_start_tracking_rejects_duplicate_active_timer(
+        self, member_client, test_workspace, test_project, test_issue, create_worklog
+    ):
+        create_worklog(duration=0)
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_409_CONFLICT
+
+    @pytest.mark.django_db
+    def test_stop_tracking_finalizes_duration(self, member_client, test_workspace, test_project, test_issue):
+        start_url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        stop_url = self.get_worklogs_stop_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        start_response = member_client.post(start_url, format="json")
+        assert start_response.status_code == status.HTTP_201_CREATED
+
+        worklog_id = start_response.data["id"]
+        Worklog.objects.filter(pk=worklog_id).update(
+            created_at=timezone.now() - timedelta(minutes=25, seconds=10)
+        )
+
+        stop_response = member_client.post(stop_url, format="json")
+
+        assert stop_response.status_code == status.HTTP_200_OK
+        assert stop_response.data["duration"] >= 25
+
+        worklog = Worklog.objects.get(pk=worklog_id)
+        assert worklog.duration >= 25
+
+    @pytest.mark.django_db
+    def test_total_includes_elapsed_minutes_for_active_timer(
+        self, member_client, test_workspace, test_project, test_issue, create_worklog
+    ):
+        create_worklog(duration=30)
+        active_worklog = create_worklog(duration=0)
+        Worklog.objects.filter(pk=active_worklog.id).update(
+            created_at=timezone.now() - timedelta(minutes=15, seconds=10)
+        )
+
+        url = self.get_worklogs_total_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.get(url, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["total_duration"] >= 45
+
+    @pytest.mark.django_db
+    def test_start_tracking_auto_moves_todo_to_in_progress(
+        self, member_client, test_workspace, test_project, test_issue
+    ):
+        State.objects.create(
+            name="In Progress",
+            group="started",
+            project=test_project,
+            workspace=test_workspace,
+            created_by=test_issue.created_by,
+            updated_by=test_issue.updated_by,
+        )
+
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        test_issue.refresh_from_db()
+        assert test_issue.state is not None
+        assert test_issue.state.name == "In Progress"
+
+    @pytest.mark.django_db
+    def test_start_tracking_does_not_auto_move_when_state_already_changed(
+        self, member_client, test_workspace, test_project, test_issue
+    ):
+        State.objects.create(
+            name="In Progress",
+            group="started",
+            project=test_project,
+            workspace=test_workspace,
+            created_by=test_issue.created_by,
+            updated_by=test_issue.updated_by,
+        )
+        IssueActivity.objects.create(
+            issue=test_issue,
+            actor=test_issue.created_by,
+            verb="updated",
+            field="state",
+            old_value="Backlog",
+            new_value="Todo",
+            comment="updated the state to",
+            project=test_project,
+            workspace=test_workspace,
+            created_by=test_issue.created_by,
+            updated_by=test_issue.updated_by,
+        )
+
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        test_issue.refresh_from_db()
+        assert test_issue.state is not None
+        assert test_issue.state.name == "Todo"
 
 
 # ==============================================================================
