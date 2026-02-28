@@ -7,6 +7,7 @@ import uuid
 from datetime import date, timedelta
 
 import pytest
+from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework import status
 
@@ -1097,7 +1098,7 @@ class TestWorklogDelete(TestWorklogBase):
         # List should now have 1 worklog
         response = member_client.get(list_url, format="json")
         assert len(response.data) == 1
-        assert response.data[0]["id"] == str(wl2.id)
+        assert str(response.data[0]["id"]) == str(wl2.id)
 
     @pytest.mark.django_db
     def test_delete_all_worklogs_total_becomes_zero(
@@ -1337,7 +1338,7 @@ class TestWorklogModelIntegrity(TestWorklogBase):
 
         assert Worklog.objects.filter(issue=test_issue).count() == 2
 
-        test_issue.delete()
+        test_issue.delete(soft=False)
 
         assert Worklog.objects.filter(issue_id=test_issue.id).count() == 0
 
@@ -1368,3 +1369,33 @@ class TestWorklogModelIntegrity(TestWorklogBase):
         assert worklogs[0].id == wl_newer.id
         assert worklogs[1].id == wl_yesterday.id
         assert worklogs[2].id == wl_older.id
+
+    @pytest.mark.django_db
+    def test_single_active_timer_constraint_per_actor_issue(
+        self, test_workspace, test_project, test_issue, member_user
+    ):
+        """Only one active timer (duration=0) is allowed per actor/issue."""
+        Worklog.objects.create(
+            issue=test_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=0,
+            description="Active timer",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+
+        with pytest.raises(IntegrityError):
+            Worklog.objects.create(
+                issue=test_issue,
+                project=test_project,
+                workspace=test_workspace,
+                actor=member_user,
+                duration=0,
+                description="Duplicate active timer",
+                logged_at=date.today(),
+                created_by=member_user,
+                updated_by=member_user,
+            )

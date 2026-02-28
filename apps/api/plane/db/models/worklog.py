@@ -5,6 +5,7 @@
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 from plane.db.models.issue import Issue
 from plane.db.models.project import ProjectBaseModel
@@ -49,6 +50,13 @@ class Worklog(ProjectBaseModel):
                 fields=["issue", "-logged_at"],
                 name="worklogs_issue_logged_at",
             ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["actor", "issue"],
+                condition=Q(duration=0, deleted_at__isnull=True),
+                name="worklog_unique_active_timer_per_actor_issue",
+            )
         ]
 
     def __str__(self):

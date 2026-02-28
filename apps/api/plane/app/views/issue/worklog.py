@@ -8,6 +8,7 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 
 # Django imports
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -153,23 +154,28 @@ class WorklogViewSet(BaseViewSet):
     @action(detail=False, methods=["post"], url_path="start")
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def start(self, request, slug, project_id, issue_id):
-        active_worklog = self._get_active_worklog_for_actor()
-        if active_worklog is not None:
+        try:
+            with transaction.atomic():
+                worklog, created = Worklog.objects.get_or_create(
+                    project_id=project_id,
+                    issue_id=issue_id,
+                    actor=request.user,
+                    duration=0,
+                    defaults={
+                        "description": "",
+                        "logged_at": timezone.localdate(),
+                        "created_by": request.user,
+                        "updated_by": request.user,
+                    },
+                )
+        except IntegrityError:
+            created = False
+
+        if not created:
             return Response(
                 {"error": "An active time tracker already exists for this work item."},
                 status=status.HTTP_409_CONFLICT,
             )
-
-        worklog = Worklog.objects.create(
-            project_id=project_id,
-            issue_id=issue_id,
-            actor=request.user,
-            description="",
-            duration=0,
-            logged_at=timezone.localdate(),
-            created_by=request.user,
-            updated_by=request.user,
-        )
 
         self._maybe_auto_transition_issue_state_on_tracking_start(issue_id=issue_id, project_id=project_id)
 
