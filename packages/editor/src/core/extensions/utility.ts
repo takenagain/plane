@@ -5,6 +5,7 @@
  */
 
 import { Extension } from "@tiptap/core";
+import type { Plugin } from "@tiptap/pm/state";
 import codemark from "prosemirror-codemark";
 // helpers
 import { CORE_EXTENSIONS } from "@/constants/extension";
@@ -68,13 +69,14 @@ export const UtilityExtension = (props: Props) => {
     priority: 1000,
 
     addProseMirrorPlugins() {
+      const codemarkPlugins = codemark({ markType: this.editor.schema.marks.code }) as unknown as Plugin[];
       return [
         ...FilePlugins({
           editor: this.editor,
           isEditable,
           fileHandler,
         }),
-        ...codemark({ markType: this.editor.schema.marks.code }),
+        ...codemarkPlugins,
         MarkdownClipboardPlugin({
           editor: this.editor,
           getEditorMetaData,
@@ -84,7 +86,7 @@ export const UtilityExtension = (props: Props) => {
           flaggedExtensions,
           editor: this.editor,
         }),
-      ] as unknown as never[];
+      ];
     },
 
     onCreate() {
