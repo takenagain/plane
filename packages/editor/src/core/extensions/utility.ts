@@ -10,7 +10,6 @@ import codemark from "prosemirror-codemark";
 import { CORE_EXTENSIONS } from "@/constants/extension";
 import { restorePublicImages } from "@/helpers/image-helpers";
 // plugins
-import type { TAdditionalActiveDropbarExtensions } from "@/plane-editor/types/utils";
 import { DropHandlerPlugin } from "@/plugins/drop";
 import { FilePlugins } from "@/plugins/file/root";
 import { MarkdownClipboardPlugin } from "@/plugins/markdown-clipboard";
@@ -22,8 +21,7 @@ type TActiveDropbarExtensions =
   | CORE_EXTENSIONS.SLASH_COMMANDS
   | CORE_EXTENSIONS.TABLE
   | "bubble-menu"
-  | CORE_EXTENSIONS.SIDE_MENU
-  | TAdditionalActiveDropbarExtensions;
+  | CORE_EXTENSIONS.SIDE_MENU;
 
 declare module "@tiptap/core" {
   interface Commands {
@@ -86,7 +84,7 @@ export const UtilityExtension = (props: Props) => {
           flaggedExtensions,
           editor: this.editor,
         }),
-      ];
+      ] as unknown as never[];
     },
 
     onCreate() {
