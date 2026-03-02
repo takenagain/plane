@@ -3,7 +3,7 @@
 # See the LICENSE file for details.
 
 import pytest
-from datetime import date, timedelta
+from datetime import date
 
 from plane.utils.build_chart import build_time_logged_chart
 from plane.db.models import Issue, Worklog

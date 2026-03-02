@@ -23,7 +23,7 @@ from plane.db.models import (
 from django.db import models
 from django.db.models import F, Case, When, Value
 from django.db.models.functions import Concat
-from plane.utils.build_chart import build_analytics_chart
+from plane.utils.build_chart import build_analytics_chart, build_time_logged_chart
 from plane.utils.date_utils import (
     get_analytics_filters,
 )

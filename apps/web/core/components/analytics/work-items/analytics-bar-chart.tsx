@@ -18,7 +18,8 @@ import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { BarChart } from "@plane/propel/charts/bar-chart";
 import { EmptyStateCompact } from "@plane/propel/empty-state";
-import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty, ChartYAxisMetric } from "@plane/types";
+import { ChartYAxisMetric } from "@plane/types";
+import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty } from "@plane/types";
 // plane web components
 import { generateExtendedColors, parseChartData } from "@/components/chart/utils";
 // hooks
@@ -228,7 +229,23 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
               <Button
                 variant="secondary"
                 prependIcon={<Download className="h-3.5 w-3.5" />}
-                onClick={async () => { if (props.y_axis === ChartYAxisMetric.HOURS_LOGGED) { const params = { project_ids: selectedProjects?.join(","), cycle_id: selectedCycle || undefined, module_id: selectedModule || undefined }; try { await exportTimeLoggedCsv(workspaceSlug, params); } catch (e) { console.error(e); } } else { exportCSV(table.getRowModel().rows, [...defaultColumns, ...columns], workspaceSlug); } }}
+                onClick={async () => {
+                  if (props.y_axis === ChartYAxisMetric.HOURS_LOGGED) {
+                    const params = {
+                      project_ids: selectedProjects?.join(","),
+                      cycle_id: selectedCycle || undefined,
+                      module_id: selectedModule || undefined,
+                    };
+
+                    try {
+                      await exportTimeLoggedCsv(workspaceSlug, params);
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  } else {
+                    exportCSV(table.getRowModel().rows, [...defaultColumns, ...columns], workspaceSlug);
+                  }
+                }}
               >
                 <div>{t("exporter.csv.short_description")}</div>
               </Button>
