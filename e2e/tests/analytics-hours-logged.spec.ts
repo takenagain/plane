@@ -1,0 +1,74 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+/**
+ * E2E tests for Analytics: Hours Logged chart & CSV export.
+ *
+ * This focuses on:
+ * - Ensuring the HOURS_LOGGED analytics endpoint returns chart data.
+ * - Ensuring the time-logged CSV export includes the expected columns and non-zero hours.
+ *
+ * It reuses the seeding and auth helpers from the main time-tracking E2E spec.
+ */
+import type { Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { BASE_URL, ensureE2ESeedData, signInAndEnsureWorkspace } from "./time-tracking.spec";
+
+let workspaceSlug = "";
+let projectId = "";
+let issueId = "";
+
+async function createWorklog(page: Page, minutes: number) {
+  const path = `/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}/worklogs/`;
+  const resp = await page.request.post(`${BASE_URL}${path}`, {
+    data: {
+      duration: minutes,
+      logged_at: new Date().toISOString().slice(0, 10),
+      description: "Analytics hours logged E2E",
+    },
+  });
+  expect(resp.ok()).toBeTruthy();
+}
+
+test.describe.serial("Analytics Hours Logged E2E", () => {
+  test.beforeAll(async ({ page }) => {
+    const seeded = ensureE2ESeedData();
+    workspaceSlug = seeded.workspaceSlug;
+    projectId = seeded.projectId;
+    issueId = seeded.issueId;
+    await signInAndEnsureWorkspace(page);
+    // create a couple of worklogs so that analytics & CSV have data
+    await createWorklog(page, 60);
+    await createWorklog(page, 30);
+  });
+
+  test("1. Hours logged analytics chart returns data", async ({ page }) => {
+    const params =
+      "?type=custom-work-items&y_axis=HOURS_LOGGED&x_axis=LOGGED_DAY_OF_WEEK&group_by=WORK_ITEMS";
+    const resp = await page.request.get(
+      `${BASE_URL}/api/workspaces/${workspaceSlug}/advance-analytics-charts/${params}`
+    );
+    expect(resp.ok()).toBeTruthy();
+    const body = (await resp.json()) as { data?: Array<{ name?: string; count?: number }> };
+    expect(Array.isArray(body.data)).toBe(true);
+    expect((body.data ?? []).length).toBeGreaterThan(0);
+  });
+
+  test("2. Hours logged CSV export includes expected columns and non-zero hours", async ({ page }) => {
+    const resp = await page.request.get(
+      `${BASE_URL}/api/workspaces/${workspaceSlug}/analytics/time-logged-export/`
+    );
+    expect(resp.ok()).toBeTruthy();
+    const csv = await resp.text();
+    const lines = csv.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    expect(lines.length).toBeGreaterThan(1);
+    const header = lines[0];
+    expect(header).toContain("issue_id");
+    expect(header).toContain("title");
+    expect(header).toContain("hours_logged");
+    expect(header).toContain("status");
+    expect(header).toContain("priority");
+    expect(header).toContain("assignee");
+    const hasNonZeroHours = lines.slice(1).some((line) => /,\d+\.\d{2},/.test(line) || line.includes("1.00"));
+    expect(hasNonZeroHours).toBeTruthy();
+  });
+});
+

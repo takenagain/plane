@@ -21,7 +21,7 @@
 import { execFileSync } from "node:child_process";
 import type { Page } from "@playwright/test";
 import { test, expect } from "@playwright/test";
-const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
+export const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
 // Test user credentials - configure via environment variables
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "TestPass123!";
@@ -37,7 +37,7 @@ let workspaceSlug = "";
 let projectId = "";
 let issueId = "";
 
-function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
+export function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
   const seedScript = `
 import re
 from plane.db.models.user import User, Profile
@@ -328,7 +328,7 @@ async function loginWithEmailAndPassword(page: Page) {
  * After sign-in, completes the onboarding flow if needed.
  * Returns the workspace slug once the user is on a workspace page.
  */
-async function signInAndEnsureWorkspace(page: Page): Promise<string> {
+export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
   await page.goto(BASE_URL);
   await waitForPageLoad(page);
   await page.waitForTimeout(2000);
