@@ -11,9 +11,13 @@ from django.db.models import (
     F,
     QuerySet,
     Aggregate,
+    Sum,
 )
+from django.db.models.functions import ExtractWeekDay
+import calendar
 
 from plane.db.models import Issue
+from plane.db.models.worklog import Worklog
 from rest_framework.exceptions import ValidationError
 
 
@@ -152,14 +156,6 @@ def build_simple_chart_response(
     ]
 
 
-
-# additional imports for time‑logged aggregation
-from django.db.models import Sum, F
-from django.db.models.functions import ExtractWeekDay
-import calendar
-from plane.db.models.worklog import Worklog
-
-
 def build_time_logged_chart(
     queryset: QuerySet[Issue],
     x_axis: str,
@@ -212,7 +208,10 @@ def build_time_logged_chart(
         key_field = f"issue__{id_field}"
         name_field_res = f"issue__{name_field}" if name_field else key_field
         worklogs = worklogs.annotate(key_val=F(key_field), name_val=F(name_field_res))
-        name_mapper = lambda v: v
+
+        def name_mapper(value: Any) -> Any:
+            return value
+
         ordered_keys = None
 
     # now handle grouping (stacked) if requested
@@ -272,7 +271,11 @@ def build_time_logged_chart(
         else:
             agg = worklogs.values("key_val", "name_val").annotate(total=Sum("duration"))
             data = [
-                {"key": itm.get("key_val") or "None", "name": itm.get("name_val") or itm.get("key_val") or "None", "count": (itm.get("total", 0) or 0) / 60}
+                {
+                    "key": itm.get("key_val") or "None",
+                    "name": itm.get("name_val") or itm.get("key_val") or "None",
+                    "count": (itm.get("total", 0) or 0) / 60,
+                }
                 for itm in agg
             ]
             schema = {}

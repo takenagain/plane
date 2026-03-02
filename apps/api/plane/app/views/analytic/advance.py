@@ -5,7 +5,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from typing import Dict, List, Any
-from django.db.models import QuerySet, Q, Count
+from django.db.models import QuerySet, Q, Count, Sum
 from django.http import HttpRequest
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
@@ -349,17 +349,9 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             start, end = date_range
             worklogs = worklogs.filter(logged_at__date__gte=start, logged_at__date__lte=end)
 
-        issue_hours = (
-            worklogs.values("issue_id")
-            .annotate(total_minutes=Sum("duration"))
-            .filter(total_minutes__gt=0)
-        )
+        issue_hours = worklogs.values("issue_id").annotate(total_minutes=Sum("duration")).filter(total_minutes__gt=0)
         issue_ids = [item["issue_id"] for item in issue_hours]
-        issues = (
-            Issue.issue_objects.filter(id__in=issue_ids)
-            .select_related("state")
-            .prefetch_related("assignees")
-        )
+        issues = Issue.issue_objects.filter(id__in=issue_ids).select_related("state").prefetch_related("assignees")
         issue_map = {issue.id: issue for issue in issues}
 
         # build csv text
@@ -376,14 +368,16 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             hours = (item["total_minutes"] or 0) / 60
             assignee_obj = issue.assignees.filter(deleted_at__isnull=True).first()
             assignee = assignee_obj.display_name if assignee_obj else ""
-            writer.writerow([
-                str(issue.id),
-                issue.title,
-                f"{hours:.2f}",
-                issue.state.name if issue.state else "",
-                issue.priority,
-                assignee,
-            ])
+            writer.writerow(
+                [
+                    str(issue.id),
+                    issue.title,
+                    f"{hours:.2f}",
+                    issue.state.name if issue.state else "",
+                    issue.priority,
+                    assignee,
+                ]
+            )
         csv_content = output.getvalue()
         response = Response(csv_content, content_type="text/csv")
         response["Content-Disposition"] = f"attachment; filename=hours_logged_{slug}.csv"
@@ -397,13 +391,7 @@ class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
     def get(self, request: HttpRequest, slug: str, project_id: str) -> Response:
         # apply workspace base filters then add project constraint
         self.initialize_workspace(slug, type="chart")
-        queryset = (
-            Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
-        )
-        date_range = None
-        if self.filters.get("chart_period_range"):
-            start_date, end_date = self.filters["chart_period_range"]
-            date_range = (start_date, end_date)
+        queryset = Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
         # reuse export logic from parent but with adjusted queryset
         # monkey-patch by setting self._override_queryset
         self._export_queryset = queryset
