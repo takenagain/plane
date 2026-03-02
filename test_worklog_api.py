@@ -680,6 +680,41 @@ def run_tests():
 
     test("Validation: Missing duration", test_missing_duration)
 
+    # ---- Test: Analytics hours-logged chart and export ----
+    def test_analytics_hours_logged():
+        # create one more worklog on a different weekday for chart variety
+        data, status = client.request(
+            "POST",
+            base_worklog_path,
+            data={
+                "duration": 30,
+                "logged_at": str(date.today() - timedelta(days=2)),
+                "description": "Additional work for analytics",
+            },
+        )
+        # ignore result, we just want data present
+        params = (
+            "?type=custom-work-items&y_axis=HOURS_LOGGED&x_axis=LOGGED_DAY_OF_WEEK&group_by=WORK_ITEMS"
+        )
+        data, status = client.request(
+            "GET", f"/api/workspaces/{workspace_slug}/advance-analytics-charts/{params}"
+        )
+        if status != 200 or not data or not isinstance(data.get("data"), list):
+            print(f"  Analytics chart request failed: status {status}, data={data}")
+            return False
+        print(f"  Chart buckets: {[d.get('name') for d in data.get('data', [])]}")
+        # now test export endpoint directly by fetching raw CSV
+        url = BASE_URL + f"/api/workspaces/{workspace_slug}/analytics/time-logged-export/"
+        req = urllib.request.Request(url, method="GET")
+        resp = client.opener.open(req)
+        csv_text = resp.read().decode("utf-8")
+        print(f"  Export CSV content:\n{csv_text[:200]}")
+        if "issue_id" in csv_text and "hours_logged" in csv_text:
+            return True
+        return False
+
+    test("Analytics: Hours logged chart & export", test_analytics_hours_logged)
+
     # ---- Cleanup: Delete remaining worklog ----
     def test_cleanup():
         if not worklog_id:

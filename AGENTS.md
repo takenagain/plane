@@ -11,6 +11,17 @@
 - `pnpm turbo run <command> --filter=<package>` - Target specific package/app
 - `pnpm --filter=@plane/ui storybook` - Start Storybook on port 6006
 
+## Validation Workflow
+
+- Frontend checks must follow `.github/workflows/pull-request-build-lint-web-apps.yml` exactly and in this order:
+- `pnpm turbo run check:format --affected`
+- `pnpm turbo run build --affected`
+- `pnpm turbo run check:lint --affected`
+- `pnpm turbo run check:types --affected`
+- Backend Python lint/format must include Ruff:
+- `apps/api/.venv/bin/ruff format apps/api`
+- `apps/api/.venv/bin/ruff check --fix apps/api`
+
 ## Container Runtime
 
 - Check whether `podman`/`podman-compose` or `docker`/`docker compose` are available before running container commands

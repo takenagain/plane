@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import React, { useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -15,7 +16,7 @@ import { cn } from "@plane/utils";
 // plane web components
 import AnalyticsSectionWrapper from "../analytics-section-wrapper";
 import { AnalyticsSelectParams } from "../select/analytics-params";
-import PriorityChart from "./priority-chart";
+import AnalyticsBarChart from "./analytics-bar-chart";
 
 const CustomizedInsights = observer(function CustomizedInsights({
   peekView,
@@ -39,6 +40,15 @@ const CustomizedInsights = observer(function CustomizedInsights({
     group_by: watch("group_by"),
   };
 
+  // when the user selects Hours logged we want sensible defaults
+  const watchedYAxis = params.y_axis;
+  useEffect(() => {
+    if (watchedYAxis === ChartYAxisMetric.HOURS_LOGGED) {
+      setValue("x_axis", ChartXAxisProperty.LOGGED_DAY_OF_WEEK);
+      setValue("group_by", ChartXAxisProperty.WORK_ITEMS);
+    }
+  }, [watchedYAxis, setValue]);
+
   return (
     <AnalyticsSectionWrapper
       title={t("workspace_analytics.customized_insights")}
@@ -54,7 +64,7 @@ const CustomizedInsights = observer(function CustomizedInsights({
         />
       }
     >
-      <PriorityChart x_axis={params.x_axis} y_axis={params.y_axis} group_by={params.group_by} />
+      <AnalyticsBarChart x_axis={params.x_axis} y_axis={params.y_axis} group_by={params.group_by} />
     </AnalyticsSectionWrapper>
   );
 });

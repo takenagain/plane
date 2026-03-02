@@ -7,10 +7,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { TIssueGroupByOptions } from "@plane/types";
 
-export const useWorkFlowFDragNDrop = (
-  groupBy: TIssueGroupByOptions | undefined,
-  subGroupBy?: TIssueGroupByOptions
-) => ({
+export const useWorkFlowDragNDrop = (groupBy: TIssueGroupByOptions | undefined, subGroupBy?: TIssueGroupByOptions) => ({
   workflowDisabledSource: undefined,
   isWorkflowDropDisabled: false,
   getIsWorkflowWorkItemCreationDisabled: (groupId: string, subGroupId?: string) => false,
@@ -21,3 +18,6 @@ export const useWorkFlowFDragNDrop = (
     destinationSubGroupId?: string
   ) => {},
 });
+
+// Backward-compatible alias for older imports.
+export const useWorkFlowFDragNDrop = useWorkFlowDragNDrop;

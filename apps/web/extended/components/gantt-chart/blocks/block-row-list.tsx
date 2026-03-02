@@ -37,27 +37,25 @@ export function GanttChartRowList(props: GanttChartBlocksProps) {
   return (
     <div className="absolute top-0 left-0 min-w-full w-max">
       {blockIds?.map((blockId) => (
-        <>
-          <RenderIfVisible
-            root={ganttContainerRef}
-            horizontalOffset={100}
-            verticalOffset={200}
-            classNames="relative min-w-full w-max"
-            placeholderChildren={<div className="w-full pointer-events-none" style={{ height: `${BLOCK_HEIGHT}px` }} />}
-            shouldRecordHeights={false}
-          >
-            <BlockRow
-              key={blockId}
-              blockId={blockId}
-              showAllBlocks={showAllBlocks}
-              blockUpdateHandler={blockUpdateHandler}
-              handleScrollToBlock={handleScrollToBlock}
-              enableAddBlock={typeof enableAddBlock === "function" ? enableAddBlock(blockId) : enableAddBlock}
-              selectionHelpers={selectionHelpers}
-              ganttContainerRef={ganttContainerRef}
-            />
-          </RenderIfVisible>
-        </>
+        <RenderIfVisible
+          key={blockId}
+          root={ganttContainerRef}
+          horizontalOffset={100}
+          verticalOffset={200}
+          classNames="relative min-w-full w-max"
+          placeholderChildren={<div className="w-full pointer-events-none" style={{ height: `${BLOCK_HEIGHT}px` }} />}
+          shouldRecordHeights={false}
+        >
+          <BlockRow
+            blockId={blockId}
+            showAllBlocks={showAllBlocks}
+            blockUpdateHandler={blockUpdateHandler}
+            handleScrollToBlock={handleScrollToBlock}
+            enableAddBlock={typeof enableAddBlock === "function" ? enableAddBlock(blockId) : enableAddBlock}
+            selectionHelpers={selectionHelpers}
+            ganttContainerRef={ganttContainerRef}
+          />
+        </RenderIfVisible>
       ))}
     </div>
   );

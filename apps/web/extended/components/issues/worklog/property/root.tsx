@@ -24,15 +24,15 @@ type TIssueWorklogProperty = {
 export const IssueWorklogProperty = observer(function IssueWorklogProperty(props: TIssueWorklogProperty) {
   const { workspaceSlug, projectId, issueId, disabled } = props;
   const rootStore = useContext(StoreContext);
-  const worklogStore = (rootStore as any).worklogStore;
+  const { worklogStore } = rootStore;
 
   useEffect(() => {
-    if (workspaceSlug && projectId && issueId && worklogStore) {
+    if (!disabled && workspaceSlug && projectId && issueId && worklogStore) {
       worklogStore.fetchTotal(workspaceSlug, projectId, issueId);
     }
-  }, [workspaceSlug, projectId, issueId, worklogStore]);
+  }, [disabled, workspaceSlug, projectId, issueId, worklogStore]);
 
-  if (!worklogStore) return <></>;
+  if (!worklogStore || disabled) return <></>;
 
   const totalMinutes = worklogStore.totalByIssue[issueId] ?? 0;
 

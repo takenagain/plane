@@ -23,6 +23,8 @@ export enum ChartXAxisProperty {
   WORK_ITEM_TYPES = "WORK_ITEM_TYPES",
   PROJECTS = "PROJECTS",
   EPICS = "EPICS",
+  LOGGED_DAY_OF_WEEK = "LOGGED_DAY_OF_WEEK", // weekday bucket for worklog date
+  WORK_ITEMS = "WORK_ITEMS", // used for grouping by individual issue/work item
 }
 
 export enum ChartYAxisMetric {
@@ -35,6 +37,7 @@ export enum ChartYAxisMetric {
   WORK_ITEM_DUE_TODAY_COUNT = "WORK_ITEM_DUE_TODAY_COUNT",
   BLOCKED_WORK_ITEM_COUNT = "BLOCKED_WORK_ITEM_COUNT",
   EPIC_WORK_ITEM_COUNT = "EPIC_WORK_ITEM_COUNT",
+  HOURS_LOGGED = "HOURS_LOGGED",
 }
 
 export type TAnalyticsTabsBase = "overview" | "work-items";

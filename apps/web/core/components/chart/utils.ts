@@ -76,6 +76,16 @@ export const parseChartData = (
     const missingValues: Record<string, number> = Object.fromEntries(missingKeys.map((key) => [key, 0]));
 
     if (xAxisProperty) {
+      // convert weekday number (1=Sunday,..) into name when logging axis is selected
+      if (xAxisProperty === ChartXAxisProperty.LOGGED_DAY_OF_WEEK) {
+        const num = parseInt(datum.name, 10);
+        if (!isNaN(num) && num >= 1 && num <= 7) {
+          // map 1=Sunday, 2=Monday, etc.
+          const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          datum.name = names[num - 1];
+        }
+      }
+
       // capitalize first letter if xAxisProperty is in TO_CAPITALIZE_PROPERTIES and no groupByProperty is set
       if (TO_CAPITALIZE_PROPERTIES.includes(xAxisProperty)) {
         datum.name = capitalizeFirstLetter(datum.name);

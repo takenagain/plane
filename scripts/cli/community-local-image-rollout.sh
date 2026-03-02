@@ -12,11 +12,14 @@ DEPLOY_COMPOSE_FILE=""
 SOURCE_REPO_URL=""
 SOURCE_BRANCH=""
 CLONE_DIR=""
+BUILD_SOURCE_DIR=""
 IMAGE_NAMESPACE="localplane"
 IMAGE_TAG="local-${NOW_UTC}"
 RUNTIME="auto"
+DRY_RUN="false"                # new flag for previewing plan
 SKIP_BACKUP="false"
 ASSUME_YES="false"
+FORCE_CLONE="false"
 
 COMPOSE_CMD=()
 COMPOSE_GLOBAL_ARGS=()
@@ -31,7 +34,9 @@ warn() {
 }
 
 die() {
-  printf "ERROR: %s\n" "$*" >&2
+  # include line number for easier debugging
+  local lineno=${BASH_LINENO[0]:-?}
+  printf "ERROR [line %s]: %s\n" "${lineno}" "$*" >&2
   exit 1
 }
 
@@ -45,12 +50,14 @@ Options:
   --deploy-dir <path>         Deployed Plane directory (or pass compose file path)
   --compose-file <path>       Compose file path (defaults to docker-compose.yml/.yaml in deploy dir)
   --clone-dir <path>          Separate directory to clone this fork into
+  --force-clone               Always clone even if running inside a Plane repo checkout
   --repo-url <url>            Source fork URL to clone (default: origin remote URL)
   --branch <name>             Source branch to clone (default: current branch)
   --image-namespace <value>   Local image namespace/repo prefix (default: localplane)
   --image-tag <value>         Local image tag (default: local-<utc timestamp>)
   --runtime <auto|podman|docker>
                               Container runtime selection (default: auto)
+  --dry-run                   Print plan and exit without making changes
   --skip-backup               Skip backup step (not recommended)
   -y, --yes                   Non-interactive; do not prompt for confirmation
   -h, --help                  Show this help
@@ -82,6 +89,10 @@ parse_args() {
         CLONE_DIR=${2:-}
         shift 2
         ;;
+      --force-clone)
+        FORCE_CLONE="true"
+        shift
+        ;;
       --repo-url)
         SOURCE_REPO_URL=${2:-}
         shift 2
@@ -101,6 +112,10 @@ parse_args() {
       --runtime)
         RUNTIME=${2:-}
         shift 2
+        ;;
+      --dry-run)
+        DRY_RUN="true"
+        shift
         ;;
       --skip-backup)
         SKIP_BACKUP="true"
@@ -207,7 +222,8 @@ detect_runtime() {
   podman_count=0
 
   if command -v docker >/dev/null 2>&1; then
-    docker_count=$(docker ps -aq --filter "label=com.docker.compose.project=${project_name}" | wc -l | tr -d ' ')
+    # if daemon is down, docker ps will fail; default to 0
+    docker_count=$(docker ps -aq --filter "label=com.docker.compose.project=${project_name}" 2>/dev/null | wc -l | tr -d ' ' || echo 0)
   fi
 
   if command -v podman >/dev/null 2>&1; then
@@ -215,7 +231,7 @@ detect_runtime() {
       (
         podman ps -aq --filter "label=io.podman.compose.project=${project_name}" 2>/dev/null
         podman ps -aq --filter "label=com.docker.compose.project=${project_name}" 2>/dev/null
-      ) | sort -u | sed "/^$/d" | wc -l | tr -d ' '
+      ) | sort -u | sed "/^$/d" | wc -l | tr -d ' ' || echo 0
     )
   fi
 
@@ -223,7 +239,10 @@ detect_runtime() {
     set_compose_command "docker"
   elif [[ "${podman_count}" -gt 0 ]]; then
     set_compose_command "podman"
-  elif command -v podman-compose >/dev/null 2>&1 || (command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1); then
+  elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
+    # prefer native podman compose if available
+    set_compose_command "podman"
+  elif command -v podman-compose >/dev/null 2>&1; then
     set_compose_command "podman"
   elif command -v docker >/dev/null 2>&1 || command -v docker-compose >/dev/null 2>&1; then
     set_compose_command "docker"
@@ -258,6 +277,41 @@ ensure_defaults() {
   if [[ -z "${CLONE_DIR}" ]]; then
     CLONE_DIR="${REPO_ROOT}/tmp/community-local-build-${NOW_UTC}"
   fi
+
+  # validate namespace and tag strings
+  validate_image_vars
+}
+
+is_plane_repo_dir() {
+  local candidate_dir="$1"
+  git -C "${candidate_dir}" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  [[ -f "${candidate_dir}/deployments/cli/community/build.yml" ]] || return 1
+  [[ -f "${candidate_dir}/deployments/cli/community/docker-compose.yml" ]] || return 1
+  [[ -f "${candidate_dir}/apps/api/Dockerfile.api" ]] || return 1
+  [[ -f "${candidate_dir}/apps/proxy/Dockerfile.ce" ]] || return 1
+  [[ -f "${candidate_dir}/package.json" ]] || return 1
+  return 0
+}
+
+should_skip_clone() {
+  local current_branch
+  local current_origin
+
+  if [[ "${FORCE_CLONE}" == "true" ]]; then
+    return 1
+  fi
+
+  is_plane_repo_dir "${REPO_ROOT}" || return 1
+
+  current_branch=$(git -C "${REPO_ROOT}" rev-parse --abbrev-ref HEAD)
+  current_origin=$(git -C "${REPO_ROOT}" remote get-url origin 2>/dev/null || true)
+
+  [[ "${SOURCE_BRANCH}" == "${current_branch}" ]] || return 1
+  if [[ -n "${current_origin}" && -n "${SOURCE_REPO_URL}" && "${SOURCE_REPO_URL}" != "${current_origin}" ]]; then
+    return 1
+  fi
+
+  return 0
 }
 
 confirm_plan() {
@@ -273,6 +327,7 @@ Plan:
   Source repo:        ${SOURCE_REPO_URL}
   Source branch:      ${SOURCE_BRANCH}
   Clone directory:    ${CLONE_DIR}
+  Force clone:        ${FORCE_CLONE}
   Image namespace:    ${IMAGE_NAMESPACE}
   Image tag:          ${IMAGE_TAG}
   Skip backup:        ${SKIP_BACKUP}
@@ -281,6 +336,18 @@ EOF
   read -r -p "Continue with rollout? [y/N]: " confirm
   if [[ ! "${confirm}" =~ ^[Yy]$ ]]; then
     die "Aborted by user"
+  fi
+}
+
+
+validate_image_vars() {
+  # tags and namespaces must be lowercase alphanum with ._- and start with alnum
+  local re='^[a-z0-9][a-z0-9._-]*$'
+  if [[ ! "${IMAGE_TAG}" =~ ${re} ]]; then
+    die "invalid image tag '${IMAGE_TAG}'; allowed characters: a-z0-9._- and must start with alphanumeric"
+  fi
+  if [[ ! "${IMAGE_NAMESPACE}" =~ ${re} ]]; then
+    die "invalid image namespace '${IMAGE_NAMESPACE}'; allowed characters: a-z0-9._- and must start with alphanumeric"
   fi
 }
 
@@ -293,20 +360,85 @@ clone_source() {
   fi
 
   git clone --branch "${SOURCE_BRANCH}" --single-branch "${SOURCE_REPO_URL}" "${CLONE_DIR}"
+  BUILD_SOURCE_DIR="${CLONE_DIR}"
+}
+
+prepare_source_repo() {
+  if should_skip_clone; then
+    log "Step 1/5: Using current Plane repository checkout as source (clone skipped)"
+    BUILD_SOURCE_DIR="${REPO_ROOT}"
+    return
+  fi
+
+  clone_source
 }
 
 build_images() {
   local build_compose_file
+  local service_name
+  local services=(
+    api
+    proxy
+    web
+    space
+    admin
+    live
+  )
   log "Step 2/5: Building local community images with tags"
 
-  build_compose_file="${CLONE_DIR}/deployments/cli/community/build.yml"
-  [[ -f "${build_compose_file}" ]] || die "Missing build compose file: ${build_compose_file}"
+  [[ -n "${BUILD_SOURCE_DIR}" ]] || die "Build source directory is not set"
+  [[ -f "${BUILD_SOURCE_DIR}/apps/api/Dockerfile.api" ]] || die "Invalid build source directory: ${BUILD_SOURCE_DIR}"
+
+  build_compose_file=$(mktemp "${BUILD_SOURCE_DIR}/.community-local-build.XXXXXX.yml")
+  cat >"${build_compose_file}" <<EOF
+services:
+  web:
+    image: \${DOCKERHUB_USER:-local}/plane-frontend:\${APP_RELEASE:-latest}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.web
+
+  space:
+    image: \${DOCKERHUB_USER:-local}/plane-space:\${APP_RELEASE:-latest}
+    build:
+      context: .
+      dockerfile: apps/space/Dockerfile.space
+
+  admin:
+    image: \${DOCKERHUB_USER:-local}/plane-admin:\${APP_RELEASE:-latest}
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile.admin
+
+  live:
+    image: \${DOCKERHUB_USER:-local}/plane-live:\${APP_RELEASE:-latest}
+    build:
+      context: .
+      dockerfile: apps/live/Dockerfile.live
+
+  api:
+    image: \${DOCKERHUB_USER:-local}/plane-backend:\${APP_RELEASE:-latest}
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.api
+
+  proxy:
+    image: \${DOCKERHUB_USER:-local}/plane-proxy:\${APP_RELEASE:-latest}
+    build:
+      context: ./apps/proxy
+      dockerfile: Dockerfile.ce
+EOF
 
   (
-    cd "${CLONE_DIR}"
-    DOCKERHUB_USER="${IMAGE_NAMESPACE}" APP_RELEASE="${IMAGE_TAG}" \
-      "${COMPOSE_CMD[@]}" -f "${build_compose_file}" build
+    cd "${BUILD_SOURCE_DIR}"
+    for service_name in "${services[@]}"; do
+      log "Building service image: ${service_name}"
+      DOCKERHUB_USER="${IMAGE_NAMESPACE}" APP_RELEASE="${IMAGE_TAG}" \
+        "${COMPOSE_CMD[@]}" -f "${build_compose_file}" build --no-cache "${service_name}"
+    done
   )
+
+  rm -f "${build_compose_file}"
 }
 
 rewrite_compose_images() {
@@ -331,6 +463,7 @@ rewrite_compose_images() {
   cp "${DEPLOY_COMPOSE_FILE}" "${tmp_file}"
 
   for image_name in "${image_names[@]}"; do
+    log "  - rewriting references to ${image_name}"
     sed -E \
       "s#(^[[:space:]]*image:[[:space:]]*)([^[:space:]]*/)?${image_name}:[^[:space:]]+#\\1${IMAGE_NAMESPACE}/${image_name}:${IMAGE_TAG}#g" \
       "${tmp_file}" >"${tmp_file}.next"
@@ -409,9 +542,17 @@ main() {
   resolve_deploy_files
   ensure_defaults
   detect_runtime
+
+  # dry-run just prints the plan and exits
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "DRY RUN: the following actions would be performed."
+    confirm_plan
+    exit 0
+  fi
+
   confirm_plan
 
-  clone_source
+  prepare_source_repo
   build_images
   rewrite_compose_images
   run_backups
@@ -422,9 +563,12 @@ Rollout completed.
 
 Updated compose: ${DEPLOY_COMPOSE_FILE}
 Local images: ${IMAGE_NAMESPACE}/plane-<service>:${IMAGE_TAG}
-Cloned source: ${CLONE_DIR}
+Source checkout: ${BUILD_SOURCE_DIR}
 Runtime used: ${RUNTIME} (${COMPOSE_CMD[*]})
 EOF
 }
 
-main "$@"
+# if script is executed rather than sourced, run main
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

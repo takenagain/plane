@@ -68,6 +68,11 @@ jobs:
       - name: Check formatting
         run: pnpm turbo run check:format --affected
 
+      - name: Shellcheck shell scripts
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          shellcheck scripts/cli/*.sh
+
   # Build packages - required for lint and type checks
   build:
     name: Build packages

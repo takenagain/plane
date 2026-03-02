@@ -320,6 +320,7 @@ class ProjectAdvanceAnalyticsChartEndpoint(ProjectAdvanceAnalyticsBaseView):
         type = request.GET.get("type", "projects")
         group_by = request.GET.get("group_by", None)
         x_axis = request.GET.get("x_axis", "PRIORITY")
+        y_axis = request.GET.get("y_axis", "WORK_ITEM_COUNT")
         cycle_id = request.GET.get("cycle_id", None)
         module_id = request.GET.get("module_id", None)
 
@@ -345,14 +346,23 @@ class ProjectAdvanceAnalyticsChartEndpoint(ProjectAdvanceAnalyticsBaseView):
                 queryset = queryset.filter(id__in=module_issues)
 
             # Apply date range filter if available
+            date_range = None
             if self.filters["chart_period_range"]:
                 start_date, end_date = self.filters["chart_period_range"]
-                queryset = queryset.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
+                date_range = (start_date, end_date)
+                if y_axis != "HOURS_LOGGED":
+                    queryset = queryset.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
 
-            return Response(
-                build_analytics_chart(queryset, x_axis, group_by),
-                status=status.HTTP_200_OK,
-            )
+            if y_axis == "HOURS_LOGGED":
+                return Response(
+                    build_time_logged_chart(queryset, x_axis, group_by, date_range),
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    build_analytics_chart(queryset, x_axis, group_by, date_range),
+                    status=status.HTTP_200_OK,
+                )
 
         elif type == "work-items":
             # Optionally accept cycle_id or module_id as query params

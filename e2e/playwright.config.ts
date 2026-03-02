@@ -9,8 +9,10 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Read environment variables from the system.
  * BASE_URL: The URL of the Plane instance to test against (default: http://localhost:8081)
+ * E2E_WEB_SERVER_COMMAND: Optional command to start the app under test.
  */
 const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
+const E2E_WEB_SERVER_COMMAND = process.env.E2E_WEB_SERVER_COMMAND;
 
 export default defineConfig({
   testDir: "./tests",
@@ -37,9 +39,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    url: BASE_URL,
-    reuseExistingServer: true,
-    timeout: 120 * 1000,
-  },
+  ...(E2E_WEB_SERVER_COMMAND
+    ? {
+        webServer: {
+          command: E2E_WEB_SERVER_COMMAND,
+          url: BASE_URL,
+          reuseExistingServer: true,
+          timeout: 120 * 1000,
+        },
+      }
+    : {}),
 });

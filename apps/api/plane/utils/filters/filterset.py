@@ -271,7 +271,7 @@ class IssueFilterSet(BaseFilterSet):
     def filter_time_logged(self, queryset, name, value):
         """Filter by total logged time (minutes), including active tracking elapsed minutes."""
         if value in (None, ""):
-            return Q()
+            return queryset
 
         annotated_queryset = annotate_issue_queryset_with_time_logged(queryset)
         return annotated_queryset.filter(time_logged=value)
@@ -279,7 +279,7 @@ class IssueFilterSet(BaseFilterSet):
     def filter_time_logged_range(self, queryset, name, value):
         """Filter by logged time range: `min,max` (minutes)."""
         if value in (None, ""):
-            return Q()
+            return queryset
 
         if isinstance(value, str):
             values = [v.strip() for v in value.split(",") if v.strip() != ""]

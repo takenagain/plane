@@ -32,7 +32,7 @@ class Worklog(ProjectBaseModel):
     )
     duration = models.PositiveIntegerField(
         verbose_name="Duration (minutes)",
-        validators=[MinValueValidator(1), MaxValueValidator(99999)],
+        validators=[MinValueValidator(0), MaxValueValidator(99999)],
         help_text="Time spent in minutes",
     )
     logged_at = models.DateField(
