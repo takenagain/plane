@@ -143,6 +143,13 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
     () => ANALYTICS_Y_AXIS_VALUES.find((item) => item.value === props.y_axis)?.label ?? props.y_axis,
     [props.y_axis]
   );
+  const yAxisChartLabel = useMemo(
+    () =>
+      props.y_axis === ChartYAxisMetric.HOURS_LOGGED
+        ? yAxisLabel
+        : t("common.no_of", { entity: yAxisLabel.replace("_", " ") }),
+    [props.y_axis, t, yAxisLabel]
+  );
   const xAxisLabel = useMemo(
     () => ANALYTICS_X_AXIS_VALUES.find((item) => item.value === props.x_axis)?.label ?? props.x_axis,
     [props.x_axis]
@@ -216,7 +223,7 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
             }}
             yAxis={{
               key: "count",
-              label: t("common.no_of", { entity: yAxisLabel.replace("_", " ") }),
+              label: yAxisChartLabel,
               offset: -60,
               dx: -26,
             }}
