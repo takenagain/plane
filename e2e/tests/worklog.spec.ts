@@ -35,6 +35,15 @@ type IssueResponse = {
   assignee_ids?: string[];
 };
 
+function resolveApiContainerName() {
+  const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
+  const names = output
+    .split(/\r?\n/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+  return names.find((name) => name === "api" || name.endsWith("_api_1")) || "api";
+}
+
 function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
   const seedScript = `
 import re
@@ -154,9 +163,13 @@ IssueAssignee.objects.update_or_create(
 print(f"WORKLOG_SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 `;
 
-  const output = execFileSync("podman", ["exec", "api", "python", "manage.py", "shell", "-c", seedScript], {
-    encoding: "utf-8",
-  });
+  const output = execFileSync(
+    "podman",
+    ["exec", resolveApiContainerName(), "python", "manage.py", "shell", "-c", seedScript],
+    {
+      encoding: "utf-8",
+    }
+  );
 
   const match = output.match(/WORKLOG_SEED_RESULT:([^\n\r]+)/);
   if (!match?.[1]) {
@@ -278,9 +291,13 @@ Worklog.objects.filter(
 print(f"WORKLOG_RESET_RESULT:{todo_state.id if todo_state else ''}|{in_progress_state.id}|{user.id}|{timezone.localdate()}")
 `;
 
-  const output = execFileSync("podman", ["exec", "api", "python", "manage.py", "shell", "-c", resetScript], {
-    encoding: "utf-8",
-  });
+  const output = execFileSync(
+    "podman",
+    ["exec", resolveApiContainerName(), "python", "manage.py", "shell", "-c", resetScript],
+    {
+      encoding: "utf-8",
+    }
+  );
   const match = output.match(/WORKLOG_RESET_RESULT:([^\n\r]+)/);
   if (!match?.[1]) {
     throw new Error(`Unable to parse reset output: ${output}`);

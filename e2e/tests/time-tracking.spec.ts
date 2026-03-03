@@ -37,6 +37,15 @@ let workspaceSlug = "";
 let projectId = "";
 let issueId = "";
 
+function resolveApiContainerName() {
+  const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
+  const names = output
+    .split(/\r?\n/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+  return names.find((name) => name === "api" || name.endsWith("_api_1")) || "api";
+}
+
 export function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
   const seedScript = `
 import re
@@ -166,9 +175,13 @@ Worklog.objects.filter(
 print(f"SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 `;
 
-  const output = execFileSync("podman", ["exec", "api", "python", "manage.py", "shell", "-c", seedScript], {
-    encoding: "utf-8",
-  });
+  const output = execFileSync(
+    "podman",
+    ["exec", resolveApiContainerName(), "python", "manage.py", "shell", "-c", seedScript],
+    {
+      encoding: "utf-8",
+    }
+  );
   const match = output.match(/SEED_RESULT:([^\n\r]+)/);
 
   if (!match?.[1]) {

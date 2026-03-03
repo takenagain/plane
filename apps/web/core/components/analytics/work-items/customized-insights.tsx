@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -49,10 +49,7 @@ const CustomizedInsights = observer(function CustomizedInsights({
       return;
     }
 
-    if (
-      params.x_axis === ChartXAxisProperty.LOGGED_DAY_OF_WEEK ||
-      params.x_axis === ChartXAxisProperty.WORK_ITEMS
-    ) {
+    if (params.x_axis === ChartXAxisProperty.LOGGED_DAY_OF_WEEK || params.x_axis === ChartXAxisProperty.WORK_ITEMS) {
       setValue("x_axis", ChartXAxisProperty.PRIORITY);
     }
 

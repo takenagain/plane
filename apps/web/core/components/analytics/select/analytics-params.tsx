@@ -48,19 +48,15 @@ export const AnalyticsSelectParams = observer(function AnalyticsSelectParams(pro
     () => axisOptions.filter((option) => option.value !== params.group_by),
     [axisOptions, params.group_by]
   );
-  const groupByOptions = useMemo(
-    () => {
-      if (isHoursLogged) {
-        return ANALYTICS_X_AXIS_VALUES.filter(
-          (option) =>
-            option.value !== ChartXAxisProperty.LOGGED_DAY_OF_WEEK && option.value !== params.x_axis
-        );
-      }
+  const groupByOptions = useMemo(() => {
+    if (isHoursLogged) {
+      return ANALYTICS_X_AXIS_VALUES.filter(
+        (option) => option.value !== ChartXAxisProperty.LOGGED_DAY_OF_WEEK && option.value !== params.x_axis
+      );
+    }
 
-      return axisOptions.filter((option) => option.value !== params.x_axis);
-    },
-    [axisOptions, isHoursLogged, params.x_axis]
-  );
+    return axisOptions.filter((option) => option.value !== params.x_axis);
+  }, [axisOptions, isHoursLogged, params.x_axis]);
 
   return (
     <div className={cn("flex w-full justify-between", classNames)}>
