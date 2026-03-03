@@ -296,12 +296,15 @@ class WorklogViewSet(BaseViewSet):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN], creator=True, model=Worklog)
     def partial_update(self, request, slug, project_id, issue_id, pk):
-        worklog = Worklog.objects.get(
-            workspace__slug=slug,
-            project_id=project_id,
-            issue_id=issue_id,
-            pk=pk,
-        )
+        try:
+            worklog = Worklog.objects.get(
+                workspace__slug=slug,
+                project_id=project_id,
+                issue_id=issue_id,
+                pk=pk,
+            )
+        except Worklog.DoesNotExist:
+            return Response({"detail": "Worklog not found."}, status=status.HTTP_404_NOT_FOUND)
         current_instance = json.dumps(WorklogSerializer(worklog).data, cls=DjangoJSONEncoder)
         serializer = WorklogSerializer(worklog, data=request.data, partial=True)
         if serializer.is_valid():
@@ -322,12 +325,15 @@ class WorklogViewSet(BaseViewSet):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN], creator=True, model=Worklog)
     def destroy(self, request, slug, project_id, issue_id, pk):
-        worklog = Worklog.objects.get(
-            workspace__slug=slug,
-            project_id=project_id,
-            issue_id=issue_id,
-            pk=pk,
-        )
+        try:
+            worklog = Worklog.objects.get(
+                workspace__slug=slug,
+                project_id=project_id,
+                issue_id=issue_id,
+                pk=pk,
+            )
+        except Worklog.DoesNotExist:
+            return Response({"detail": "Worklog not found."}, status=status.HTTP_404_NOT_FOUND)
         current_instance = json.dumps(WorklogSerializer(worklog).data, cls=DjangoJSONEncoder)
         worklog.delete()
         issue_activity.delay(
