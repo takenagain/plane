@@ -218,7 +218,7 @@ def build_time_logged_chart(
     if group_by:
         # prepare grouping annotation
         if group_by == "WORK_ITEMS":
-            worklogs = worklogs.annotate(group_key=F("issue__id"), group_name=F("issue__title"))
+            worklogs = worklogs.annotate(group_key=F("issue__id"), group_name=F("issue__name"))
         elif group_by == "LOGGED_DAY_OF_WEEK":
             worklogs = worklogs.annotate(group_key=ExtractWeekDay("logged_at"))
         else:
