@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from typing import Dict, List, Any
 from django.db.models import QuerySet, Q, Count, Sum
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from plane.app.views.base import BaseAPIView
@@ -371,7 +371,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             writer.writerow(
                 [
                     str(issue.id),
-                    issue.title,
+                    getattr(issue, "title", None) or issue.name,
                     f"{hours:.2f}",
                     issue.state.name if issue.state else "",
                     issue.priority,
@@ -379,7 +379,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
                 ]
             )
         csv_content = output.getvalue()
-        response = Response(csv_content, content_type="text/csv")
+        response = HttpResponse(csv_content, content_type="text/csv")
         response["Content-Disposition"] = f"attachment; filename=hours_logged_{slug}.csv"
         return response
 
