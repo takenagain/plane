@@ -171,12 +171,12 @@ class WorklogViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def create(self, request, slug, project_id, issue_id):
-        issue_exists = Issue.objects.filter(
+        issue = Issue.objects.filter(
             pk=issue_id,
             project_id=project_id,
             workspace__slug=slug,
-        ).exists()
-        if not issue_exists:
+        ).only("id", "workspace_id").first()
+        if issue is None:
             return Response(
                 {"error": "Issue does not belong to the specified project/workspace."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -187,6 +187,7 @@ class WorklogViewSet(BaseViewSet):
             serializer.save(
                 project_id=project_id,
                 issue_id=issue_id,
+                workspace_id=issue.workspace_id,
                 actor=request.user,
             )
             self._apply_tracking_issue_defaults(issue_id=issue_id, project_id=project_id)
@@ -207,12 +208,12 @@ class WorklogViewSet(BaseViewSet):
     @action(detail=False, methods=["post"], url_path="start")
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def start(self, request, slug, project_id, issue_id):
-        issue_exists = Issue.objects.filter(
+        issue = Issue.objects.filter(
             pk=issue_id,
             project_id=project_id,
             workspace__slug=slug,
-        ).exists()
-        if not issue_exists:
+        ).only("id", "workspace_id").first()
+        if issue is None:
             return Response(
                 {"error": "Issue does not belong to the specified project/workspace."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -228,6 +229,7 @@ class WorklogViewSet(BaseViewSet):
                     defaults={
                         "description": "",
                         "logged_at": timezone.localdate(),
+                        "workspace_id": issue.workspace_id,
                         "created_by": request.user,
                         "updated_by": request.user,
                     },
