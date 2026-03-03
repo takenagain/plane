@@ -182,7 +182,7 @@ def build_time_logged_chart(
     # helper to convert weekday numbers to names
     def weekday_name(num: int) -> str:
         # ExtractWeekDay returns 1=Sunday, 2=Monday, … 7=Saturday
-        return calendar.day_name[(num - 1) % 7]
+        return calendar.day_name[(num - 2) % 7]
 
     # ensure consistent Monday→Sunday order
     WEEKDAY_ORDER = [2, 3, 4, 5, 6, 7, 1]
