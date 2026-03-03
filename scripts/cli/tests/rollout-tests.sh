@@ -12,44 +12,67 @@ passed=0
 failed=0
 
 run_test() {
-  local name="$1"; shift
+  local name="$1"
+  shift
   echo "[TEST] $name..."
   if "$@"; then
     echo "  OK"
-    passed=$((passed+1))
+    passed=$((passed + 1))
   else
     echo "  FAILED" >&2
-    failed=$((failed+1))
+    failed=$((failed + 1))
   fi
 }
 
-# tests
-run_test "validate rejects bad tag" bash -c 'source "$SCRIPT_DIR/community-local-image-rollout.sh"; IMAGE_TAG="bad/tag"; IMAGE_NAMESPACE="foo"; if (validate_image_vars); then exit 1; else exit 0; fi'
-run_test "validate rejects bad namespace" bash -c 'source "$SCRIPT_DIR/community-local-image-rollout.sh"; IMAGE_TAG="good"; IMAGE_NAMESPACE="Bad*"; if (validate_image_vars); then exit 1; else exit 0; fi'
-run_test "validate accepts good names" bash -c 'source "$SCRIPT_DIR/community-local-image-rollout.sh"; IMAGE_TAG="foo-1_2"; IMAGE_NAMESPACE="bar"; (validate_image_vars)'
-
 run_test "dry-run exits before doing work" bash -c '
-  source "$SCRIPT_DIR/community-local-image-rollout.sh"; DRY_RUN="true"; 
-  tmpf="$(mktemp)"; touch "$tmpf"; DEPLOY_DIR="/tmp"; DEPLOY_COMPOSE_FILE="$tmpf"; 
-  SOURCE_REPO_URL="u"; SOURCE_BRANCH="b"; CLONE_DIR="/tmp/zzz"; IMAGE_NAMESPACE="n"; IMAGE_TAG="t"; RUNTIME="auto"; ASSUME_YES="true"; 
-  # main should exit 0 without touching directories
-  main --deploy-dir /tmp -y
-'
-
-run_test "rewrite_compose_images updates tags" bash -c '
-  source "$SCRIPT_DIR/community-local-image-rollout.sh"; tmp="$(mktemp)"; cat >"$tmp" <<EOF
+  source "$SCRIPT_DIR/community-local-image-rollout.sh"
+  tmpd="$(mktemp -d)"
+  tmpf="$tmpd/docker-compose.yml"
+  cat >"$tmpf" <<YAML
 services:
   web:
-    image: plane-frontend:latest
-  api:
-    image: foo/plane-backend:old
-EOF
-  DEPLOY_COMPOSE_FILE="$tmp"; IMAGE_NAMESPACE="ns"; IMAGE_TAG="v1"; NOW_UTC="${NOW_UTC}";
-  rewrite_compose_images
-  grep -q "ns/plane-frontend:v1" "$tmp" && grep -q "ns/plane-backend:v1" "$tmp"
+    image: artifacts.plane.so/makeplane/plane-frontend:
+      ${APP_RELEASE:-stable}
+YAML
+  ASSUME_YES="true"
+  main --deploy-dir "$tmpd" --dry-run -y
 '
 
-# summary
+run_test "rewrite_compose_images rewrites artifacts and local references" bash -c '
+  source "$SCRIPT_DIR/community-local-image-rollout.sh"
+  tmp="$(mktemp)"
+  cat >"$tmp" <<YAML
+services:
+  web:
+    image: artifacts.plane.so/makeplane/plane-frontend:${APP_RELEASE:-stable}
+  api:
+    image: localplane/plane-backend:local-123
+  proxy:
+    image: plane-proxy:latest
+YAML
+  DEPLOY_COMPOSE_FILE="$tmp"
+  IMAGE_PREFIX="ghcr.io/takenagain/plane"
+  NOW_UTC="20260101-000000"
+  rewrite_compose_images
+  grep -q "ghcr.io/takenagain/plane/plane-frontend:${APP_RELEASE:-stable}" "$tmp" && \
+    grep -q "ghcr.io/takenagain/plane/plane-backend:local-123" "$tmp" && \
+    grep -q "ghcr.io/takenagain/plane/plane-proxy:latest" "$tmp"
+'
+
+run_test "rewrite_compose_images creates backup file" bash -c '
+  source "$SCRIPT_DIR/community-local-image-rollout.sh"
+  tmp="$(mktemp)"
+  cat >"$tmp" <<YAML
+services:
+  admin:
+    image: artifacts.plane.so/makeplane/plane-admin:${APP_RELEASE:-stable}
+YAML
+  DEPLOY_COMPOSE_FILE="$tmp"
+  IMAGE_PREFIX="ghcr.io/takenagain/plane"
+  NOW_UTC="20260101-000000"
+  rewrite_compose_images
+  [[ -f "$tmp.bak.20260101-000000" ]]
+'
 
 echo
 if [[ $failed -gt 0 ]]; then
