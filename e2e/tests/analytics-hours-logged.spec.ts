@@ -40,7 +40,32 @@ test.describe.serial("Analytics Hours Logged E2E", () => {
     await createWorklog(page, 30);
   });
 
-  test("1. Hours logged analytics chart returns data", async ({ page }) => {
+  test("1. Hours logged is visible in Work Items analytics and requests weekday chart", async ({ page }) => {
+    const analyticsResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/workspaces/${workspaceSlug}/advance-analytics-charts/`) &&
+        response.url().includes("type=custom-work-items") &&
+        response.url().includes("y_axis=HOURS_LOGGED") &&
+        response.url().includes("x_axis=LOGGED_DAY_OF_WEEK")
+    );
+
+    await page.goto(`${BASE_URL}/${workspaceSlug}/analytics/work-items`);
+    await expect(page.getByText("Customized insights")).toBeVisible();
+
+    // Metric selector defaults to Work item in this chart; switch to Hours logged.
+    await page.getByRole("button", { name: /work item/i }).first().click();
+    await page.getByRole("option", { name: "Hours logged" }).click();
+
+    const analyticsResponse = await analyticsResponsePromise;
+    expect(analyticsResponse.ok()).toBeTruthy();
+    expect(page.getByRole("button", { name: "Export as CSV" })).toBeVisible();
+
+    // Axis labels should reflect hours-logged semantics.
+    await expect(page.getByText("Day of week")).toBeVisible();
+    await expect(page.getByText("Hours logged")).toBeVisible();
+  });
+
+  test("2. Hours logged analytics chart API returns data", async ({ page }) => {
     const params =
       "?type=custom-work-items&y_axis=HOURS_LOGGED&x_axis=LOGGED_DAY_OF_WEEK&group_by=WORK_ITEMS";
     const resp = await page.request.get(
@@ -52,7 +77,7 @@ test.describe.serial("Analytics Hours Logged E2E", () => {
     expect((body.data ?? []).length).toBeGreaterThan(0);
   });
 
-  test("2. Hours logged CSV export includes expected columns and non-zero hours", async ({ page }) => {
+  test("3. Hours logged CSV export includes expected columns and non-zero hours", async ({ page }) => {
     const resp = await page.request.get(
       `${BASE_URL}/api/workspaces/${workspaceSlug}/analytics/time-logged-export/`
     );
@@ -67,8 +92,16 @@ test.describe.serial("Analytics Hours Logged E2E", () => {
     expect(header).toContain("status");
     expect(header).toContain("priority");
     expect(header).toContain("assignee");
-    const hasNonZeroHours = lines.slice(1).some((line) => /,\d+\.\d{2},/.test(line) || line.includes("1.00"));
+
+    const columns = header.split(",");
+    const hoursLoggedIndex = columns.indexOf("hours_logged");
+    expect(hoursLoggedIndex).toBeGreaterThan(-1);
+
+    const hasNonZeroHours = lines.slice(1).some((line) => {
+      const values = line.split(",");
+      const numeric = Number.parseFloat(values[hoursLoggedIndex] || "0");
+      return Number.isFinite(numeric) && numeric > 0;
+    });
     expect(hasNonZeroHours).toBeTruthy();
   });
 });
-
