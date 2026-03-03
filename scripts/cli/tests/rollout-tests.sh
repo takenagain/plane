@@ -38,7 +38,7 @@ YAML
   main --deploy-dir "$tmpd" --dry-run -y
 '
 
-run_test "rewrite_compose_images rewrites artifacts and local references" bash -c '
+run_test "rewrite_compose_images rewrites image path and forces target tag" bash -c '
   source "$SCRIPT_DIR/community-local-image-rollout.sh"
   tmp="$(mktemp)"
   cat >"$tmp" <<YAML
@@ -46,17 +46,18 @@ services:
   web:
     image: artifacts.plane.so/makeplane/plane-frontend:${APP_RELEASE:-stable}
   api:
-    image: localplane/plane-backend:local-123
+    image: localplane/plane-backend:v1.2.1
   proxy:
-    image: plane-proxy:latest
+    image: plane-proxy:sha-old
 YAML
   DEPLOY_COMPOSE_FILE="$tmp"
   IMAGE_PREFIX="ghcr.io/takenagain/plane"
+  IMAGE_TAG="feature-time-tracking"
   NOW_UTC="20260101-000000"
   rewrite_compose_images
-  grep -q "ghcr.io/takenagain/plane/plane-frontend:${APP_RELEASE:-stable}" "$tmp" && \
-    grep -q "ghcr.io/takenagain/plane/plane-backend:local-123" "$tmp" && \
-    grep -q "ghcr.io/takenagain/plane/plane-proxy:latest" "$tmp"
+  grep -q "ghcr.io/takenagain/plane/plane-frontend:feature-time-tracking" "$tmp" && \
+    grep -q "ghcr.io/takenagain/plane/plane-backend:feature-time-tracking" "$tmp" && \
+    grep -q "ghcr.io/takenagain/plane/plane-proxy:feature-time-tracking" "$tmp"
 '
 
 run_test "rewrite_compose_images creates backup file" bash -c '
@@ -69,6 +70,7 @@ services:
 YAML
   DEPLOY_COMPOSE_FILE="$tmp"
   IMAGE_PREFIX="ghcr.io/takenagain/plane"
+  IMAGE_TAG="feature-time-tracking"
   NOW_UTC="20260101-000000"
   rewrite_compose_images
   [[ -f "$tmp.bak.20260101-000000" ]]

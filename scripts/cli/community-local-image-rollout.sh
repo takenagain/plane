@@ -9,6 +9,7 @@ DEPLOY_DIR=""
 DEPLOY_COMPOSE_FILE=""
 RUNTIME="auto"
 IMAGE_PREFIX="ghcr.io/takenagain/plane"
+IMAGE_TAG="feature-time-tracking"
 DRY_RUN="false"
 SKIP_BACKUP="false"
 ASSUME_YES="false"
@@ -42,6 +43,7 @@ Options:
   --deploy-dir <path>         Deployed Plane directory (or pass compose file path)
   --compose-file <path>       Compose file path (defaults to docker-compose.yml/.yaml in deploy dir)
   --image-prefix <value>      Image prefix to use (default: ghcr.io/takenagain/plane)
+  --image-tag <value>         GHCR image tag to apply (default: feature-time-tracking)
   --runtime <auto|podman|docker>
                               Container runtime selection (default: auto)
   --dry-run                   Print plan and exit without making changes
@@ -51,7 +53,8 @@ Options:
 
 Examples:
   ${SCRIPT_NAME} --deploy-dir /opt/plane-selfhost/plane-app
-  ${SCRIPT_NAME} --deploy-dir /opt/plane-selfhost/plane-app --image-prefix ghcr.io/takenagain/plane
+  ${SCRIPT_NAME} --deploy-dir /opt/plane-selfhost/plane-app --image-tag preview
+  ${SCRIPT_NAME} --deploy-dir /opt/plane-selfhost/plane-app --image-tag sha-356f35d
 EOF_USAGE
 }
 
@@ -68,6 +71,10 @@ parse_args() {
         ;;
       --image-prefix)
         IMAGE_PREFIX=${2:-}
+        shift 2
+        ;;
+      --image-tag)
+        IMAGE_TAG=${2:-}
         shift 2
         ;;
       --runtime)
@@ -235,6 +242,7 @@ Plan:
   Deploy directory:   ${DEPLOY_DIR}
   Deploy compose:     ${DEPLOY_COMPOSE_FILE}
   Image prefix:       ${IMAGE_PREFIX}
+  Image tag:          ${IMAGE_TAG}
   Skip backup:        ${SKIP_BACKUP}
 EOF_PLAN
   echo
@@ -308,7 +316,7 @@ rewrite_compose_images() {
     plane-proxy
   )
 
-  log "Step 2/3: Rewriting compose image paths to ${IMAGE_PREFIX}"
+  log "Step 2/3: Rewriting compose image paths to ${IMAGE_PREFIX} with tag ${IMAGE_TAG}"
   compose_backup="${DEPLOY_COMPOSE_FILE}.bak.${NOW_UTC}"
   cp "${DEPLOY_COMPOSE_FILE}" "${compose_backup}"
   log "Backup created: ${compose_backup}"
@@ -319,7 +327,7 @@ rewrite_compose_images() {
   for image_name in "${image_names[@]}"; do
     log "  - rewriting references to ${image_name}"
     sed -E \
-      "s#(^[[:space:]]*image:[[:space:]]*)([^[:space:]]*/)?${image_name}(:[^[:space:]]+)?#\\1${IMAGE_PREFIX}/${image_name}\\3#g" \
+      "s#(^[[:space:]]*image:[[:space:]]*)([^[:space:]]*/)?${image_name}(:[^[:space:]]+)?#\\1${IMAGE_PREFIX}/${image_name}:${IMAGE_TAG}#g" \
       "${tmp_file}" >"${tmp_file}.next"
     mv "${tmp_file}.next" "${tmp_file}"
   done
@@ -362,6 +370,7 @@ Rollout completed.
 
 Updated compose: ${DEPLOY_COMPOSE_FILE}
 Image prefix: ${IMAGE_PREFIX}
+Image tag: ${IMAGE_TAG}
 Runtime used: ${RUNTIME} (${COMPOSE_CMD[*]})
 EOF_DONE
 }
