@@ -19,16 +19,22 @@ jobs:
         include:
           - image_name: plane-frontend
             dockerfile: ./apps/web/Dockerfile.web
+            context: .
           - image_name: plane-space
             dockerfile: ./apps/space/Dockerfile.space
+            context: .
           - image_name: plane-admin
             dockerfile: ./apps/admin/Dockerfile.admin
+            context: .
           - image_name: plane-live
             dockerfile: ./apps/live/Dockerfile.live
+            context: .
           - image_name: plane-backend
             dockerfile: ./apps/api/Dockerfile.api
+            context: ./apps/api
           - image_name: plane-proxy
             dockerfile: ./apps/proxy/Dockerfile.ce
+            context: ./apps/proxy
 
     steps:
       - name: Checkout
@@ -63,7 +69,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
           platforms: linux/amd64
