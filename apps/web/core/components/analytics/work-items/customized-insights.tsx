@@ -46,8 +46,23 @@ const CustomizedInsights = observer(function CustomizedInsights({
     if (watchedYAxis === ChartYAxisMetric.HOURS_LOGGED) {
       setValue("x_axis", ChartXAxisProperty.LOGGED_DAY_OF_WEEK);
       setValue("group_by", ChartXAxisProperty.WORK_ITEMS);
+      return;
     }
-  }, [watchedYAxis, setValue]);
+
+    if (
+      params.x_axis === ChartXAxisProperty.LOGGED_DAY_OF_WEEK ||
+      params.x_axis === ChartXAxisProperty.WORK_ITEMS
+    ) {
+      setValue("x_axis", ChartXAxisProperty.PRIORITY);
+    }
+
+    if (
+      params.group_by === ChartXAxisProperty.LOGGED_DAY_OF_WEEK ||
+      params.group_by === ChartXAxisProperty.WORK_ITEMS
+    ) {
+      setValue("group_by", undefined);
+    }
+  }, [watchedYAxis, params.x_axis, params.group_by, setValue]);
 
   return (
     <AnalyticsSectionWrapper

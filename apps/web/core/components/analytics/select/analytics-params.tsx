@@ -13,7 +13,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { ANALYTICS_X_AXIS_VALUES, ANALYTICS_Y_AXIS_VALUES } from "@plane/constants";
 import { CalendarLayoutIcon } from "@plane/propel/icons";
 import type { IAnalyticsParams } from "@plane/types";
-import { ChartYAxisMetric } from "@plane/types";
+import { ChartXAxisProperty, ChartYAxisMetric } from "@plane/types";
 import { cn } from "@plane/utils";
 // plane web components
 import { SelectXAxis } from "./select-x-axis";
@@ -30,13 +30,36 @@ type Props = {
 
 export const AnalyticsSelectParams = observer(function AnalyticsSelectParams(props: Props) {
   const { control, params, classNames, isEpic } = props;
+
+  const isHoursLogged = params.y_axis === ChartYAxisMetric.HOURS_LOGGED;
+
+  const axisOptions = useMemo(() => {
+    if (isHoursLogged) {
+      return ANALYTICS_X_AXIS_VALUES.filter((option) => option.value === ChartXAxisProperty.LOGGED_DAY_OF_WEEK);
+    }
+
+    return ANALYTICS_X_AXIS_VALUES.filter(
+      (option) =>
+        option.value !== ChartXAxisProperty.LOGGED_DAY_OF_WEEK && option.value !== ChartXAxisProperty.WORK_ITEMS
+    );
+  }, [isHoursLogged]);
+
   const xAxisOptions = useMemo(
-    () => ANALYTICS_X_AXIS_VALUES.filter((option) => option.value !== params.group_by),
-    [params.group_by]
+    () => axisOptions.filter((option) => option.value !== params.group_by),
+    [axisOptions, params.group_by]
   );
   const groupByOptions = useMemo(
-    () => ANALYTICS_X_AXIS_VALUES.filter((option) => option.value !== params.x_axis),
-    [params.x_axis]
+    () => {
+      if (isHoursLogged) {
+        return ANALYTICS_X_AXIS_VALUES.filter(
+          (option) =>
+            option.value !== ChartXAxisProperty.LOGGED_DAY_OF_WEEK && option.value !== params.x_axis
+        );
+      }
+
+      return axisOptions.filter((option) => option.value !== params.x_axis);
+    },
+    [axisOptions, isHoursLogged, params.x_axis]
   );
 
   return (
