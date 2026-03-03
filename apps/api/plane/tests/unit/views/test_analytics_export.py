@@ -16,6 +16,7 @@ def test_time_logged_export_endpoint_returns_csv():
     ws = WorkspaceFactory()
     proj = ProjectFactory(workspace=ws)
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="ExportTest")
+    Issue.issue_objects.create(project=proj, workspace=ws, name="NoWorklogIssue")
 
     Worklog.objects.create(issue=issue, actor=None, duration=90, logged_at=date.today())
 
@@ -39,3 +40,5 @@ def test_time_logged_export_endpoint_returns_csv():
     assert "assignee" in header
     # ensure that the exported duration matches expected hours (1.5h)
     assert any("1.50" in line for line in lines[1:]), "Expected 1.50 hours_logged in at least one data row"
+    # ensure issues with zero hours are excluded
+    assert all("NoWorklogIssue" not in line for line in lines[1:])
