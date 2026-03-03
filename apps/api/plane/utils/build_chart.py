@@ -204,7 +204,7 @@ def build_time_logged_chart(
         id_field, name_field, additional_filter = field_mapping.get(x_axis)
         if additional_filter:
             queryset = queryset.filter(**additional_filter)
-            worklogs = worklogs.filter(**additional_filter)
+            worklogs = worklogs.filter(**{f"issue__{k}": v for k, v in additional_filter.items()})
         key_field = f"issue__{id_field}"
         name_field_res = f"issue__{name_field}" if name_field else key_field
         worklogs = worklogs.annotate(key_val=F(key_field), name_val=F(name_field_res))
@@ -227,7 +227,7 @@ def build_time_logged_chart(
                 raise ValidationError(f"Invalid group_by field: {group_by}")
             gid_field, gname_field, gfilter = field_mapping.get(group_by)
             if gfilter:
-                worklogs = worklogs.filter(**gfilter)
+                worklogs = worklogs.filter(**{f"issue__{k}": v for k, v in gfilter.items()})
             worklogs = worklogs.annotate(
                 group_key=F(f"issue__{gid_field}"),
                 group_name=F(f"issue__{gname_field}"),
