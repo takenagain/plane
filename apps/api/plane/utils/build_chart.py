@@ -177,7 +177,7 @@ def build_time_logged_chart(
     worklogs = Worklog.objects.filter(issue__in=queryset)
     if date_filter:
         start, end = date_filter
-        worklogs = worklogs.filter(logged_at__date__gte=start, logged_at__date__lte=end)
+        worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)
 
     # helper to convert weekday numbers to names
     def weekday_name(num: int) -> str:
