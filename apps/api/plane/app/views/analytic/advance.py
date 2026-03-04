@@ -371,7 +371,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             writer.writerow(
                 [
                     str(issue.id),
-                    getattr(issue, "title", None) or issue.name,
+                    issue.name,
                     f"{hours:.2f}",
                     issue.state.name if issue.state else "",
                     issue.priority,
