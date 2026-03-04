@@ -366,7 +366,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             if not issue:
                 continue
             hours = (item["total_minutes"] or 0) / 60
-            assignee_obj = issue.assignees.filter(deleted_at__isnull=True).first()
+            assignee_obj = issue.assignees.filter(issue_assignee__deleted_at__isnull=True).first()
             assignee = assignee_obj.display_name if assignee_obj else ""
             writer.writerow(
                 [
