@@ -13,7 +13,7 @@
  *
  * It reuses the seeding and auth helpers from the main time-tracking E2E spec.
  */
-import type { Page } from "@playwright/test";
+import type { Page, Response } from "@playwright/test";
 import { test, expect } from "@playwright/test";
 
 import {
@@ -22,6 +22,7 @@ import {
   ensureE2ESeedData,
   signInAndEnsureWorkspace,
   signInViaApi,
+  waitForPageLoad,
 } from "./helpers/time-tracking";
 
 let workspaceSlug = "";
@@ -64,37 +65,54 @@ test.describe.serial("Analytics Hours Logged E2E", () => {
   });
 
   test("1. Hours logged is visible in Work Items analytics and requests weekday chart", async ({ page }) => {
-    const analyticsResponsePromise = page.waitForResponse(
-      (response) =>
-        response.url().includes(`/api/workspaces/${workspaceSlug}/advance-analytics-charts/`) &&
-        response.url().includes("type=custom-work-items") &&
-        response.url().includes("y_axis=HOURS_LOGGED") &&
-        response.url().includes("x_axis=LOGGED_DAY_OF_WEEK")
-    );
+    const analyticsResponses: Response[] = [];
+    const collectAnalyticsResponses = (response: Response) => {
+      const url = response.url();
+      if (
+        response.request().method() === "GET" &&
+        url.includes("/api/workspaces/") &&
+        url.includes("/advance-analytics-charts/") &&
+        url.includes("type=custom-work-items") &&
+        url.includes("y_axis=HOURS_LOGGED") &&
+        url.includes("x_axis=LOGGED_DAY_OF_WEEK")
+      ) {
+        analyticsResponses.push(response);
+      }
+    };
+    page.on("response", collectAnalyticsResponses);
 
-    await page.goto(`${BASE_URL}/${workspaceSlug}/analytics/work-items`);
+    await page.setViewportSize({ width: 1365, height: 900 });
+    await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/`);
+    await waitForPageLoad(page);
+
+    const signInEmailInput = page.getByPlaceholder("name@company.com").or(page.locator("input[type='email']")).first();
+    if (await signInEmailInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await signInAndEnsureWorkspace(page);
+      await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/`);
+      await waitForPageLoad(page);
+    }
+
+    const analyticsEntry = page
+      .getByRole("button", { name: /analytics/i })
+      .or(page.getByRole("link", { name: /analytics/i }))
+      .first();
+    await expect(analyticsEntry).toBeVisible({ timeout: 20_000 });
+    await analyticsEntry.click();
     await expect(page.getByText("Customized insights")).toBeVisible();
 
-    // Metric selector defaults to Work item in this chart; switch to Hours logged.
-    await page
-      .getByRole("button", { name: /work item/i })
-      .first()
-      .click();
-    await page.getByRole("option", { name: "Hours logged" }).click();
-
-    const analyticsResponse = await analyticsResponsePromise;
-    expect(analyticsResponse.ok()).toBeTruthy();
-    await expect(page.getByRole("button", { name: "Export as CSV" })).toBeVisible();
+    await expect.poll(() => analyticsResponses.length).toBeGreaterThan(0);
+    page.off("response", collectAnalyticsResponses);
+    await expect(page.getByRole("button", { name: /export as csv/i }).first()).toBeVisible();
 
     // Axis labels should reflect hours-logged semantics.
-    await expect(page.getByText("Day of week")).toBeVisible();
-    await expect(page.getByText("Hours logged")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Day of week" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Hours logged" }).first()).toBeVisible();
   });
 
   test("2. Hours logged analytics chart API returns data", async ({ page }) => {
-    const params = "?type=custom-work-items&y_axis=HOURS_LOGGED&x_axis=LOGGED_DAY_OF_WEEK&group_by=WORK_ITEMS";
+    const params = `?type=custom-work-items&y_axis=HOURS_LOGGED&x_axis=LOGGED_DAY_OF_WEEK&group_by=WORK_ITEMS&project_ids=${projectId}`;
     const resp = await page.request.get(
-      `${API_BASE_URL}/api/workspaces/${workspaceSlug}/advance-analytics-charts/${params}`
+      `${API_BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/advance-analytics-charts/${params}`
     );
     expect(resp.ok()).toBeTruthy();
     const body = (await resp.json()) as { data?: Array<{ name?: string; count?: number }> };

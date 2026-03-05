@@ -29,8 +29,13 @@ const CustomizedInsights = observer(function CustomizedInsights({
   const { workspaceSlug } = useParams();
   const { control, watch, setValue } = useForm<IAnalyticsParams>({
     defaultValues: {
-      x_axis: ChartXAxisProperty.PRIORITY,
-      y_axis: isEpic ? ChartYAxisMetric.EPIC_WORK_ITEM_COUNT : ChartYAxisMetric.WORK_ITEM_COUNT,
+      x_axis: peekView ? ChartXAxisProperty.LOGGED_DAY_OF_WEEK : ChartXAxisProperty.PRIORITY,
+      y_axis: peekView
+        ? ChartYAxisMetric.HOURS_LOGGED
+        : isEpic
+          ? ChartYAxisMetric.EPIC_WORK_ITEM_COUNT
+          : ChartYAxisMetric.WORK_ITEM_COUNT,
+      group_by: peekView ? ChartXAxisProperty.WORK_ITEMS : undefined,
     },
   });
 

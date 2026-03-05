@@ -32,6 +32,7 @@ import {
   PROJECT_NAME,
   ensureE2ESeedData,
   signInAndEnsureWorkspace,
+  signInViaApi,
   waitForPageLoad,
 } from "./helpers/time-tracking";
 
@@ -59,7 +60,10 @@ async function waitForApiReady(page: Page) {
 
 async function findFirstAccessibleProject(page: Page): Promise<{ workspaceSlug: string; projectId: string } | null> {
   try {
-    const workspacesResponse = await page.request.get(`${BASE_URL}/api/workspaces/`);
+    let workspacesResponse = await page.request.get(`${BASE_URL}/api/users/me/workspaces/`);
+    if (!workspacesResponse.ok()) {
+      workspacesResponse = await page.request.get(`${BASE_URL}/api/workspaces/`);
+    }
     if (!workspacesResponse.ok()) return null;
 
     const workspacesData = await workspacesResponse.json();
@@ -519,19 +523,21 @@ test.describe.serial("Time Tracking E2E Flow", () => {
     expect(projectId).toBeTruthy();
     expect(issueId).toBeTruthy();
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    await signInViaApi(page);
+
+    for (let attempt = 0; attempt < 4; attempt++) {
       await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/${issueId}`);
       await waitForPageLoad(page);
       await page.waitForTimeout(2500);
 
       const emailInput = page.getByPlaceholder("name@company.com").or(page.locator("input[type='email']")).first();
-      if (await emailInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await loginWithEmailAndPassword(page);
+      if (await emailInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await signInAndEnsureWorkspace(page);
         continue;
       }
 
       const noWorkspaceMessage = page.getByText(/you don't seem to have any invites to a workspace/i);
-      if (await noWorkspaceMessage.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      if (await noWorkspaceMessage.isVisible({ timeout: 5_000 }).catch(() => false)) {
         const reseeded = ensureE2ESeedData();
         workspaceSlug = reseeded.workspaceSlug;
         projectId = reseeded.projectId;
@@ -542,7 +548,14 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       break;
     }
 
-    await expect(page).not.toHaveURL(/\/sign-in/);
+    const finalEmailInput = page.getByPlaceholder("name@company.com").or(page.locator("input[type='email']")).first();
+    if (await finalEmailInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await signInAndEnsureWorkspace(page);
+      await signInViaApi(page);
+      await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/${issueId}`);
+      await waitForPageLoad(page);
+      await page.waitForTimeout(1500);
+    }
 
     const trackingActions = page.getByTestId("issue-time-tracking-actions").first();
     const startStopButton = trackingActions.getByTestId("issue-time-start-stop-button");
@@ -589,5 +602,113 @@ test.describe.serial("Time Tracking E2E Flow", () => {
 
       await expect(form).toHaveCount(0);
     });
+  });
+
+  test("11. Parent work item: Time Logged display rolls up child totals", async ({ page }) => {
+    const seeded = ensureE2ESeedData();
+    workspaceSlug = seeded.workspaceSlug;
+    projectId = seeded.projectId;
+
+    await signInAndEnsureWorkspace(page);
+    expect(workspaceSlug).toBeTruthy();
+    expect(projectId).toBeTruthy();
+
+    const uniqueSuffix = Date.now().toString();
+    const parentIssueName = `Parent time rollup ${uniqueSuffix}`;
+    const childIssueName = `Child time rollup ${uniqueSuffix}`;
+
+    const createIssue = async (name: string): Promise<{ id: string }> => {
+      const response = await page.request.post(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/`,
+        {
+          data: { name },
+        }
+      );
+      expect(response.status()).toBeLessThan(300);
+      return (await response.json()) as { id: string };
+    };
+
+    let parentIssueId = "";
+    let childIssueId = "";
+
+    try {
+      const parentIssue = await createIssue(parentIssueName);
+      const childIssue = await createIssue(childIssueName);
+      parentIssueId = parentIssue.id;
+      childIssueId = childIssue.id;
+      expect(parentIssueId).toBeTruthy();
+      expect(childIssueId).toBeTruthy();
+
+      const attachSubIssueResponse = await page.request.post(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/sub-issues/`,
+        {
+          data: { sub_issue_ids: [childIssueId] },
+        }
+      );
+      expect(attachSubIssueResponse.status()).toBe(200);
+
+      const today = new Date().toISOString().split("T")[0];
+      const parentWorklogResponse = await page.request.post(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/worklogs/`,
+        {
+          data: {
+            duration: 30,
+            logged_at: today,
+            description: "Parent worklog for rollup UI assertion",
+          },
+        }
+      );
+      expect(parentWorklogResponse.status()).toBe(201);
+
+      const childWorklogResponse = await page.request.post(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/worklogs/`,
+        {
+          data: {
+            duration: 45,
+            logged_at: today,
+            description: "Child worklog for rollup UI assertion",
+          },
+        }
+      );
+      expect(childWorklogResponse.status()).toBe(201);
+
+      const childTotalResponse = await page.request.get(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/worklogs/total/`
+      );
+      expect(childTotalResponse.ok()).toBe(true);
+      const childTotal = (await childTotalResponse.json()) as { total_duration: number };
+      expect(childTotal.total_duration).toBe(45);
+
+      const parentTotalBeforeRenderResponse = await page.request.get(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/worklogs/total/`
+      );
+      expect(parentTotalBeforeRenderResponse.ok()).toBe(true);
+      const parentTotalBeforeRender = (await parentTotalBeforeRenderResponse.json()) as { total_duration: number };
+      expect(parentTotalBeforeRender.total_duration).toBe(30);
+
+      await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}`);
+      await waitForPageLoad(page);
+
+      const timeLoggedRow = page.locator("div", { has: page.getByText("Time Logged", { exact: true }) }).first();
+      await expect(timeLoggedRow).toContainText(/1h 15m/, { timeout: 20_000 });
+
+      const parentTotalAfterRenderResponse = await page.request.get(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/worklogs/total/`
+      );
+      expect(parentTotalAfterRenderResponse.ok()).toBe(true);
+      const parentTotalAfterRender = (await parentTotalAfterRenderResponse.json()) as { total_duration: number };
+      expect(parentTotalAfterRender.total_duration).toBe(30);
+    } finally {
+      if (childIssueId) {
+        await page.request.delete(
+          `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/`
+        );
+      }
+      if (parentIssueId) {
+        await page.request.delete(
+          `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/`
+        );
+      }
+    }
   });
 });

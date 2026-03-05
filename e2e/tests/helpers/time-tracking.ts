@@ -108,6 +108,11 @@ WorkspaceMember.objects.update_or_create(
     member=user,
     defaults={"role": 20, "is_active": True},
 )
+WorkspaceMember.objects.filter(member=user).exclude(workspace=workspace).delete()
+WorkspaceMember.objects.filter(workspace=workspace).exclude(member=user).delete()
+workspace_members = WorkspaceMember.objects.filter(workspace=workspace, member=user).order_by("id")
+if workspace_members.count() > 1:
+    workspace_members.exclude(id=workspace_members.first().id).delete()
 
 profile, _ = Profile.objects.get_or_create(user=user)
 profile.is_onboarded = True
@@ -142,6 +147,11 @@ ProjectMember.objects.update_or_create(
     member=user,
     defaults={"workspace": workspace, "role": 20, "is_active": True},
 )
+ProjectMember.objects.filter(member=user).exclude(project=project).delete()
+ProjectMember.objects.filter(project=project).exclude(member=user).delete()
+project_members = ProjectMember.objects.filter(project=project, member=user).order_by("id")
+if project_members.count() > 1:
+    project_members.exclude(id=project_members.first().id).delete()
 
 if not State.all_state_objects.filter(project=project, deleted_at__isnull=True).exists():
     for state in DEFAULT_STATES:
@@ -152,12 +162,21 @@ default_state = (
     or State.all_state_objects.filter(project=project, deleted_at__isnull=True).first()
 )
 
-issue, _ = Issue.objects.get_or_create(
-    project=project,
-    workspace=workspace,
-    name=issue_title,
-    defaults={"state": default_state, "priority": "none"},
+issue = (
+    Issue.issue_objects.filter(project=project, workspace=workspace, name=issue_title)
+    .order_by("-updated_at", "-created_at")
+    .first()
 )
+if issue is None:
+    issue = Issue.objects.create(
+        project=project,
+        workspace=workspace,
+        name=issue_title,
+        state=default_state,
+        priority="none",
+        created_by=user,
+        updated_by=user,
+    )
 
 if issue.state_id is None and default_state is not None:
     issue.state = default_state
@@ -183,9 +202,10 @@ print(f"SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 
   const output = execFileSync(
     "podman",
-    ["exec", resolveApiContainerName(), "python", "manage.py", "shell", "-c", seedScript],
+    ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", seedScript],
     {
       encoding: "utf-8",
+      cwd: "/",
     }
   );
   const match = output.match(/SEED_RESULT:([^\n\r]+)/);
@@ -226,11 +246,18 @@ async function resolveWorkspaceSlugWithProjectAccess(page: Page, preferredSlug =
   }
 
   try {
-    const workspacesResponse = await page.request.get(`${BASE_URL}/api/workspaces/`);
-    if (workspacesResponse.ok()) {
+    const workspaceEndpoints = ["/api/users/me/workspaces/", "/api/workspaces/"];
+    for (const endpoint of workspaceEndpoints) {
+      const workspacesResponse = await page.request.get(`${BASE_URL}${endpoint}`);
+      if (!workspacesResponse.ok()) {
+        continue;
+      }
       const workspacesData: unknown = await workspacesResponse.json();
       for (const slug of extractWorkspaceSlugs(workspacesData)) {
         candidateSlugs.add(slug);
+      }
+      if (candidateSlugs.size > 0) {
+        break;
       }
     }
   } catch {
@@ -252,42 +279,57 @@ async function resolveWorkspaceSlugWithProjectAccess(page: Page, preferredSlug =
 }
 
 async function loginWithEmailAndPassword(page: Page) {
-  const emailInput = page.getByPlaceholder("name@company.com").or(page.locator("input[type='email']")).first();
-  await expect(emailInput).toBeVisible({ timeout: 15_000 });
-  await emailInput.fill(ADMIN_EMAIL);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const emailInput = page
+      .getByPlaceholder("name@company.com")
+      .or(page.locator("input[type='email'], input[name='email'], #email"))
+      .first();
 
-  const continueButton = page
-    .locator("form button[type='submit']")
-    .or(page.getByRole("button", { name: /continue/i }))
-    .first();
-  await expect(continueButton).toBeEnabled({ timeout: 10_000 });
-  await continueButton.click();
+    if (!(await emailInput.isVisible({ timeout: 5_000 }).catch(() => false))) {
+      await page.goto(`${BASE_URL}/auth/sign-in/`);
+      await waitForPageLoad(page);
+      await page.waitForTimeout(1000);
+      continue;
+    }
 
-  const passwordInput = page
-    .locator("#password")
-    .or(page.getByPlaceholder(/enter password|set a password|new password/i))
-    .first();
-  await expect(passwordInput).toBeVisible({ timeout: 15_000 });
-  await passwordInput.fill(ADMIN_PASSWORD);
+    await emailInput.fill(ADMIN_EMAIL);
 
-  const confirmPasswordInput = page
-    .locator("#confirm-password")
-    .or(page.getByPlaceholder(/confirm password/i))
-    .first();
-  if (await confirmPasswordInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
-    await confirmPasswordInput.fill(ADMIN_PASSWORD);
+    const continueButton = page
+      .locator("form button[type='submit']")
+      .or(page.getByRole("button", { name: /continue/i }))
+      .first();
+    await expect(continueButton).toBeEnabled({ timeout: 10_000 });
+    await continueButton.click();
+
+    const passwordInput = page
+      .locator("#password")
+      .or(page.getByPlaceholder(/enter password|set a password|new password/i))
+      .first();
+    await expect(passwordInput).toBeVisible({ timeout: 15_000 });
+    await passwordInput.fill(ADMIN_PASSWORD);
+
+    const confirmPasswordInput = page
+      .locator("#confirm-password")
+      .or(page.getByPlaceholder(/confirm password/i))
+      .first();
+    if (await confirmPasswordInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      await confirmPasswordInput.fill(ADMIN_PASSWORD);
+    }
+
+    const submitButton = passwordInput
+      .locator("xpath=ancestor::form[1]")
+      .locator("button[type='submit']")
+      .or(page.getByRole("button", { name: /go to workspace|sign in|continue|create account/i }))
+      .first();
+
+    await expect(submitButton).toBeEnabled({ timeout: 10_000 });
+    await submitButton.click();
+    await page.waitForTimeout(4000);
+    await waitForPageLoad(page);
+    return;
   }
 
-  const submitButton = passwordInput
-    .locator("xpath=ancestor::form[1]")
-    .locator("button[type='submit']")
-    .or(page.getByRole("button", { name: /go to workspace|sign in|continue|create account/i }))
-    .first();
-
-  await expect(submitButton).toBeEnabled({ timeout: 10_000 });
-  await submitButton.click();
-  await page.waitForTimeout(4000);
-  await waitForPageLoad(page);
+  throw new Error("Unable to find sign-in email form");
 }
 
 async function completeOnboarding(page: Page) {
@@ -387,11 +429,35 @@ export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
     return wsMatch[1];
   }
 
-  if (url.endsWith("/") || url.endsWith(":8081") || url.endsWith(":8081/") || url.includes("/sign-in")) {
-    await loginWithEmailAndPassword(page);
-    if (page.url().includes("/sign-in")) {
-      await loginWithEmailAndPassword(page);
+  const resolvedWorkspace = await resolveWorkspaceSlugWithProjectAccess(page);
+  if (resolvedWorkspace) {
+    return resolvedWorkspace;
+  }
+
+  try {
+    await signInViaApi(page);
+    await page.goto(BASE_URL);
+    await waitForPageLoad(page);
+    await page.waitForTimeout(1000);
+
+    const workspaceAfterApiSignIn = await resolveWorkspaceSlugWithProjectAccess(page);
+    if (workspaceAfterApiSignIn) {
+      return workspaceAfterApiSignIn;
     }
+  } catch {
+    // Fall back to UI login flow below.
+  }
+
+  if (url.includes("/sign-in")) {
+    await loginWithEmailAndPassword(page);
+  } else {
+    await page.goto(`${BASE_URL}/auth/sign-in/`);
+    await waitForPageLoad(page);
+    await loginWithEmailAndPassword(page);
+  }
+
+  if (page.url().includes("/sign-in")) {
+    await loginWithEmailAndPassword(page);
   }
 
   await completeOnboarding(page);
@@ -400,14 +466,46 @@ export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
   const finalMatch = finalUrl.match(/\/([a-zA-Z0-9_-]+)\/(projects|issues|settings|home)/);
   const slugFromUrl = finalMatch?.[1] ?? "";
 
-  return resolveWorkspaceSlugWithProjectAccess(page, slugFromUrl);
+  const resolvedFinalWorkspace = await resolveWorkspaceSlugWithProjectAccess(page, slugFromUrl);
+  return resolvedFinalWorkspace || slugFromUrl;
 }
 
 export async function signInViaApi(page: Page) {
-  const csrfResponse = await page.request.get(`${API_BASE_URL}/auth/get-csrf-token/`);
-  expect(csrfResponse.ok()).toBe(true);
-  const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
-  const csrfToken = csrfData.csrf_token ?? "";
+  let apiReady = false;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      const instancesResponse = await page.request.get(`${API_BASE_URL}/api/instances/`);
+      if (instancesResponse.ok()) {
+        apiReady = true;
+        break;
+      }
+    } catch {
+      // API may not be fully ready yet.
+    }
+    await page.waitForTimeout(1000);
+  }
+  expect(apiReady).toBe(true);
+
+  let csrfToken = "";
+  for (let attempt = 0; attempt < 15; attempt++) {
+    const csrfResponse = await page.request.get(`${API_BASE_URL}/auth/get-csrf-token/`);
+    if (!csrfResponse.ok()) {
+      await page.waitForTimeout(1000);
+      continue;
+    }
+
+    const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
+    csrfToken = csrfData.csrf_token ?? "";
+    if (!csrfToken) {
+      const setCookieHeader = csrfResponse.headers()["set-cookie"] ?? "";
+      const cookieMatch = setCookieHeader.match(/csrftoken=([^;]+)/);
+      csrfToken = cookieMatch?.[1] ?? "";
+    }
+    if (csrfToken) {
+      break;
+    }
+    await page.waitForTimeout(1000);
+  }
   expect(csrfToken).not.toBe("");
 
   const signInResponse = await page.request.post(`${API_BASE_URL}/auth/sign-in/`, {

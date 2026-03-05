@@ -67,6 +67,7 @@ export const ProjectIssuesMobileHeader = observer(function ProjectIssuesMobileHe
         isOpen={analyticsModal}
         onClose={() => setAnalyticsModal(false)}
         projectDetails={currentProjectDetails ?? undefined}
+        projectId={projectId?.toString()}
       />
       <div className="md:hidden flex justify-evenly border-b border-subtle py-2 z-[13] bg-surface-1">
         <MobileLayoutSelection

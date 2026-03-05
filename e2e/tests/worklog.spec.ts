@@ -35,6 +35,8 @@ type IssueResponse = {
   assignee_ids?: string[];
 };
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function resolveApiContainerName() {
   const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
   const names = output
@@ -99,6 +101,11 @@ WorkspaceMember.objects.update_or_create(
     member=user,
     defaults={"role": 20, "is_active": True},
 )
+WorkspaceMember.objects.filter(member=user).exclude(workspace=workspace).delete()
+WorkspaceMember.objects.filter(workspace=workspace).exclude(member=user).delete()
+workspace_members = WorkspaceMember.objects.filter(workspace=workspace, member=user).order_by("id")
+if workspace_members.count() > 1:
+    workspace_members.exclude(id=workspace_members.first().id).delete()
 
 profile, _ = Profile.objects.get_or_create(user=user)
 profile.is_onboarded = True
@@ -133,6 +140,11 @@ ProjectMember.objects.update_or_create(
     member=user,
     defaults={"workspace": workspace, "role": 20, "is_active": True},
 )
+ProjectMember.objects.filter(member=user).exclude(project=project).delete()
+ProjectMember.objects.filter(project=project).exclude(member=user).delete()
+project_members = ProjectMember.objects.filter(project=project, member=user).order_by("id")
+if project_members.count() > 1:
+    project_members.exclude(id=project_members.first().id).delete()
 
 if not State.all_state_objects.filter(project=project, deleted_at__isnull=True).exists():
     for state in DEFAULT_STATES:
@@ -143,12 +155,21 @@ default_state = (
     or State.all_state_objects.filter(project=project, deleted_at__isnull=True).first()
 )
 
-issue, _ = Issue.objects.get_or_create(
-    project=project,
-    workspace=workspace,
-    name=issue_title,
-    defaults={"state": default_state, "priority": "none"},
+issue = (
+    Issue.issue_objects.filter(project=project, workspace=workspace, name=issue_title)
+    .order_by("-updated_at", "-created_at")
+    .first()
 )
+if issue is None:
+    issue = Issue.objects.create(
+        project=project,
+        workspace=workspace,
+        name=issue_title,
+        state=default_state,
+        priority="none",
+        created_by=user,
+        updated_by=user,
+    )
 
 if issue.state_id is None and default_state is not None:
     issue.state = default_state
@@ -165,9 +186,10 @@ print(f"WORKLOG_SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 
   const output = execFileSync(
     "podman",
-    ["exec", resolveApiContainerName(), "python", "manage.py", "shell", "-c", seedScript],
+    ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", seedScript],
     {
       encoding: "utf-8",
+      cwd: "/",
     }
   );
 
@@ -189,24 +211,53 @@ print(f"WORKLOG_SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 }
 
 async function signIn(request: APIRequestContext): Promise<void> {
-  const csrfResponse = await request.get(`${BASE_URL}/auth/get-csrf-token/`);
-  expect(csrfResponse.ok()).toBe(true);
-  const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
-  const csrfToken = csrfData.csrf_token ?? "";
-  expect(csrfToken).not.toBe("");
+  const maxAttempts = 5;
+  let csrfToken = "";
+  let lastCsrfStatus = -1;
+  let lastCsrfBody = "";
 
-  const signInResponse = await request.post(`${BASE_URL}/auth/sign-in/`, {
-    form: {
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    },
-    headers: {
-      "X-CSRFToken": csrfToken,
-      Referer: `${BASE_URL}/`,
-    },
-  });
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const csrfResponse = await request.get(`${BASE_URL}/auth/get-csrf-token/`);
+    lastCsrfStatus = csrfResponse.status();
+    if (csrfResponse.ok()) {
+      const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
+      csrfToken = csrfData.csrf_token ?? "";
+      if (csrfToken) break;
+    } else {
+      lastCsrfBody = (await csrfResponse.text()).slice(0, 200);
+    }
+    if (attempt < maxAttempts) {
+      await wait(500 * attempt);
+    }
+  }
 
-  expect([200, 302]).toContain(signInResponse.status());
+  expect(
+    csrfToken,
+    `Unable to fetch CSRF token. lastStatus=${lastCsrfStatus} lastBody=${lastCsrfBody}`
+  ).not.toBe("");
+
+  let lastSignInStatus = -1;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const signInResponse = await request.post(`${BASE_URL}/auth/sign-in/`, {
+      form: {
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+      },
+      headers: {
+        "X-CSRFToken": csrfToken,
+        Referer: `${BASE_URL}/`,
+      },
+    });
+    lastSignInStatus = signInResponse.status();
+    if ([200, 302].includes(lastSignInStatus)) {
+      return;
+    }
+    if (attempt < maxAttempts) {
+      await wait(500 * attempt);
+    }
+  }
+
+  expect([200, 302]).toContain(lastSignInStatus);
 }
 
 function getWorklogBaseUrl(): string {
@@ -293,9 +344,10 @@ print(f"WORKLOG_RESET_RESULT:{todo_state.id if todo_state else ''}|{in_progress_
 
   const output = execFileSync(
     "podman",
-    ["exec", resolveApiContainerName(), "python", "manage.py", "shell", "-c", resetScript],
+    ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", resetScript],
     {
       encoding: "utf-8",
+      cwd: "/",
     }
   );
   const match = output.match(/WORKLOG_RESET_RESULT:([^\n\r]+)/);

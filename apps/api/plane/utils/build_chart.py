@@ -242,7 +242,8 @@ def build_time_logged_chart(
                 k = k
             if k not in results:
                 results[k] = {"key": k, "name": name_mapper(k), "count": 0}
-            gk = item.get("group_key") or "none"
+            raw_group_key = item.get("group_key") or "none"
+            gk = str(raw_group_key)
             schema[gk] = item.get("group_name") or gk
             hours = (item.get("total", 0) or 0) / 60
             results[k][gk] = results[k].get(gk, 0) + hours

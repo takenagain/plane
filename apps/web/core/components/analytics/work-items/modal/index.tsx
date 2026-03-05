@@ -18,13 +18,14 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   projectDetails?: IProject | undefined;
+  projectId?: string;
   cycleDetails?: ICycle | undefined;
   moduleDetails?: IModule | undefined;
   isEpic?: boolean;
 };
 
 export const WorkItemsModal = observer(function WorkItemsModal(props: Props) {
-  const { isOpen, onClose, projectDetails, moduleDetails, cycleDetails, isEpic } = props;
+  const { isOpen, onClose, projectDetails, projectId, moduleDetails, cycleDetails, isEpic } = props;
   const { updateIsEpic, isPeekView } = useAnalytics();
   const [fullScreen, setFullScreen] = useState(false);
 
@@ -61,6 +62,7 @@ export const WorkItemsModal = observer(function WorkItemsModal(props: Props) {
         <WorkItemsModalMainContent
           fullScreen={fullScreen}
           projectDetails={projectDetails}
+          projectId={projectId}
           cycleDetails={cycleDetails}
           moduleDetails={moduleDetails}
           isEpic={isEpic}

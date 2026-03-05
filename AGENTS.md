@@ -27,6 +27,7 @@
 - Check whether `podman`/`podman-compose` or `docker`/`docker compose` are available before running container commands
 - Prefer `podman` and `podman-compose` even if both Podman and Docker are installed
 - On this system (CachyOS), use `podman` and `podman-compose` for local stack startup and E2E prerequisites
+- Use non-privileged HTTP ports for compose/e2e (default `8081`) and never bind HTTP to port `80`
 
 ## Code Style
 

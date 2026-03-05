@@ -171,11 +171,15 @@ class WorklogViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def create(self, request, slug, project_id, issue_id):
-        issue = Issue.objects.filter(
-            pk=issue_id,
-            project_id=project_id,
-            workspace__slug=slug,
-        ).only("id", "workspace_id").first()
+        issue = (
+            Issue.objects.filter(
+                pk=issue_id,
+                project_id=project_id,
+                workspace__slug=slug,
+            )
+            .only("id", "workspace_id")
+            .first()
+        )
         if issue is None:
             return Response(
                 {"error": "Issue does not belong to the specified project/workspace."},
@@ -208,11 +212,15 @@ class WorklogViewSet(BaseViewSet):
     @action(detail=False, methods=["post"], url_path="start")
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def start(self, request, slug, project_id, issue_id):
-        issue = Issue.objects.filter(
-            pk=issue_id,
-            project_id=project_id,
-            workspace__slug=slug,
-        ).only("id", "workspace_id").first()
+        issue = (
+            Issue.objects.filter(
+                pk=issue_id,
+                project_id=project_id,
+                workspace__slug=slug,
+            )
+            .only("id", "workspace_id")
+            .first()
+        )
         if issue is None:
             return Response(
                 {"error": "Issue does not belong to the specified project/workspace."},

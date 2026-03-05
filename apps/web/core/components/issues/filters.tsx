@@ -92,6 +92,7 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
         isOpen={analyticsModal}
         onClose={() => setAnalyticsModal(false)}
         projectDetails={currentProjectDetails ?? undefined}
+        projectId={projectId}
         isEpic={storeType === EIssuesStoreType.EPIC}
       />
       <div className="hidden @4xl:flex">
