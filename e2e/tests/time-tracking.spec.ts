@@ -604,7 +604,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
     });
   });
 
-  test("11. Parent work item: Time Logged display rolls up child totals", async ({ page }) => {
+  test("11. Parent work item: Time Logged display rolls up descendant totals recursively", async ({ page }) => {
     const seeded = ensureE2ESeedData();
     workspaceSlug = seeded.workspaceSlug;
     projectId = seeded.projectId;
@@ -616,6 +616,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
     const uniqueSuffix = Date.now().toString();
     const parentIssueName = `Parent time rollup ${uniqueSuffix}`;
     const childIssueName = `Child time rollup ${uniqueSuffix}`;
+    const grandchildIssueName = `Grandchild time rollup ${uniqueSuffix}`;
 
     const createIssue = async (name: string): Promise<{ id: string }> => {
       const response = await page.request.post(
@@ -630,14 +631,18 @@ test.describe.serial("Time Tracking E2E Flow", () => {
 
     let parentIssueId = "";
     let childIssueId = "";
+    let grandchildIssueId = "";
 
     try {
       const parentIssue = await createIssue(parentIssueName);
       const childIssue = await createIssue(childIssueName);
+      const grandchildIssue = await createIssue(grandchildIssueName);
       parentIssueId = parentIssue.id;
       childIssueId = childIssue.id;
+      grandchildIssueId = grandchildIssue.id;
       expect(parentIssueId).toBeTruthy();
       expect(childIssueId).toBeTruthy();
+      expect(grandchildIssueId).toBeTruthy();
 
       const attachSubIssueResponse = await page.request.post(
         `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/sub-issues/`,
@@ -646,6 +651,21 @@ test.describe.serial("Time Tracking E2E Flow", () => {
         }
       );
       expect(attachSubIssueResponse.status()).toBe(200);
+
+      const attachGrandchildResponse = await page.request.post(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/sub-issues/`,
+        {
+          data: { sub_issue_ids: [grandchildIssueId] },
+        }
+      );
+      expect(attachGrandchildResponse.status()).toBe(200);
+
+      const childSubIssuesResponse = await page.request.get(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/sub-issues/`
+      );
+      expect(childSubIssuesResponse.ok()).toBe(true);
+      const childSubIssues = (await childSubIssuesResponse.json()) as { sub_issues?: Array<{ id?: string }> };
+      expect((childSubIssues.sub_issues ?? []).some((item) => item.id === grandchildIssueId)).toBe(true);
 
       const today = new Date().toISOString().split("T")[0];
       const parentWorklogResponse = await page.request.post(
@@ -672,12 +692,31 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       );
       expect(childWorklogResponse.status()).toBe(201);
 
+      const grandchildWorklogResponse = await page.request.post(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${grandchildIssueId}/worklogs/`,
+        {
+          data: {
+            duration: 15,
+            logged_at: today,
+            description: "Grandchild worklog for recursive rollup UI assertion",
+          },
+        }
+      );
+      expect(grandchildWorklogResponse.status()).toBe(201);
+
       const childTotalResponse = await page.request.get(
         `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/worklogs/total/`
       );
       expect(childTotalResponse.ok()).toBe(true);
       const childTotal = (await childTotalResponse.json()) as { total_duration: number };
       expect(childTotal.total_duration).toBe(45);
+
+      const grandchildTotalResponse = await page.request.get(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${grandchildIssueId}/worklogs/total/`
+      );
+      expect(grandchildTotalResponse.ok()).toBe(true);
+      const grandchildTotal = (await grandchildTotalResponse.json()) as { total_duration: number };
+      expect(grandchildTotal.total_duration).toBe(15);
 
       const parentTotalBeforeRenderResponse = await page.request.get(
         `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/worklogs/total/`
@@ -690,7 +729,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await waitForPageLoad(page);
 
       const timeLoggedRow = page.locator("div", { has: page.getByText("Time Logged", { exact: true }) }).first();
-      await expect(timeLoggedRow).toContainText(/1h 15m/, { timeout: 20_000 });
+      await expect(timeLoggedRow).toContainText(/1h 30m/, { timeout: 20_000 });
 
       const parentTotalAfterRenderResponse = await page.request.get(
         `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/worklogs/total/`
@@ -699,6 +738,11 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       const parentTotalAfterRender = (await parentTotalAfterRenderResponse.json()) as { total_duration: number };
       expect(parentTotalAfterRender.total_duration).toBe(30);
     } finally {
+      if (grandchildIssueId) {
+        await page.request.delete(
+          `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${grandchildIssueId}/`
+        );
+      }
       if (childIssueId) {
         await page.request.delete(
           `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${childIssueId}/`
