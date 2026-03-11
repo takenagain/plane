@@ -24,6 +24,8 @@ type TIssueWorklogProperty = {
   disabled: boolean;
 };
 
+const MAX_DESCENDANT_FETCH_REQUESTS = 50;
+
 export const IssueWorklogProperty = observer(function IssueWorklogProperty(props: TIssueWorklogProperty) {
   const { workspaceSlug, projectId, issueId, disabled } = props;
   const { t } = useTranslation();
@@ -51,10 +53,15 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
         const visitedIssueIds = new Set<string>([issueId]);
         const discoveredIssueIds: string[] = [];
         const queue: string[] = [issueId];
+        let requestCount = 0;
 
         while (queue.length > 0) {
+          if (requestCount >= MAX_DESCENDANT_FETCH_REQUESTS) {
+            break;
+          }
           const currentIssueId = queue.shift();
           if (!currentIssueId) continue;
+          requestCount += 1;
 
           const response = await issueService.subIssues(workspaceSlug, projectId, currentIssueId);
           if (cancelled) return;
