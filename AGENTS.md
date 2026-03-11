@@ -21,12 +21,15 @@
 - Backend Python lint/format must include Ruff:
 - `apps/api/.venv/bin/ruff format apps/api`
 - `apps/api/.venv/bin/ruff check --fix apps/api`
+- Backend changes can be validated locally with `pytest` from `apps/api`
+- Full GitHub workflow runs can be exercised locally with `act` (`netkos/act` is installed on this system)
 
 ## Container Runtime
 
 - Check whether `podman`/`podman-compose` or `docker`/`docker compose` are available before running container commands
 - Prefer `podman` and `podman-compose` even if both Podman and Docker are installed
 - On this system (CachyOS), use `podman` and `podman-compose` for local stack startup and E2E prerequisites
+- You can start the full local stack with `podman-compose up -d`
 - Use non-privileged HTTP ports for compose/e2e (default `8081`) and never bind HTTP to port `80`
 
 ## Code Style
