@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
-from datetime import date
-
 from rest_framework import serializers
+
+from django.utils import timezone
 
 from plane.db.models import Worklog
 
@@ -40,7 +40,7 @@ class WorklogSerializer(BaseSerializer):
 
     def validate_logged_at(self, value):
         """Ensure logged_at is not in the future."""
-        if value > date.today():
+        if value > timezone.localdate():
             raise serializers.ValidationError("logged_at cannot be in the future.")
         return value
 
