@@ -1514,6 +1514,24 @@ def create_worklog_activity(
     time_str = f"{hours}h {minutes}m" if hours else f"{minutes}m"
     issue_name = Issue.objects.filter(pk=issue_id).values_list("name", flat=True).first() or "work item"
 
+    if duration == 0:
+        issue_activities.append(
+            IssueActivity(
+                issue_id=issue_id,
+                actor_id=actor_id,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                comment=f"Started tracking time on {issue_name}",
+                verb="created",
+                field="worklog",
+                new_value="tracking",
+                new_identifier=requested_data.get("id"),
+                old_value=requested_data.get("description", ""),
+                epoch=epoch,
+            )
+        )
+        return
+
     issue_activities.append(
         IssueActivity(
             issue_id=issue_id,
