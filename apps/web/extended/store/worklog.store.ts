@@ -81,15 +81,11 @@ export class WorklogStore implements IWorklogStore {
   };
 
   fetchTotal = async (workspaceSlug: string, projectId: string, issueId: string): Promise<number> => {
-    try {
-      const response = await worklogService.getTotal(workspaceSlug, projectId, issueId);
-      runInAction(() => {
-        this.totalByIssue[issueId] = response.total_duration;
-      });
-      return response.total_duration;
-    } catch (error) {
-      throw error;
-    }
+    const response = await worklogService.getTotal(workspaceSlug, projectId, issueId);
+    runInAction(() => {
+      this.totalByIssue[issueId] = response.total_duration;
+    });
+    return response.total_duration;
   };
 
   createWorklog = async (
@@ -98,58 +94,46 @@ export class WorklogStore implements IWorklogStore {
     issueId: string,
     data: IWorklogCreatePayload
   ): Promise<IWorklog> => {
-    try {
-      const worklog = await worklogService.create(workspaceSlug, projectId, issueId, data);
-      runInAction(() => {
-        const existing = this.worklogsByIssue[issueId] ?? [];
-        this.worklogsByIssue[issueId] = [worklog, ...existing];
-        // Update total optimistically
-        this.totalByIssue[issueId] = (this.totalByIssue[issueId] ?? 0) + worklog.duration;
-      });
-      return worklog;
-    } catch (error) {
-      throw error;
-    }
+    const worklog = await worklogService.create(workspaceSlug, projectId, issueId, data);
+    runInAction(() => {
+      const existing = this.worklogsByIssue[issueId] ?? [];
+      this.worklogsByIssue[issueId] = [worklog, ...existing];
+      // Update total optimistically
+      this.totalByIssue[issueId] = (this.totalByIssue[issueId] ?? 0) + worklog.duration;
+    });
+    return worklog;
   };
 
   startTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
-    try {
-      const worklog = await worklogService.startTracking(workspaceSlug, projectId, issueId);
-      runInAction(() => {
-        const existing = this.worklogsByIssue[issueId] ?? [];
-        const existingIndex = existing.findIndex((w) => w.id === worklog.id);
-        if (existingIndex !== -1) {
-          existing[existingIndex] = worklog;
-          this.worklogsByIssue[issueId] = [...existing];
-        } else {
-          this.worklogsByIssue[issueId] = [worklog, ...existing];
-        }
-      });
-      await this.fetchTotal(workspaceSlug, projectId, issueId);
-      return worklog;
-    } catch (error) {
-      throw error;
-    }
+    const worklog = await worklogService.startTracking(workspaceSlug, projectId, issueId);
+    runInAction(() => {
+      const existing = this.worklogsByIssue[issueId] ?? [];
+      const existingIndex = existing.findIndex((w) => w.id === worklog.id);
+      if (existingIndex !== -1) {
+        existing[existingIndex] = worklog;
+        this.worklogsByIssue[issueId] = [...existing];
+      } else {
+        this.worklogsByIssue[issueId] = [worklog, ...existing];
+      }
+    });
+    await this.fetchTotal(workspaceSlug, projectId, issueId);
+    return worklog;
   };
 
   stopTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
-    try {
-      const updated = await worklogService.stopTracking(workspaceSlug, projectId, issueId);
-      runInAction(() => {
-        const existing = this.worklogsByIssue[issueId] ?? [];
-        const existingIndex = existing.findIndex((w) => w.id === updated.id);
-        if (existingIndex !== -1) {
-          existing[existingIndex] = updated;
-          this.worklogsByIssue[issueId] = [...existing];
-        } else if (existing.length > 0) {
-          this.worklogsByIssue[issueId] = [updated, ...existing];
-        }
-      });
-      await this.fetchTotal(workspaceSlug, projectId, issueId);
-      return updated;
-    } catch (error) {
-      throw error;
-    }
+    const updated = await worklogService.stopTracking(workspaceSlug, projectId, issueId);
+    runInAction(() => {
+      const existing = this.worklogsByIssue[issueId] ?? [];
+      const existingIndex = existing.findIndex((w) => w.id === updated.id);
+      if (existingIndex !== -1) {
+        existing[existingIndex] = updated;
+        this.worklogsByIssue[issueId] = [...existing];
+      } else {
+        this.worklogsByIssue[issueId] = [updated, ...existing];
+      }
+    });
+    await this.fetchTotal(workspaceSlug, projectId, issueId);
+    return updated;
   };
 
   updateWorklog = async (
@@ -159,23 +143,19 @@ export class WorklogStore implements IWorklogStore {
     worklogId: string,
     data: IWorklogUpdatePayload
   ): Promise<IWorklog> => {
-    try {
-      const updated = await worklogService.update(workspaceSlug, projectId, issueId, worklogId, data);
-      runInAction(() => {
-        const existing = this.worklogsByIssue[issueId] ?? [];
-        const idx = existing.findIndex((w) => w.id === worklogId);
-        if (idx !== -1) {
-          const oldDuration = existing[idx].duration;
-          existing[idx] = updated;
-          this.worklogsByIssue[issueId] = [...existing];
-          // Update total: subtract old, add new
-          this.totalByIssue[issueId] = (this.totalByIssue[issueId] ?? 0) - oldDuration + updated.duration;
-        }
-      });
-      return updated;
-    } catch (error) {
-      throw error;
-    }
+    const updated = await worklogService.update(workspaceSlug, projectId, issueId, worklogId, data);
+    runInAction(() => {
+      const existing = this.worklogsByIssue[issueId] ?? [];
+      const idx = existing.findIndex((w) => w.id === worklogId);
+      if (idx !== -1) {
+        const oldDuration = existing[idx].duration;
+        existing[idx] = updated;
+        this.worklogsByIssue[issueId] = [...existing];
+        // Update total: subtract old, add new
+        this.totalByIssue[issueId] = (this.totalByIssue[issueId] ?? 0) - oldDuration + updated.duration;
+      }
+    });
+    return updated;
   };
 
   deleteWorklog = async (
@@ -189,14 +169,10 @@ export class WorklogStore implements IWorklogStore {
     const target = existing.find((w) => w.id === worklogId);
     const removedDuration = target?.duration ?? 0;
 
-    try {
-      await worklogService.remove(workspaceSlug, projectId, issueId, worklogId);
-      runInAction(() => {
-        this.worklogsByIssue[issueId] = existing.filter((w) => w.id !== worklogId);
-        this.totalByIssue[issueId] = Math.max(0, (this.totalByIssue[issueId] ?? 0) - removedDuration);
-      });
-    } catch (error) {
-      throw error;
-    }
+    await worklogService.remove(workspaceSlug, projectId, issueId, worklogId);
+    runInAction(() => {
+      this.worklogsByIssue[issueId] = existing.filter((w) => w.id !== worklogId);
+      this.totalByIssue[issueId] = Math.max(0, (this.totalByIssue[issueId] ?? 0) - removedDuration);
+    });
   };
 }
