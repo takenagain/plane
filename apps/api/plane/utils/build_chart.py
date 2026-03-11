@@ -39,6 +39,8 @@ x_axis_mapper = {
     "WORK_ITEMS": "WORK_ITEMS",
 }
 
+hours_logged_only_axis = {"LOGGED_DAY_OF_WEEK", "WORK_ITEMS"}
+
 
 def get_y_axis_filter(y_axis: str) -> Dict[str, Any]:
     filter_mapping = {
@@ -295,6 +297,10 @@ def build_analytics_chart(
     # Validate group_by
     if group_by and group_by not in x_axis_mapper:
         raise ValidationError(f"Invalid group_by field: {group_by}")
+    if x_axis in hours_logged_only_axis:
+        raise ValidationError(f"x_axis '{x_axis}' is only supported with HOURS_LOGGED.")
+    if group_by and group_by in hours_logged_only_axis:
+        raise ValidationError(f"group_by '{group_by}' is only supported with HOURS_LOGGED.")
 
     # existing behaviour returns counts only
     field_mapping = get_x_axis_field()
