@@ -18,8 +18,9 @@ from plane.app.views import (
     ProjectAdvanceAnalyticsEndpoint,
     ProjectAdvanceAnalyticsStatsEndpoint,
     ProjectAdvanceAnalyticsChartEndpoint,
+    ProjectTimeLoggedExportEndpoint,
+    TimeLoggedExportEndpoint,
 )
-
 
 urlpatterns = [
     path(
@@ -72,6 +73,12 @@ urlpatterns = [
         AdvanceAnalyticsChartEndpoint.as_view(),
         name="advance-analytics-chart",
     ),
+    # new export endpoint for hours logged
+    path(
+        "workspaces/<str:slug>/analytics/time-logged-export/",
+        TimeLoggedExportEndpoint.as_view(),
+        name="time-logged-export",
+    ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/advance-analytics/",
         ProjectAdvanceAnalyticsEndpoint.as_view(),
@@ -86,5 +93,10 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/advance-analytics-charts/",
         ProjectAdvanceAnalyticsChartEndpoint.as_view(),
         name="project-advance-analytics-chart",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/analytics/time-logged-export/",
+        ProjectTimeLoggedExportEndpoint.as_view(),
+        name="project-time-logged-export",
     ),
 ]

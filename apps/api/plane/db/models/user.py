@@ -170,6 +170,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.email = self.email.lower().strip()
         self.mobile_number = self.mobile_number
 
+        if not self.username:
+            if self.email:
+                self.username = self.email[:128]
+            else:
+                self.username = uuid.uuid4().hex
+
         if self.token_updated_at is not None:
             self.token = uuid.uuid4().hex + uuid.uuid4().hex
             self.token_updated_at = timezone.now()
@@ -278,7 +284,7 @@ class Account(TimeAuditModel):
     id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, primary_key=True)
     user = models.ForeignKey("db.User", on_delete=models.CASCADE, related_name="accounts")
     provider_account_id = models.CharField(max_length=255)
-    provider = models.CharField(choices=PROVIDER_CHOICES)
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
     access_token = models.TextField()
     access_token_expired_at = models.DateTimeField(null=True)
     refresh_token = models.TextField(null=True, blank=True)

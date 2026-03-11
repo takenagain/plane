@@ -47,6 +47,7 @@ from plane.space.utils.grouper import (
 
 from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 from plane.app.serializers import (
     CommentReactionSerializer,
     IssueCommentSerializer,
@@ -84,7 +85,7 @@ class ProjectIssuesPublicEndpoint(BaseAPIView):
         project_id = deploy_board.entity_identifier
         slug = deploy_board.workspace.slug
 
-        issue_queryset = (
+        issue_queryset = annotate_issue_queryset_with_time_logged(
             Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id)
             .select_related("workspace", "project", "state", "parent")
             .prefetch_related("assignees", "labels", "issue_module__module")

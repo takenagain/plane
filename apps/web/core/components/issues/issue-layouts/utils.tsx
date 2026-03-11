@@ -115,6 +115,7 @@ export const getGroupByColumns = ({
     project: getProjectColumns,
     cycle: getCycleColumns,
     module: getModuleColumns,
+    time_logged: getTimeLoggedColumns,
     state: getStateColumns,
     "state_detail.group": getStateGroupColumns,
     priority: getPriorityColumns,
@@ -206,6 +207,24 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
     payload: {},
   });
   return modules;
+};
+
+const getTimeLoggedColumns = (): IGroupByColumn[] => {
+  const allIssues = Object.values(store.issue.issues.issuesMap ?? {});
+  const values = uniq(
+    allIssues
+      .map((issue) => issue.time_logged)
+      .filter((timeLogged): timeLogged is number => typeof timeLogged === "number")
+      .sort((a, b) => a - b)
+  );
+
+  const columns = values.map((timeLogged) => ({
+    id: String(timeLogged),
+    name: `${timeLogged}m`,
+    payload: {},
+  }));
+
+  return columns;
 };
 
 const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefined => {

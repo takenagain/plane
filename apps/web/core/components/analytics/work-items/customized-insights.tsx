@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -15,7 +16,7 @@ import { cn } from "@plane/utils";
 // plane web components
 import AnalyticsSectionWrapper from "../analytics-section-wrapper";
 import { AnalyticsSelectParams } from "../select/analytics-params";
-import PriorityChart from "./priority-chart";
+import AnalyticsBarChart from "./analytics-bar-chart";
 
 const CustomizedInsights = observer(function CustomizedInsights({
   peekView,
@@ -28,8 +29,13 @@ const CustomizedInsights = observer(function CustomizedInsights({
   const { workspaceSlug } = useParams();
   const { control, watch, setValue } = useForm<IAnalyticsParams>({
     defaultValues: {
-      x_axis: ChartXAxisProperty.PRIORITY,
-      y_axis: isEpic ? ChartYAxisMetric.EPIC_WORK_ITEM_COUNT : ChartYAxisMetric.WORK_ITEM_COUNT,
+      x_axis: peekView ? ChartXAxisProperty.LOGGED_DAY_OF_WEEK : ChartXAxisProperty.PRIORITY,
+      y_axis: peekView
+        ? ChartYAxisMetric.HOURS_LOGGED
+        : isEpic
+          ? ChartYAxisMetric.EPIC_WORK_ITEM_COUNT
+          : ChartYAxisMetric.WORK_ITEM_COUNT,
+      group_by: peekView ? ChartXAxisProperty.WORK_ITEMS : undefined,
     },
   });
 
@@ -38,6 +44,33 @@ const CustomizedInsights = observer(function CustomizedInsights({
     y_axis: watch("y_axis"),
     group_by: watch("group_by"),
   };
+
+  // when the user selects Hours logged we want sensible defaults
+  const watchedYAxis = params.y_axis;
+  useEffect(() => {
+    if (watchedYAxis === ChartYAxisMetric.HOURS_LOGGED) {
+      if (params.x_axis !== ChartXAxisProperty.LOGGED_DAY_OF_WEEK) {
+        setValue("x_axis", ChartXAxisProperty.LOGGED_DAY_OF_WEEK);
+      }
+
+      if (params.group_by !== ChartXAxisProperty.WORK_ITEMS) {
+        setValue("group_by", ChartXAxisProperty.WORK_ITEMS);
+      }
+
+      return;
+    }
+
+    if (params.x_axis === ChartXAxisProperty.LOGGED_DAY_OF_WEEK || params.x_axis === ChartXAxisProperty.WORK_ITEMS) {
+      setValue("x_axis", ChartXAxisProperty.PRIORITY);
+    }
+
+    if (
+      params.group_by === ChartXAxisProperty.LOGGED_DAY_OF_WEEK ||
+      params.group_by === ChartXAxisProperty.WORK_ITEMS
+    ) {
+      setValue("group_by", undefined);
+    }
+  }, [watchedYAxis, params.x_axis, params.group_by, setValue]);
 
   return (
     <AnalyticsSectionWrapper
@@ -54,7 +87,7 @@ const CustomizedInsights = observer(function CustomizedInsights({
         />
       }
     >
-      <PriorityChart x_axis={params.x_axis} y_axis={params.y_axis} group_by={params.group_by} />
+      <AnalyticsBarChart x_axis={params.x_axis} y_axis={params.y_axis} group_by={params.group_by} />
     </AnalyticsSectionWrapper>
   );
 });

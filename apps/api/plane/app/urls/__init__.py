@@ -7,6 +7,7 @@ from .api import urlpatterns as api_urls
 from .asset import urlpatterns as asset_urls
 from .cycle import urlpatterns as cycle_urls
 from .estimate import urlpatterns as estimate_urls
+from .exporter import urlpatterns as exporter_urls
 from .external import urlpatterns as external_urls
 from .intake import urlpatterns as intake_urls
 from .issue import urlpatterns as issue_urls
@@ -16,12 +17,12 @@ from .page import urlpatterns as page_urls
 from .project import urlpatterns as project_urls
 from .search import urlpatterns as search_urls
 from .state import urlpatterns as state_urls
+from .timezone import urlpatterns as timezone_urls
 from .user import urlpatterns as user_urls
 from .views import urlpatterns as view_urls
 from .webhook import urlpatterns as webhook_urls
+from .worklog import urlpatterns as worklog_urls
 from .workspace import urlpatterns as workspace_urls
-from .timezone import urlpatterns as timezone_urls
-from .exporter import urlpatterns as exporter_urls
 
 urlpatterns = [
     *analytic_urls,
@@ -44,4 +45,5 @@ urlpatterns = [
     *webhook_urls,
     *timezone_urls,
     *exporter_urls,
+    *worklog_urls,
 ]

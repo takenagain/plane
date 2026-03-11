@@ -21,22 +21,24 @@ import WorkItemsInsightTable from "../workitems-insight-table";
 type Props = {
   fullScreen: boolean;
   projectDetails: IProject | undefined;
+  projectId?: string;
   cycleDetails: ICycle | undefined;
   moduleDetails: IModule | undefined;
   isEpic?: boolean;
 };
 
 export const WorkItemsModalMainContent = observer(function WorkItemsModalMainContent(props: Props) {
-  const { projectDetails, cycleDetails, moduleDetails, fullScreen, isEpic } = props;
+  const { projectDetails, projectId, cycleDetails, moduleDetails, fullScreen, isEpic } = props;
   const { updateSelectedProjects, updateSelectedCycle, updateSelectedModule, updateIsPeekView } = useAnalytics();
   const [isModalConfigured, setIsModalConfigured] = useState(false);
+  const selectedProjectId = projectDetails?.id ?? projectId;
 
   useEffect(() => {
     updateIsPeekView(true);
 
     // Handle project selection
-    if (projectDetails?.id) {
-      updateSelectedProjects([projectDetails.id]);
+    if (selectedProjectId) {
+      updateSelectedProjects([selectedProjectId]);
     }
 
     // Handle cycle selection
@@ -58,7 +60,7 @@ export const WorkItemsModalMainContent = observer(function WorkItemsModalMainCon
       updateIsPeekView(false);
     };
   }, [
-    projectDetails?.id,
+    selectedProjectId,
     cycleDetails?.id,
     moduleDetails?.id,
     updateSelectedProjects,

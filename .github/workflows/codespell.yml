@@ -3,10 +3,11 @@
 name: Codespell
 
 on:
+  workflow_dispatch:
   push:
-    branches: [preview]
+    branches: [preview, staging, canary, master]
   pull_request:
-    branches: [preview]
+    branches: [preview, staging, canary, master]
 
 permissions:
   contents: read
@@ -15,6 +16,7 @@ jobs:
   codespell:
     name: Check for spelling errors
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
 
     steps:
       - name: Checkout

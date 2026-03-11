@@ -38,6 +38,7 @@ def create_user(db, user_data):
     """Create and return a user instance"""
     user = User.objects.create(
         email=user_data["email"],
+        username=user_data["email"],
         first_name=user_data["first_name"],
         last_name=user_data["last_name"],
     )

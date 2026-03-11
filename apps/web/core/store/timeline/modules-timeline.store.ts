@@ -6,7 +6,7 @@
 
 import { autorun } from "mobx";
 // Store
-import type { RootStore } from "@/plane-web/store/root.store";
+import type { CoreRootStore } from "@/store/root.store";
 import { BaseTimeLineStore } from "@/plane-web/store/timeline/base-timeline.store";
 import type { IBaseTimelineStore } from "@/plane-web/store/timeline/base-timeline.store";
 
@@ -15,7 +15,7 @@ export interface IModulesTimeLineStore extends IBaseTimelineStore {
 }
 
 export class ModulesTimeLineStore extends BaseTimeLineStore implements IModulesTimeLineStore {
-  constructor(_rootStore: RootStore) {
+  constructor(_rootStore: CoreRootStore) {
     super(_rootStore);
 
     autorun(() => {

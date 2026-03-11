@@ -174,6 +174,7 @@ class IssueSerializer(BaseSerializer):
     issue_link = IssueLinkSerializer(read_only=True, many=True)
     issue_attachment = IssueAttachmentSerializer(read_only=True, many=True)
     sub_issues_count = serializers.IntegerField(read_only=True)
+    time_logged = serializers.IntegerField(read_only=True)
     issue_reactions = IssueReactionSerializer(read_only=True, many=True)
 
     class Meta:

@@ -49,20 +49,23 @@ def _contains_suspicious_patterns(path: str) -> bool:
 
 def get_allowed_hosts() -> list[str]:
     """Get the allowed hosts from the settings."""
-    base_origin = settings.WEB_URL or settings.APP_BASE_URL
-
     allowed_hosts = []
-    if base_origin:
+    for base_origin in (settings.WEB_URL, settings.APP_BASE_URL):
+        if not base_origin:
+            continue
         host = urlparse(base_origin).netloc
-        allowed_hosts.append(host)
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
     if settings.ADMIN_BASE_URL:
         # Get only the host
         host = urlparse(settings.ADMIN_BASE_URL).netloc
-        allowed_hosts.append(host)
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
     if settings.SPACE_BASE_URL:
         # Get only the host
         host = urlparse(settings.SPACE_BASE_URL).netloc
-        allowed_hosts.append(host)
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
     return allowed_hosts
 
 
@@ -82,6 +85,9 @@ def validate_next_path(next_path: str) -> str:
     # Block absolute URLs or anything with scheme/netloc
     if parsed_url.scheme or parsed_url.netloc:
         next_path = parsed_url.path  # Extract only the path component
+
+    if next_path and not next_path.startswith("/"):
+        next_path = f"/{next_path.lstrip('/')}"
 
     # Must start with a forward slash and not be empty
     if not next_path or not next_path.startswith("/"):

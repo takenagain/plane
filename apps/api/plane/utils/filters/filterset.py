@@ -9,6 +9,7 @@ from django.db.models import Q
 from django_filters import FilterSet, filters
 
 from plane.db.models import Issue
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 
 
 class UUIDInFilter(filters.BaseInFilter, filters.UUIDFilter):
@@ -156,6 +157,8 @@ class IssueFilterSet(BaseFilterSet):
 
     subscriber_id = filters.UUIDFilter(method="filter_subscriber_id")
     subscriber_id__in = UUIDInFilter(method="filter_subscriber_id_in", lookup_expr="in")
+    time_logged = filters.NumberFilter(method="filter_time_logged")
+    time_logged__range = filters.CharFilter(method="filter_time_logged_range")
 
     class Meta:
         model = Issue
@@ -264,3 +267,36 @@ class IssueFilterSet(BaseFilterSet):
             issue_subscribers__subscriber_id__in=value,
             issue_subscribers__deleted_at__isnull=True,
         )
+
+    def filter_time_logged(self, queryset, name, value):
+        """Filter by total logged time (minutes), including active tracking elapsed minutes."""
+        if value in (None, ""):
+            return queryset
+
+        annotated_queryset = annotate_issue_queryset_with_time_logged(queryset)
+        return annotated_queryset.filter(time_logged=value)
+
+    def filter_time_logged_range(self, queryset, name, value):
+        """Filter by logged time range: `min,max` (minutes)."""
+        if value in (None, ""):
+            return queryset
+
+        if isinstance(value, str):
+            values = [v.strip() for v in value.split(",") if v.strip() != ""]
+        elif isinstance(value, (list, tuple)):
+            values = [str(v).strip() for v in value if str(v).strip() != ""]
+        else:
+            values = []
+
+        if len(values) != 2:
+            return queryset.none()
+
+        try:
+            start = int(float(values[0]))
+            end = int(float(values[1]))
+        except (TypeError, ValueError):
+            return queryset.none()
+
+        min_value, max_value = sorted([start, end])
+        annotated_queryset = annotate_issue_queryset_with_time_logged(queryset)
+        return annotated_queryset.filter(time_logged__range=(min_value, max_value))

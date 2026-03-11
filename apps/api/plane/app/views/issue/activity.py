@@ -9,16 +9,17 @@ from itertools import chain
 from django.db.models import Prefetch, Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.gzip import gzip_page
+from rest_framework import status
 
 # Third Party imports
 from rest_framework.response import Response
-from rest_framework import status
+
+from plane.app.permissions import ROLE, ProjectEntityPermission, allow_permission
+from plane.app.serializers import IssueActivitySerializer, IssueCommentSerializer
+from plane.db.models import CommentReaction, IntakeIssue, IssueActivity, IssueComment
 
 # Module imports
 from .. import BaseAPIView
-from plane.app.serializers import IssueActivitySerializer, IssueCommentSerializer
-from plane.app.permissions import ProjectEntityPermission, allow_permission, ROLE
-from plane.db.models import IssueActivity, IssueComment, CommentReaction, IntakeIssue
 
 
 class IssueActivityEndpoint(BaseAPIView):
@@ -77,6 +78,9 @@ class IssueActivityEndpoint(BaseAPIView):
         if request.GET.get("activity_type", None) == "issue-comment":
             issue_comments = IssueCommentSerializer(issue_comments, many=True).data
             return Response(issue_comments, status=status.HTTP_200_OK)
+
+        issue_activities = IssueActivitySerializer(issue_activities, many=True).data
+        issue_comments = IssueCommentSerializer(issue_comments, many=True).data
 
         result_list = sorted(
             chain(issue_activities, issue_comments),

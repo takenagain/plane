@@ -38,6 +38,7 @@ from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 from .. import BaseViewSet
 from plane.utils.host import base_host
 
@@ -51,7 +52,7 @@ class ModuleIssueViewSet(BaseViewSet):
     filterset_class = IssueFilterSet
 
     def apply_annotations(self, issues):
-        return (
+        return annotate_issue_queryset_with_time_logged(
             issues.annotate(
                 cycle_id=Subquery(
                     CycleIssue.objects.filter(issue=OuterRef("id"), deleted_at__isnull=True).values("cycle_id")[:1]

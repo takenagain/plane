@@ -18,6 +18,7 @@ class UserFactory(factory.django.DjangoModelFactory):
 
     id = factory.LazyFunction(uuid4)
     email = factory.Sequence(lambda n: f"user{n}@plane.so")
+    username = factory.LazyAttribute(lambda obj: obj.email)
     password = factory.PostGenerationMethodCall("set_password", "password")
     first_name = factory.Sequence(lambda n: f"First{n}")
     last_name = factory.Sequence(lambda n: f"Last{n}")
@@ -64,6 +65,7 @@ class ProjectFactory(factory.django.DjangoModelFactory):
 
     id = factory.LazyFunction(uuid4)
     name = factory.Sequence(lambda n: f"Project {n}")
+    identifier = factory.Sequence(lambda n: f"P{n}".upper())
     workspace = factory.SubFactory(WorkspaceFactory)
     created_by = factory.SelfAttribute("workspace.owner")
     updated_by = factory.SelfAttribute("workspace.owner")

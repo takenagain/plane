@@ -120,6 +120,7 @@ export type GroupByColumnTypes =
   | "project"
   | "cycle"
   | "module"
+  | "time_logged"
   | "state"
   | "state_detail.group"
   | "priority"

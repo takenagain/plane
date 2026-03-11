@@ -77,6 +77,7 @@ export const ModuleIssuesMobileHeader = observer(function ModuleIssuesMobileHead
         onClose={() => setAnalyticsModal(false)}
         moduleDetails={moduleDetails ?? undefined}
         projectDetails={currentProjectDetails}
+        projectId={projectId?.toString()}
       />
       <div className="flex justify-evenly border-b border-subtle bg-surface-1 py-2">
         <CustomMenu

@@ -130,6 +130,7 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
     <>
       <WorkItemsModal
         projectDetails={currentProjectDetails}
+        projectId={projectId?.toString()}
         isOpen={analyticsModal}
         onClose={() => setAnalyticsModal(false)}
         cycleDetails={cycleDetails ?? undefined}

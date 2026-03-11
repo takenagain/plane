@@ -302,10 +302,11 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
         Create a new development cycle with specified name, description, and date range.
         Supports external ID tracking for integration purposes.
         """
+        project = Project.objects.get(workspace__slug=slug, pk=project_id)
         if (request.data.get("start_date", None) is None and request.data.get("end_date", None) is None) or (
             request.data.get("start_date", None) is not None and request.data.get("end_date", None) is not None
         ):
-            serializer = CycleCreateSerializer(data=request.data, context={"request": request})
+            serializer = CycleCreateSerializer(data=request.data, context={"request": request, "project": project})
             if serializer.is_valid():
                 if (
                     request.data.get("external_id")
@@ -343,7 +344,7 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
                 )
 
                 cycle = Cycle.objects.get(pk=serializer.instance.id)
-                serializer = CycleSerializer(cycle)
+                serializer = CycleSerializer(cycle, context={"project": project})
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -495,6 +496,7 @@ class CycleDetailAPIEndpoint(BaseAPIView):
         Completed cycles can only have their sort order changed.
         """
         cycle = Cycle.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
+        project = Project.objects.get(workspace__slug=slug, pk=project_id)
 
         current_instance = json.dumps(CycleSerializer(cycle).data, cls=DjangoJSONEncoder)
 
@@ -516,7 +518,12 @@ class CycleDetailAPIEndpoint(BaseAPIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        serializer = CycleUpdateSerializer(cycle, data=request.data, partial=True, context={"request": request})
+        serializer = CycleUpdateSerializer(
+            cycle,
+            data=request.data,
+            partial=True,
+            context={"request": request, "project": project},
+        )
         if serializer.is_valid():
             if (
                 request.data.get("external_id")
@@ -548,7 +555,7 @@ class CycleDetailAPIEndpoint(BaseAPIView):
                 origin=base_host(request=request, is_app=True),
             )
             cycle = Cycle.objects.get(pk=serializer.instance.id)
-            serializer = CycleSerializer(cycle)
+            serializer = CycleSerializer(cycle, context={"project": project})
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -24,6 +24,7 @@ from plane.app.serializers import (
     IssueStateIntakeSerializer,
 )
 from plane.utils.issue_filters import issue_filters
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.db.models.intake import SourceType
 
@@ -62,7 +63,7 @@ class IntakeIssuePublicViewSet(BaseViewSet):
             )
 
         filters = issue_filters(request.query_params, "GET")
-        issues = (
+        issues = annotate_issue_queryset_with_time_logged(
             Issue.objects.filter(
                 issue_intake__intake_id=intake_id,
                 workspace_id=project_deploy_board.workspace_id,

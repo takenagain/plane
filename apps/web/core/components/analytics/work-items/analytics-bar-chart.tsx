@@ -18,14 +18,15 @@ import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { BarChart } from "@plane/propel/charts/bar-chart";
 import { EmptyStateCompact } from "@plane/propel/empty-state";
-import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty, ChartYAxisMetric } from "@plane/types";
+import { ChartYAxisMetric } from "@plane/types";
+import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty } from "@plane/types";
 // plane web components
 import { generateExtendedColors, parseChartData } from "@/components/chart/utils";
 // hooks
 import { useAnalytics } from "@/hooks/store/use-analytics";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { AnalyticsService } from "@/services/analytics.service";
-import { exportCSV } from "../export";
+import { exportCSV, exportTimeLoggedCsv } from "../export";
 import { DataTable } from "../insight-table/data-table";
 import { ChartLoader } from "../loaders";
 import { generateBarColor } from "./utils";
@@ -48,7 +49,7 @@ interface Props {
 }
 
 const analyticsService = new AnalyticsService();
-const PriorityChart = observer(function PriorityChart(props: Props) {
+const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
   const { x_axis, y_axis, group_by } = props;
   const { t } = useTranslation();
   // store hooks
@@ -142,6 +143,14 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
     () => ANALYTICS_Y_AXIS_VALUES.find((item) => item.value === props.y_axis)?.label ?? props.y_axis,
     [props.y_axis]
   );
+  const countLabel = props.y_axis === ChartYAxisMetric.HOURS_LOGGED ? "Hours logged" : "Count";
+  const yAxisChartLabel = useMemo(
+    () =>
+      props.y_axis === ChartYAxisMetric.HOURS_LOGGED
+        ? yAxisLabel
+        : t("common.no_of", { entity: yAxisLabel.replace("_", " ") }),
+    [props.y_axis, t, yAxisLabel]
+  );
   const xAxisLabel = useMemo(
     () => ANALYTICS_X_AXIS_VALUES.find((item) => item.value === props.x_axis)?.label ?? props.x_axis,
     [props.x_axis]
@@ -162,18 +171,22 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
       },
       {
         accessorKey: "count",
-        header: () => <div className="text-right">Count</div>,
-        cell: ({ row }) => <div className="text-right">{row.original.count}</div>,
+        header: () => <div className="text-right">{countLabel}</div>,
+        cell: ({ row }) => (
+          <div className="text-right">
+            {props.y_axis === ChartYAxisMetric.HOURS_LOGGED ? row.original.count.toFixed(2) : row.original.count}
+          </div>
+        ),
         meta: {
           export: {
-            key: "Count",
+            key: countLabel,
             value: (row) => row.original.count,
-            label: "Count",
+            label: countLabel,
           },
         },
       },
     ],
-    [xAxisLabel]
+    [countLabel, props.y_axis, xAxisLabel]
   );
 
   const columns: ColumnDef<TChartDatum>[] = useMemo(
@@ -215,7 +228,7 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
             }}
             yAxis={{
               key: "count",
-              label: t("common.no_of", { entity: yAxisLabel.replace("_", " ") }),
+              label: yAxisChartLabel,
               offset: -60,
               dx: -26,
             }}
@@ -228,9 +241,25 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
               <Button
                 variant="secondary"
                 prependIcon={<Download className="h-3.5 w-3.5" />}
-                onClick={() => exportCSV(table.getRowModel().rows, [...defaultColumns, ...columns], workspaceSlug)}
+                onClick={async () => {
+                  if (props.y_axis === ChartYAxisMetric.HOURS_LOGGED) {
+                    const params = {
+                      project_ids: selectedProjects?.join(","),
+                      cycle_id: selectedCycle || undefined,
+                      module_id: selectedModule || undefined,
+                    };
+
+                    try {
+                      await exportTimeLoggedCsv(workspaceSlug, params);
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  } else {
+                    exportCSV(table.getRowModel().rows, [...defaultColumns, ...columns], workspaceSlug);
+                  }
+                }}
               >
-                <div>{t("exporter.csv.short_description")}</div>
+                <div>Export as CSV</div>
               </Button>
             )}
           />
@@ -247,4 +276,4 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
   );
 });
 
-export default PriorityChart;
+export default AnalyticsBarChart;

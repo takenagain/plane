@@ -170,6 +170,14 @@ export const ANALYTICS_X_AXIS_VALUES: { value: ChartXAxisProperty; label: string
     value: ChartXAxisProperty.CREATED_AT,
     label: "Created date",
   },
+  {
+    value: ChartXAxisProperty.LOGGED_DAY_OF_WEEK,
+    label: "Day of week",
+  },
+  {
+    value: ChartXAxisProperty.WORK_ITEMS,
+    label: "Work item",
+  },
 ];
 
 export const ANALYTICS_Y_AXIS_VALUES: { value: ChartYAxisMetric; label: string }[] = [
@@ -184,6 +192,10 @@ export const ANALYTICS_Y_AXIS_VALUES: { value: ChartYAxisMetric; label: string }
   {
     value: ChartYAxisMetric.EPIC_WORK_ITEM_COUNT,
     label: "Epic",
+  },
+  {
+    value: ChartYAxisMetric.HOURS_LOGGED,
+    label: "Hours logged",
   },
 ];
 

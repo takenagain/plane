@@ -22,6 +22,7 @@ from plane.db.models import (
     State,
     WorkspaceMember,
 )
+from plane.utils.time_logged import annotate_issue_queryset_with_time_logged
 
 
 def issue_queryset_grouper(
@@ -93,6 +94,7 @@ def issue_on_results(
         "project_id",
         "parent_id",
         "cycle_id",
+        "time_logged",
         "created_by",
         "state__group",
     ]
@@ -247,5 +249,13 @@ def issue_group_values(
             return list(queryset.filter(project_id=project_id))
         else:
             return list(queryset)
+
+    if field == "time_logged":
+        if queryset is None:
+            return []
+        queryset = annotate_issue_queryset_with_time_logged(queryset)
+        if project_id:
+            return list(queryset.filter(project_id=project_id).values_list("time_logged", flat=True).distinct())
+        return list(queryset.values_list("time_logged", flat=True).distinct())
 
     return []

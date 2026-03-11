@@ -6,14 +6,12 @@ from typing import Dict, Any, Tuple, Optional, List, Union
 
 
 # Django imports
-from django.db.models import (
-    Count,
-    F,
-    QuerySet,
-    Aggregate,
-)
+from django.db.models import Aggregate, Case, Count, F, IntegerField, QuerySet, Sum, Value, When
+from django.db.models.functions import Cast, Extract, ExtractWeekDay, Greatest, Now
+import calendar
 
 from plane.db.models import Issue
+from plane.db.models.worklog import Worklog
 from rest_framework.exceptions import ValidationError
 
 
@@ -31,7 +29,11 @@ x_axis_mapper = {
     "CREATED_AT": "CREATED_AT",
     "COMPLETED_AT": "COMPLETED_AT",
     "CREATED_BY": "CREATED_BY",
+    "LOGGED_DAY_OF_WEEK": "LOGGED_DAY_OF_WEEK",
+    "WORK_ITEMS": "WORK_ITEMS",
 }
+
+hours_logged_only_axis = {"LOGGED_DAY_OF_WEEK", "WORK_ITEMS"}
 
 
 def get_y_axis_filter(y_axis: str) -> Dict[str, Any]:
@@ -150,11 +152,155 @@ def build_simple_chart_response(
     ]
 
 
+def build_time_logged_chart(
+    queryset: QuerySet[Issue],
+    x_axis: str,
+    group_by: Optional[str] = None,
+    date_filter: Optional[Tuple[str, str]] = None,
+) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, str]]]:
+    """Return hours-logged chart data (hours rather than counts).
+
+    *queryset* is the issue queryset already filtered by workspace/project/etc.
+    The *date_filter* tuple, if provided, should be applied against worklogs.logged_at,
+    not the issue.created_at.
+
+    x_axis may be ``LOGGED_DAY_OF_WEEK`` to bucket by weekday; otherwise it behaves
+    like the normal axes but using issue fields on the related worklogs.
+    Grouping works similarly, with the special key ``WORK_ITEMS`` forcing a split by
+    individual issue.
+    """
+    # build base worklog queryset constrained to the issues of interest
+    worklogs = Worklog.objects.filter(issue__in=queryset, deleted_at__isnull=True)
+    if date_filter:
+        start, end = date_filter
+        worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)
+
+    elapsed_minutes = Greatest(
+        Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
+        Value(0),
+    )
+    duration_aggregate = Sum(
+        Case(
+            When(duration=0, then=elapsed_minutes),
+            default=F("duration"),
+            output_field=IntegerField(),
+        )
+    )
+
+    # helper to convert weekday numbers to names
+    def weekday_name(num: int) -> str:
+        # ExtractWeekDay returns 1=Sunday, 2=Monday, … 7=Saturday
+        return calendar.day_name[(num - 2) % 7]
+
+    # ensure consistent Monday→Sunday order
+    WEEKDAY_ORDER = [2, 3, 4, 5, 6, 7, 1]
+
+    schema: Dict[str, str] = {}
+    results: Dict[Any, Dict[str, Any]] = {}
+
+    # dispatch based on x_axis
+    if x_axis == "LOGGED_DAY_OF_WEEK":
+        worklogs = worklogs.annotate(day_num=ExtractWeekDay("logged_at"))
+        key_field = "day_num"
+        name_mapper = weekday_name
+        ordered_keys = WEEKDAY_ORDER
+    else:
+        # reuse mapping from original function and prefix issue__
+        field_mapping = get_x_axis_field()
+        if x_axis not in field_mapping:
+            raise ValidationError(f"Invalid x_axis field: {x_axis}")
+        id_field, name_field, additional_filter = field_mapping.get(x_axis)
+        if additional_filter:
+            queryset = queryset.filter(**additional_filter)
+            worklogs = worklogs.filter(**{f"issue__{k}": v for k, v in additional_filter.items()})
+        key_field = f"issue__{id_field}"
+        name_field_res = f"issue__{name_field}" if name_field else key_field
+        worklogs = worklogs.annotate(key_val=F(key_field), name_val=F(name_field_res))
+
+        def name_mapper(value: Any) -> Any:
+            return value
+
+        ordered_keys = None
+
+    # now handle grouping (stacked) if requested
+    if group_by:
+        # prepare grouping annotation
+        if group_by == "WORK_ITEMS":
+            worklogs = worklogs.annotate(group_key=F("issue__id"), group_name=F("issue__name"))
+        elif group_by == "LOGGED_DAY_OF_WEEK":
+            worklogs = worklogs.annotate(
+                group_key=ExtractWeekDay("logged_at"),
+                group_name=ExtractWeekDay("logged_at"),
+            )
+        else:
+            field_mapping = get_x_axis_field()
+            if group_by not in field_mapping:
+                raise ValidationError(f"Invalid group_by field: {group_by}")
+            gid_field, gname_field, gfilter = field_mapping.get(group_by)
+            if gfilter:
+                worklogs = worklogs.filter(**{f"issue__{k}": v for k, v in gfilter.items()})
+            worklogs = worklogs.annotate(
+                group_key=F(f"issue__{gid_field}"),
+                group_name=F(f"issue__{gname_field}"),
+            )
+
+        # aggregate by both key and group_key
+        agg = worklogs.values(key_field, "group_key", "group_name").annotate(total=duration_aggregate)
+        # build response dict
+        for item in agg:
+            k = item.get(key_field)
+            if x_axis == "LOGGED_DAY_OF_WEEK":
+                k = k
+            if k not in results:
+                results[k] = {"key": k, "name": name_mapper(k), "count": 0}
+            raw_group_key = item.get("group_key") or "none"
+            gk = str(raw_group_key)
+            if group_by == "LOGGED_DAY_OF_WEEK":
+                schema[gk] = weekday_name(raw_group_key)
+            else:
+                schema[gk] = item.get("group_name") or gk
+            hours = (item.get("total", 0) or 0) / 60
+            results[k][gk] = results[k].get(gk, 0) + hours
+            results[k]["count"] += hours
+        # sort by weekday order if applicable
+        data = []
+        if ordered_keys:
+            for k in ordered_keys:
+                if k in results:
+                    data.append(results[k])
+                else:
+                    data.append({"key": k, "name": name_mapper(k), "count": 0})
+        else:
+            data = list(results.values())
+    else:
+        # simple chart: aggregate only by key
+        if x_axis == "LOGGED_DAY_OF_WEEK":
+            agg = worklogs.values("day_num").annotate(total=duration_aggregate)
+            # build a dict for lookup
+            lookup = {item["day_num"]: item["total"] for item in agg}
+            data = []
+            for k in ordered_keys:
+                hours = (lookup.get(k, 0) or 0) / 60
+                data.append({"key": k, "name": name_mapper(k), "count": hours})
+            schema = {}
+        else:
+            agg = worklogs.values("key_val", "name_val").annotate(total=duration_aggregate)
+            data = [
+                {
+                    "key": itm.get("key_val") or "None",
+                    "name": itm.get("name_val") or itm.get("key_val") or "None",
+                    "count": (itm.get("total", 0) or 0) / 60,
+                }
+                for itm in agg
+            ]
+            schema = {}
+    return {"data": data, "schema": schema}
+
+
 def build_analytics_chart(
     queryset: QuerySet[Issue],
     x_axis: str,
     group_by: Optional[str] = None,
-    date_filter: Optional[str] = None,
 ) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, str]]]:
     # Validate x_axis
     if x_axis not in x_axis_mapper:
@@ -163,7 +309,12 @@ def build_analytics_chart(
     # Validate group_by
     if group_by and group_by not in x_axis_mapper:
         raise ValidationError(f"Invalid group_by field: {group_by}")
+    if x_axis in hours_logged_only_axis:
+        raise ValidationError(f"x_axis '{x_axis}' is only supported with HOURS_LOGGED.")
+    if group_by and group_by in hours_logged_only_axis:
+        raise ValidationError(f"group_by '{group_by}' is only supported with HOURS_LOGGED.")
 
+    # existing behaviour returns counts only
     field_mapping = get_x_axis_field()
 
     id_field, name_field, additional_filter = field_mapping.get(x_axis, (None, None, {}))

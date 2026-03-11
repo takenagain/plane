@@ -37,6 +37,7 @@ class IssueStateIntakeSerializer(BaseSerializer):
     label_details = LabelLiteSerializer(read_only=True, source="labels", many=True)
     assignee_details = UserLiteSerializer(read_only=True, source="assignees", many=True)
     sub_issues_count = serializers.IntegerField(read_only=True)
+    time_logged = serializers.IntegerField(read_only=True)
     bridge_id = serializers.UUIDField(read_only=True)
     issue_intake = IntakeIssueLiteSerializer(read_only=True, many=True)
 

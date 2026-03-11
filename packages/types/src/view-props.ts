@@ -21,6 +21,7 @@ export type TIssueGroupByOptions =
   | "assignees"
   | "cycle"
   | "module"
+  | "time_logged"
   | "target_date"
   | "team_project"
   | null;
@@ -54,7 +55,9 @@ export type TIssueOrderByOptions =
   | "attachment_count"
   | "-attachment_count"
   | "sub_issues_count"
-  | "-sub_issues_count";
+  | "-sub_issues_count"
+  | "time_logged"
+  | "-time_logged";
 
 export type TIssueGroupingFilters = "active" | "backlog";
 
@@ -73,6 +76,7 @@ export type TIssueParams =
   | "module"
   | "start_date"
   | "target_date"
+  | "time_logged"
   | "project"
   | "team_project"
   | "group_by"
@@ -109,6 +113,7 @@ export const WORK_ITEM_FILTER_PROPERTY_KEYS = [
   "project_id",
   "created_at",
   "updated_at",
+  "time_logged",
 ] as const;
 export type TWorkItemFilterProperty = (typeof WORK_ITEM_FILTER_PROPERTY_KEYS)[number];
 

@@ -23,7 +23,7 @@ import type {
 } from "@plane/types";
 // types
 import type { IIssue, TIssuesResponse } from "@/types/issue";
-import type { CoreRootStore } from "../root.store";
+import type { RootStore } from "../root.store";
 // constants
 // helpers
 
@@ -67,6 +67,7 @@ export const ISSUE_FILTER_DEFAULT_DATA: Record<TIssueDisplayFilterOptions, keyof
   created_by: "created_by",
   assignees: "assignee_ids",
   target_date: "target_date",
+  time_logged: "time_logged",
 };
 
 export abstract class BaseIssuesStore implements IBaseIssuesStore {
@@ -81,7 +82,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   // root store
   rootIssueStore;
 
-  constructor(_rootStore: CoreRootStore) {
+  constructor(_rootStore: RootStore) {
     makeObservable(this, {
       // observable
       loader: observable,

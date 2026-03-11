@@ -130,6 +130,7 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
         onClose={() => setAnalyticsModal(false)}
         moduleDetails={moduleDetails ?? undefined}
         projectDetails={currentProjectDetails}
+        projectId={projectId?.toString()}
       />
       <Header>
         <Header.LeftItem>

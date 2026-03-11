@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - "preview"
+      - "staging"
     types:
       - "opened"
       - "synchronize"
@@ -22,9 +23,7 @@ jobs:
     name: check:format
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     env:
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
       TURBO_SCM_HEAD: ${{ github.sha }}
@@ -34,6 +33,17 @@ jobs:
         with:
           fetch-depth: 50
           filter: blob:none
+
+      - name: Set Turbo range
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
+            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> $GITHUB_ENV
+          else
+            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> $GITHUB_ENV
+            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -59,14 +69,17 @@ jobs:
       - name: Check formatting
         run: pnpm turbo run check:format --affected
 
+      - name: Shellcheck shell scripts
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          shellcheck scripts/cli/*.sh
+
   # Build packages - required for lint and type checks
   build:
     name: Build packages
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     env:
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
       TURBO_SCM_HEAD: ${{ github.sha }}
@@ -77,6 +90,17 @@ jobs:
         with:
           fetch-depth: 50
           filter: blob:none
+
+      - name: Set Turbo range
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
+            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> $GITHUB_ENV
+          else
+            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> $GITHUB_ENV
+            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -165,6 +189,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 15
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [check:lint, check:types]
     env:
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
       TURBO_SCM_HEAD: ${{ github.sha }}
@@ -175,6 +204,17 @@ jobs:
         with:
           fetch-depth: 50
           filter: blob:none
+
+      - name: Set Turbo range
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
+            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> $GITHUB_ENV
+          else
+            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> $GITHUB_ENV
+            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v6

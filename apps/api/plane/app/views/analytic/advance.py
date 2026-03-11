@@ -2,13 +2,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+import csv
+from io import StringIO
+from typing import Any, Dict, List
+
 from rest_framework.response import Response
 from rest_framework import status
-from typing import Dict, List, Any
-from django.db.models import QuerySet, Q, Count
-from django.http import HttpRequest
-from django.db.models.functions import TruncMonth
+from django.db.models import Case, Count, F, IntegerField, Q, QuerySet, Sum, Value, When
+from django.http import HttpRequest, HttpResponse
+from django.db.models.functions import Cast, Coalesce, Extract, Greatest, Now, TruncMonth
 from django.utils import timezone
+
 from plane.app.views.base import BaseAPIView
 from plane.app.permissions import ROLE, allow_permission
 from plane.db.models import (
@@ -22,7 +26,7 @@ from plane.db.models import (
     Workspace,
     ProjectMember,
 )
-from plane.utils.build_chart import build_analytics_chart
+from plane.utils.build_chart import build_analytics_chart, build_time_logged_chart
 from plane.utils.date_utils import (
     get_analytics_filters,
 )
@@ -288,6 +292,7 @@ class AdvanceAnalyticsChartEndpoint(AdvanceAnalyticsBaseView):
         type = request.GET.get("type", "projects")
         group_by = request.GET.get("group_by", None)
         x_axis = request.GET.get("x_axis", "PRIORITY")
+        y_axis = request.GET.get("y_axis", "WORK_ITEM_COUNT")
 
         if type == "projects":
             return Response(self.project_chart(), status=status.HTTP_200_OK)
@@ -300,14 +305,24 @@ class AdvanceAnalyticsChartEndpoint(AdvanceAnalyticsBaseView):
             )
 
             # Apply date range filter if available
+            date_range = None
             if self.filters["chart_period_range"]:
                 start_date, end_date = self.filters["chart_period_range"]
-                queryset = queryset.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
+                date_range = (start_date, end_date)
+                # only apply to issues when y_axis is not hours logged
+                if y_axis != "HOURS_LOGGED":
+                    queryset = queryset.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
 
-            return Response(
-                build_analytics_chart(queryset, x_axis, group_by),
-                status=status.HTTP_200_OK,
-            )
+            if y_axis == "HOURS_LOGGED":
+                return Response(
+                    build_time_logged_chart(queryset, x_axis, group_by, date_range),
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    build_analytics_chart(queryset, x_axis, group_by),
+                    status=status.HTTP_200_OK,
+                )
 
         elif type == "work-items":
             return Response(
@@ -316,3 +331,100 @@ class AdvanceAnalyticsChartEndpoint(AdvanceAnalyticsBaseView):
             )
 
         return Response({"message": "Invalid type"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
+    """CSV export of hours logged per issue for workspace-level filters."""
+
+    @staticmethod
+    def _sanitize_csv_cell(value: str) -> str:
+        if not value:
+            return ""
+
+        stripped_value = value.lstrip()
+        if stripped_value and stripped_value[0] in ("=", "+", "-", "@"):
+            return f"'{stripped_value}"
+        return value
+
+    def _build_export_response(self, slug: str, queryset: QuerySet | None = None) -> HttpResponse:
+        if queryset is None:
+            queryset = Issue.issue_objects.filter(**self.filters["base_filters"])
+        date_range = None
+        if self.filters.get("chart_period_range"):
+            start_date, end_date = self.filters["chart_period_range"]
+            date_range = (start_date, end_date)
+        # build worklogs subquery
+        from plane.db.models.worklog import Worklog
+
+        worklogs = Worklog.objects.filter(issue__in=queryset, deleted_at__isnull=True)
+        if date_range:
+            start, end = date_range
+            worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)
+
+        elapsed_minutes = Greatest(
+            Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
+            Value(0),
+        )
+
+        issue_hours = list(
+            worklogs.values("issue_id")
+            .annotate(
+                total_minutes=Coalesce(
+                    Sum(
+                        Case(
+                            When(duration=0, then=elapsed_minutes),
+                            default=F("duration"),
+                            output_field=IntegerField(),
+                        )
+                    ),
+                    Value(0),
+                )
+            )
+            .filter(total_minutes__gt=0)
+        )
+        issue_ids = [item["issue_id"] for item in issue_hours]
+        issues = Issue.issue_objects.filter(id__in=issue_ids).select_related("state").prefetch_related("assignees")
+        issue_map = {issue.id: issue for issue in issues}
+
+        # build csv text
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["issue_id", "title", "hours_logged", "status", "priority", "assignee"])
+        for item in issue_hours:
+            issue = issue_map.get(item["issue_id"])
+            if not issue:
+                continue
+            hours = (item["total_minutes"] or 0) / 60
+            assignee_obj = issue.assignees.filter(issue_assignee__deleted_at__isnull=True).first()
+            assignee = assignee_obj.display_name if assignee_obj else ""
+            writer.writerow(
+                [
+                    str(issue.id),
+                    self._sanitize_csv_cell(issue.name),
+                    f"{hours:.2f}",
+                    self._sanitize_csv_cell(issue.state.name if issue.state else ""),
+                    self._sanitize_csv_cell(issue.priority),
+                    self._sanitize_csv_cell(assignee),
+                ]
+            )
+        csv_content = output.getvalue()
+        response = HttpResponse(csv_content, content_type="text/csv")
+        safe_slug = "".join(char for char in slug if char.isalnum() or char in ("-", "_")) or "workspace"
+        response["Content-Disposition"] = f"attachment; filename=hours_logged_{safe_slug}.csv"
+        return response
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def get(self, request: HttpRequest, slug: str) -> HttpResponse:
+        self.initialize_workspace(slug, type="chart")
+        return self._build_export_response(slug)
+
+
+class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
+    """Project-scoped variant reuses most logic but restricts to a project."""
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def get(self, request: HttpRequest, slug: str, project_id: str) -> HttpResponse:
+        # apply workspace base filters then add project constraint
+        self.initialize_workspace(slug, type="chart")
+        queryset = Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
+        return self._build_export_response(slug, queryset=queryset)
