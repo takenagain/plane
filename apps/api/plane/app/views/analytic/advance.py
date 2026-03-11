@@ -336,7 +336,11 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
     def get(self, request: HttpRequest, slug: str) -> Response:
         self.initialize_workspace(slug, type="chart")
         # allow subclass to override the base queryset (e.g. project-scoped)
-        queryset = getattr(self, "_export_queryset", None) or Issue.issue_objects.filter(**self.filters["base_filters"])
+        override_queryset = getattr(self, "_export_queryset", None)
+        if override_queryset is None:
+            queryset = Issue.issue_objects.filter(**self.filters["base_filters"])
+        else:
+            queryset = override_queryset
         date_range = None
         if self.filters.get("chart_period_range"):
             start_date, end_date = self.filters["chart_period_range"]
