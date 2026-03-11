@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('deleted_at', models.DateTimeField(blank=True, null=True, verbose_name='Deleted At')),
                 ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
                 ('description', models.TextField(blank=True, default='', verbose_name='Work Description')),
-                ('duration', models.PositiveIntegerField(help_text='Time spent in minutes', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(99999)], verbose_name='Duration (minutes)')),
+                ('duration', models.PositiveIntegerField(help_text='Time spent in minutes', validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(99999)], verbose_name='Duration (minutes)')),
                 ('logged_at', models.DateField(help_text='The date the work was performed', verbose_name='Date Logged')),
                 ('actor', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='worklogs', to=settings.AUTH_USER_MODEL)),
                 ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
