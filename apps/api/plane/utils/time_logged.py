@@ -4,7 +4,6 @@
 
 from django.db.models import (
     Case,
-    ExpressionWrapper,
     F,
     IntegerField,
     OuterRef,
@@ -28,10 +27,7 @@ def annotate_issue_queryset_with_time_logged(issue_queryset):
     """
 
     elapsed_minutes = Greatest(
-        ExpressionWrapper(
-            Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60),
-            output_field=IntegerField(),
-        ),
+        Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
         Value(0),
     )
 
