@@ -58,17 +58,25 @@ class CycleCreateSerializer(BaseSerializer):
             "deleted_at",
         ]
 
-    def validate(self, data):
+    def _get_project(self):
+        project = self.context.get("project")
+        if project:
+            return project
+
         project_id = self.initial_data.get("project_id") or (
             self.instance.project_id if self.instance and hasattr(self.instance, "project_id") else None
         )
-
         if not project_id:
+            return None
+
+        return Project.objects.filter(id=project_id).first()
+
+    def validate(self, data):
+        project = self._get_project()
+        if not project:
             raise serializers.ValidationError("Project ID is required")
 
-        project = Project.objects.filter(id=project_id).first()
-        if not project:
-            raise serializers.ValidationError("Project not found")
+        project_id = project.id
         if not project.cycle_view:
             raise serializers.ValidationError("Cycles are not enabled for this project")
         if (

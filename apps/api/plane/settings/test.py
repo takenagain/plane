@@ -10,6 +10,7 @@ DEBUG = True
 
 # Send it in a dummy outbox
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+CELERY_BROKER_URL = "memory://"
 
 INSTALLED_APPS.append(  # noqa
     "plane.tests"

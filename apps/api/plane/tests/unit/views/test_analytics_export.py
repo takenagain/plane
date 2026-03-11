@@ -23,6 +23,7 @@ from plane.db.models import Issue, State, Worklog
 def test_time_logged_export_endpoint_returns_csv():
     # setup minimal workspace/project/issue with a worklog
     ws = WorkspaceFactory()
+    WorkspaceMemberFactory(workspace=ws, member=ws.owner, role=20)
     proj = ProjectFactory(workspace=ws)
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="ExportTest")
     Issue.issue_objects.create(project=proj, workspace=ws, name="NoWorklogIssue")
@@ -56,6 +57,7 @@ def test_time_logged_export_endpoint_returns_csv():
 @pytest.mark.django_db
 def test_time_logged_export_endpoint_includes_active_tracking_time():
     ws = WorkspaceFactory()
+    WorkspaceMemberFactory(workspace=ws, member=ws.owner, role=20)
     proj = ProjectFactory(workspace=ws)
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="Active timer issue")
 
@@ -75,6 +77,7 @@ def test_time_logged_export_endpoint_includes_active_tracking_time():
 @pytest.mark.django_db
 def test_time_logged_export_endpoint_excludes_soft_deleted_worklogs():
     ws = WorkspaceFactory()
+    WorkspaceMemberFactory(workspace=ws, member=ws.owner, role=20)
     proj = ProjectFactory(workspace=ws)
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="Deleted worklog issue")
 
@@ -96,6 +99,7 @@ def test_time_logged_export_endpoint_excludes_soft_deleted_worklogs():
 @pytest.mark.django_db
 def test_time_logged_export_endpoint_sanitizes_formula_like_cells():
     ws = WorkspaceFactory()
+    WorkspaceMemberFactory(workspace=ws, member=ws.owner, role=20)
     proj = ProjectFactory(workspace=ws)
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="=Dangerous formula", priority="@urgent")
     issue.state = State.objects.create(project=proj, workspace=ws, name="-In Progress", color="#000000")
@@ -120,6 +124,7 @@ def test_time_logged_export_endpoint_sanitizes_formula_like_cells():
 @pytest.mark.django_db
 def test_time_logged_export_endpoint_sanitizes_tab_prefixed_formula_like_cells():
     ws = WorkspaceFactory()
+    WorkspaceMemberFactory(workspace=ws, member=ws.owner, role=20)
     proj = ProjectFactory(workspace=ws)
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="\t=Tabbed formula")
     Worklog.objects.create(issue=issue, actor=ws.owner, duration=60, logged_at=date.today())
