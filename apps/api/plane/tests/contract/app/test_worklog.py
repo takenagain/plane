@@ -1182,7 +1182,7 @@ class TestWorklogDelete(TestWorklogBase):
         response = member_client.delete(url, format="json")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert Worklog.objects.filter(pk=worklog.id).exists()
+        assert Worklog.all_objects.filter(pk=worklog.id).exists()
 
     @pytest.mark.django_db
     def test_delete_worklog_updates_total(
