@@ -347,7 +347,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
         worklogs = Worklog.objects.filter(issue__in=queryset)
         if date_range:
             start, end = date_range
-            worklogs = worklogs.filter(logged_at__date__gte=start, logged_at__date__lte=end)
+            worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)
 
         issue_hours = worklogs.values("issue_id").annotate(total_minutes=Sum("duration")).filter(total_minutes__gt=0)
         issue_ids = [item["issue_id"] for item in issue_hours]
