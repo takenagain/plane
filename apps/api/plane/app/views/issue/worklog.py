@@ -8,6 +8,8 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 
 # Django imports
+from django.db.models import Case, F, IntegerField, Sum, Value, When
+from django.db.models.functions import Cast, Coalesce, Extract, Greatest, Now
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status
@@ -58,17 +60,24 @@ class WorklogViewSet(BaseViewSet):
         return self.get_queryset().filter(actor=self.request.user, duration=0).order_by("-created_at").first()
 
     def _get_total_duration_with_active_tracking(self) -> int:
-        queryset = self.get_queryset().select_related(None).only("duration", "created_at")
-        now = timezone.now()
-        total_duration = 0
+        elapsed_minutes = Greatest(
+            Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
+            Value(0),
+        )
+        total_duration = self.get_queryset().aggregate(
+            total_duration=Coalesce(
+                Sum(
+                    Case(
+                        When(duration=0, then=elapsed_minutes),
+                        default=F("duration"),
+                        output_field=IntegerField(),
+                    )
+                ),
+                Value(0),
+            )
+        )["total_duration"]
 
-        for worklog in queryset:
-            if worklog.duration == 0:
-                total_duration += _elapsed_minutes_from_created_at(worklog.created_at, now)
-            else:
-                total_duration += worklog.duration
-
-        return total_duration
+        return int(total_duration or 0)
 
     def _get_tracking_target_state(self, issue_id, project_id):
         issue = (
