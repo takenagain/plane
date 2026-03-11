@@ -228,7 +228,10 @@ def build_time_logged_chart(
         if group_by == "WORK_ITEMS":
             worklogs = worklogs.annotate(group_key=F("issue__id"), group_name=F("issue__name"))
         elif group_by == "LOGGED_DAY_OF_WEEK":
-            worklogs = worklogs.annotate(group_key=ExtractWeekDay("logged_at"))
+            worklogs = worklogs.annotate(
+                group_key=ExtractWeekDay("logged_at"),
+                group_name=ExtractWeekDay("logged_at"),
+            )
         else:
             field_mapping = get_x_axis_field()
             if group_by not in field_mapping:
@@ -252,7 +255,10 @@ def build_time_logged_chart(
                 results[k] = {"key": k, "name": name_mapper(k), "count": 0}
             raw_group_key = item.get("group_key") or "none"
             gk = str(raw_group_key)
-            schema[gk] = item.get("group_name") or gk
+            if group_by == "LOGGED_DAY_OF_WEEK":
+                schema[gk] = weekday_name(raw_group_key)
+            else:
+                schema[gk] = item.get("group_name") or gk
             hours = (item.get("total", 0) or 0) / 60
             results[k][gk] = results[k].get(gk, 0) + hours
             results[k]["count"] += hours

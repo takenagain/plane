@@ -90,3 +90,22 @@ def test_time_logged_chart_includes_active_tracking_time():
 
     assert monday_bucket is not None
     assert abs(monday_bucket["count"] - 1.5) < 0.001
+
+
+@pytest.mark.django_db
+def test_time_logged_chart_supports_weekday_grouping():
+    ws = WorkspaceFactory()
+    proj = ProjectFactory(workspace=ws)
+    issue = Issue.issue_objects.create(project=proj, workspace=ws, name="Grouped issue", priority="high")
+
+    monday = date(2023, 1, 2)
+    tuesday = date(2023, 1, 3)
+
+    Worklog.objects.create(issue=issue, actor=None, duration=60, logged_at=monday)
+    Worklog.objects.create(issue=issue, actor=None, duration=120, logged_at=tuesday)
+
+    queryset = Issue.issue_objects.filter(project=proj)
+    response = build_time_logged_chart(queryset, "PRIORITY", "LOGGED_DAY_OF_WEEK", (monday, tuesday))
+
+    assert response["schema"] == {"2": "Monday", "3": "Tuesday"}
+    assert response["data"] == [{"key": "high", "name": "high", "count": 3.0, "2": 1.0, "3": 2.0}]
