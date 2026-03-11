@@ -1348,7 +1348,7 @@ class TestWorklogCreateAndList(TestWorklogBase):
         assert response.status_code == status.HTTP_201_CREATED
         worklog = Worklog.objects.get(pk=response.data["id"])
         assert worklog.created_by_id == member_user.id
-        assert worklog.updated_by_id == member_user.id
+        assert worklog.updated_by_id is None
 
     @pytest.mark.django_db
     def test_guest_cannot_create_worklog(self, guest_client, test_workspace, test_project, test_issue):
