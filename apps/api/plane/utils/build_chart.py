@@ -287,7 +287,6 @@ def build_analytics_chart(
     queryset: QuerySet[Issue],
     x_axis: str,
     group_by: Optional[str] = None,
-    date_filter: Optional[str] = None,
 ) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, str]]]:
     # Validate x_axis
     if x_axis not in x_axis_mapper:

@@ -360,7 +360,7 @@ class ProjectAdvanceAnalyticsChartEndpoint(ProjectAdvanceAnalyticsBaseView):
                 )
             else:
                 return Response(
-                    build_analytics_chart(queryset, x_axis, group_by, date_range),
+                    build_analytics_chart(queryset, x_axis, group_by),
                     status=status.HTTP_200_OK,
                 )
 
