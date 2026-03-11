@@ -203,6 +203,8 @@ class WorklogViewSet(BaseViewSet):
                 issue_id=issue_id,
                 workspace_id=issue.workspace_id,
                 actor=request.user,
+                created_by=request.user,
+                updated_by=request.user,
             )
             self._apply_tracking_issue_defaults(issue_id=issue_id, project_id=project_id)
             issue_activity.delay(

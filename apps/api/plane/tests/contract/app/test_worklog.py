@@ -1338,6 +1338,19 @@ class TestWorklogCreateAndList(TestWorklogBase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.django_db
+    def test_create_worklog_sets_creator_fields(
+        self, member_client, member_user, test_workspace, test_project, test_issue
+    ):
+        url = self.get_worklogs_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        response = member_client.post(url, {"duration": 60, "logged_at": str(date.today())}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        worklog = Worklog.objects.get(pk=response.data["id"])
+        assert worklog.created_by_id == member_user.id
+        assert worklog.updated_by_id == member_user.id
+
+    @pytest.mark.django_db
     def test_guest_cannot_create_worklog(self, guest_client, test_workspace, test_project, test_issue):
         """FR-1 / AC-10: Guest cannot create worklogs."""
         url = self.get_worklogs_url(test_workspace.slug, test_project.id, test_issue.id)
