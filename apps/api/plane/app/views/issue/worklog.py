@@ -238,12 +238,11 @@ class WorklogViewSet(BaseViewSet):
 
         try:
             with transaction.atomic():
-                worklog, created = Worklog.objects.get_or_create(
+                worklog, created = Worklog.objects.filter(deleted_at__isnull=True).get_or_create(
                     project_id=project_id,
                     issue_id=issue_id,
                     actor=request.user,
                     duration=0,
-                    deleted_at__isnull=True,
                     defaults={
                         "description": "",
                         "logged_at": timezone.localdate(),
