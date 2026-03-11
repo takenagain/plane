@@ -164,9 +164,11 @@ services:
       dockerfile: Dockerfile.ce
     restart: always
     ports:
-      - ${LISTEN_HTTP_PORT:-8081}:8081
-      - ${LISTEN_HTTPS_PORT}:443
+      - ${LISTEN_HTTP_PORT:-8081}:${LISTEN_HTTP_PORT:-8081}
+      - ${LISTEN_HTTPS_PORT:-443}:${LISTEN_HTTPS_PORT:-443}
     environment:
+      LISTEN_HTTP_PORT: ${LISTEN_HTTP_PORT:-8081}
+      LISTEN_HTTPS_PORT: ${LISTEN_HTTPS_PORT:-443}
       SITE_ADDRESS: ${SITE_ADDRESS:-:8081}
       FILE_SIZE_LIMIT: ${FILE_SIZE_LIMIT:-5242880}
       BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-uploads}
