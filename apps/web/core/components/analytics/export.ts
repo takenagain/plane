@@ -40,7 +40,7 @@ export const exportTimeLoggedCsv = async (
     if (value) query.append(key, value);
   });
   const url = `/api/workspaces/${workspaceSlug}/analytics/time-logged-export/?${query.toString()}`;
-  const resp = await fetch(url, { method: "GET" });
+  const resp = await fetch(url, { method: "GET", credentials: "same-origin" });
   if (!resp.ok) {
     throw new Error(`Export request failed: ${resp.status}`);
   }
