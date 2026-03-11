@@ -6,14 +6,8 @@ from typing import Dict, Any, Tuple, Optional, List, Union
 
 
 # Django imports
-from django.db.models import (
-    Count,
-    F,
-    QuerySet,
-    Aggregate,
-    Sum,
-)
-from django.db.models.functions import ExtractWeekDay
+from django.db.models import Aggregate, Case, Count, F, IntegerField, QuerySet, Sum, Value, When
+from django.db.models.functions import Cast, Extract, ExtractWeekDay, Greatest, Now
 import calendar
 
 from plane.db.models import Issue
@@ -181,6 +175,18 @@ def build_time_logged_chart(
         start, end = date_filter
         worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)
 
+    elapsed_minutes = Greatest(
+        Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
+        Value(0),
+    )
+    duration_aggregate = Sum(
+        Case(
+            When(duration=0, then=elapsed_minutes),
+            default=F("duration"),
+            output_field=IntegerField(),
+        )
+    )
+
     # helper to convert weekday numbers to names
     def weekday_name(num: int) -> str:
         # ExtractWeekDay returns 1=Sunday, 2=Monday, … 7=Saturday
@@ -236,7 +242,7 @@ def build_time_logged_chart(
             )
 
         # aggregate by both key and group_key
-        agg = worklogs.values(key_field, "group_key", "group_name").annotate(total=Sum("duration"))
+        agg = worklogs.values(key_field, "group_key", "group_name").annotate(total=duration_aggregate)
         # build response dict
         for item in agg:
             k = item.get(key_field)
@@ -263,7 +269,7 @@ def build_time_logged_chart(
     else:
         # simple chart: aggregate only by key
         if x_axis == "LOGGED_DAY_OF_WEEK":
-            agg = worklogs.values("day_num").annotate(total=Sum("duration"))
+            agg = worklogs.values("day_num").annotate(total=duration_aggregate)
             # build a dict for lookup
             lookup = {item["day_num"]: item["total"] for item in agg}
             data = []
@@ -272,7 +278,7 @@ def build_time_logged_chart(
                 data.append({"key": k, "name": name_mapper(k), "count": hours})
             schema = {}
         else:
-            agg = worklogs.values("key_val", "name_val").annotate(total=Sum("duration"))
+            agg = worklogs.values("key_val", "name_val").annotate(total=duration_aggregate)
             data = [
                 {
                     "key": itm.get("key_val") or "None",

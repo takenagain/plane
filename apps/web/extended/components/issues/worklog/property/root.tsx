@@ -24,6 +24,11 @@ type TIssueWorklogProperty = {
   disabled: boolean;
 };
 
+type TDescendantIssueRef = {
+  issueId: string;
+  projectId: string;
+};
+
 const MAX_DESCENDANT_FETCH_REQUESTS = 50;
 
 export const IssueWorklogProperty = observer(function IssueWorklogProperty(props: TIssueWorklogProperty) {
@@ -32,7 +37,7 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
   const rootStore = useContext(StoreContext);
   const { worklogStore } = rootStore;
   const issueService = useMemo(() => new IssueService(), []);
-  const [descendantIssueIds, setDescendantIssueIds] = useState<string[]>([]);
+  const [descendantIssues, setDescendantIssues] = useState<TDescendantIssueRef[]>([]);
 
   useEffect(() => {
     if (!disabled && workspaceSlug && projectId && issueId && worklogStore) {
@@ -42,7 +47,7 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
 
   useEffect(() => {
     if (disabled || !workspaceSlug || !projectId || !issueId || !worklogStore) {
-      setDescendantIssueIds((previousIds) => (previousIds.length === 0 ? previousIds : []));
+      setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
       return;
     }
 
@@ -51,62 +56,91 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
     const fetchDescendantIssueTotals = async () => {
       try {
         const visitedIssueIds = new Set<string>([issueId]);
-        const discoveredIssueIds: string[] = [];
-        const queue: string[] = [issueId];
+        const discoveredIssues: TDescendantIssueRef[] = [];
         let requestCount = 0;
 
-        while (queue.length > 0) {
-          if (requestCount >= MAX_DESCENDANT_FETCH_REQUESTS) {
-            break;
+        const fetchIssueBatch = async (queue: TDescendantIssueRef[]): Promise<void> => {
+          if (queue.length === 0 || requestCount >= MAX_DESCENDANT_FETCH_REQUESTS) {
+            return;
           }
-          const currentIssueId = queue.shift();
-          if (!currentIssueId) continue;
-          requestCount += 1;
 
-          const response = await issueService.subIssues(workspaceSlug, projectId, currentIssueId);
+          const remainingRequests = MAX_DESCENDANT_FETCH_REQUESTS - requestCount;
+          const currentBatch = queue.splice(0, remainingRequests);
+          requestCount += currentBatch.length;
+
+          const batchResponses = await Promise.all(
+            currentBatch.map(async (currentIssueRef) => ({
+              currentIssueRef,
+              response: await issueService.subIssues(workspaceSlug, currentIssueRef.projectId, currentIssueRef.issueId),
+            }))
+          );
           if (cancelled) return;
 
-          const subIssuesResponse = response?.sub_issues;
-          const subIssueList: TIssue[] = Array.isArray(subIssuesResponse)
-            ? subIssuesResponse
-            : Object.values(subIssuesResponse ?? {}).flat();
+          batchResponses.forEach(({ currentIssueRef, response }) => {
+            const subIssuesResponse = response?.sub_issues;
+            const subIssueList: TIssue[] = Array.isArray(subIssuesResponse)
+              ? subIssuesResponse
+              : Object.values(subIssuesResponse ?? {}).flat();
 
-          const childIssueIds = subIssueList
-            .map((subIssue) => subIssue.id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0);
+            const childIssueRefs = subIssueList
+              .map((subIssue) => ({
+                issueId: subIssue.id,
+                projectId:
+                  typeof subIssue.project_id === "string" && subIssue.project_id.length > 0
+                    ? subIssue.project_id
+                    : currentIssueRef.projectId,
+              }))
+              .filter(
+                (subIssue): subIssue is TDescendantIssueRef =>
+                  typeof subIssue.issueId === "string" &&
+                  subIssue.issueId.length > 0 &&
+                  typeof subIssue.projectId === "string" &&
+                  subIssue.projectId.length > 0
+              );
 
-          childIssueIds.forEach((childIssueId) => {
-            if (visitedIssueIds.has(childIssueId)) return;
-            visitedIssueIds.add(childIssueId);
-            discoveredIssueIds.push(childIssueId);
-            queue.push(childIssueId);
+            childIssueRefs.forEach((childIssueRef) => {
+              if (visitedIssueIds.has(childIssueRef.issueId)) return;
+              visitedIssueIds.add(childIssueRef.issueId);
+              discoveredIssues.push(childIssueRef);
+              queue.push(childIssueRef);
+            });
           });
-        }
 
-        if (discoveredIssueIds.length === 0) {
-          if (!cancelled) setDescendantIssueIds((previousIds) => (previousIds.length === 0 ? previousIds : []));
+          if (queue.length > 0) {
+            await fetchIssueBatch(queue);
+          }
+        };
+
+        await fetchIssueBatch([{ issueId, projectId }]);
+
+        if (discoveredIssues.length === 0) {
+          if (!cancelled) setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
           return;
         }
 
         await Promise.all(
-          discoveredIssueIds.map((descendantIssueId) =>
-            worklogStore.fetchTotal(workspaceSlug, projectId, descendantIssueId)
+          discoveredIssues.map((descendantIssue) =>
+            worklogStore.fetchTotal(workspaceSlug, descendantIssue.projectId, descendantIssue.issueId)
           )
         );
 
         if (!cancelled) {
-          setDescendantIssueIds((previousIds) => {
+          setDescendantIssues((previousIssues) => {
             if (
-              previousIds.length === discoveredIssueIds.length &&
-              previousIds.every((previousId, index) => previousId === discoveredIssueIds[index])
+              previousIssues.length === discoveredIssues.length &&
+              previousIssues.every(
+                (previousIssue, index) =>
+                  previousIssue.issueId === discoveredIssues[index]?.issueId &&
+                  previousIssue.projectId === discoveredIssues[index]?.projectId
+              )
             ) {
-              return previousIds;
+              return previousIssues;
             }
-            return discoveredIssueIds;
+            return discoveredIssues;
           });
         }
       } catch {
-        if (!cancelled) setDescendantIssueIds((previousIds) => (previousIds.length === 0 ? previousIds : []));
+        if (!cancelled) setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
         // Keep parent display resilient even if child aggregation fetch fails.
       }
     };
@@ -121,8 +155,8 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
   if (!worklogStore || disabled) return <></>;
 
   const issueTotalMinutes = worklogStore.totalByIssue[issueId] ?? 0;
-  const descendantIssuesTotalMinutes = descendantIssueIds.reduce(
-    (total, descendantIssueId) => total + (worklogStore.totalByIssue[descendantIssueId] ?? 0),
+  const descendantIssuesTotalMinutes = descendantIssues.reduce(
+    (total, descendantIssue) => total + (worklogStore.totalByIssue[descendantIssue.issueId] ?? 0),
     0
   );
   const totalMinutes = issueTotalMinutes + descendantIssuesTotalMinutes;
