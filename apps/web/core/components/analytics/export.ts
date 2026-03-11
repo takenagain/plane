@@ -47,9 +47,14 @@ export const exportTimeLoggedCsv = async (
   const csv = await resp.text();
   const blob = new Blob([csv], { type: "text/csv" });
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
+  link.href = objectUrl;
   link.download = `${workspaceSlug}-hours-logged.csv`;
   document.body.appendChild(link);
-  link.click();
-  link.remove();
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
 };
