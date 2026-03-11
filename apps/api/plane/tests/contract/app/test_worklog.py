@@ -440,6 +440,19 @@ class TestWorklogTracking(TestWorklogBase):
         assert response.status_code == status.HTTP_409_CONFLICT
 
     @pytest.mark.django_db
+    def test_start_tracking_ignores_soft_deleted_active_timer(
+        self, member_client, test_workspace, test_project, test_issue, create_worklog
+    ):
+        deleted_worklog = create_worklog(duration=0)
+        Worklog.objects.filter(pk=deleted_worklog.id).update(deleted_at=timezone.now())
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert str(response.data["id"]) != str(deleted_worklog.id)
+
+    @pytest.mark.django_db
     def test_start_tracking_rejects_issue_from_different_project(
         self, member_client, test_workspace, test_project, admin_user
     ):

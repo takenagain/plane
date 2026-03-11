@@ -50,3 +50,24 @@ def test_time_logged_chart_weekdays_and_grouping():
     # Tuesday bucket should show 1h for issue1 only
     tue = next((d for d in simple_data if d["name"] == "Tuesday"), None)
     assert tue and abs(tue["count"] - 1.0) < 0.001
+
+
+@pytest.mark.django_db
+def test_time_logged_chart_excludes_soft_deleted_worklogs():
+    ws = WorkspaceFactory()
+    proj = ProjectFactory(workspace=ws)
+    issue = Issue.issue_objects.create(project=proj, workspace=ws, name="Issue 1")
+
+    monday = date(2023, 1, 2)
+
+    active_worklog = Worklog.objects.create(issue=issue, actor=None, duration=60, logged_at=monday)
+    deleted_worklog = Worklog.objects.create(issue=issue, actor=None, duration=120, logged_at=monday)
+    Worklog.objects.filter(pk=deleted_worklog.pk).update(deleted_at=date(2023, 1, 4))
+
+    queryset = Issue.issue_objects.filter(project=proj)
+    response = build_time_logged_chart(queryset, "LOGGED_DAY_OF_WEEK", None, (monday, monday))
+    monday_bucket = next((item for item in response["data"] if item["name"] == "Monday"), None)
+
+    assert active_worklog.deleted_at is None
+    assert monday_bucket is not None
+    assert abs(monday_bucket["count"] - 1.0) < 0.001

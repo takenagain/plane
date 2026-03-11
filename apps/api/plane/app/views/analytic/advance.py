@@ -350,7 +350,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
         # build worklogs subquery
         from plane.db.models.worklog import Worklog
 
-        worklogs = Worklog.objects.filter(issue__in=queryset)
+        worklogs = Worklog.objects.filter(issue__in=queryset, deleted_at__isnull=True)
         if date_range:
             start, end = date_range
             worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)

@@ -243,6 +243,7 @@ class WorklogViewSet(BaseViewSet):
                     issue_id=issue_id,
                     actor=request.user,
                     duration=0,
+                    deleted_at__isnull=True,
                     defaults={
                         "description": "",
                         "logged_at": timezone.localdate(),

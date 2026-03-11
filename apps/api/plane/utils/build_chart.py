@@ -176,7 +176,7 @@ def build_time_logged_chart(
     individual issue.
     """
     # build base worklog queryset constrained to the issues of interest
-    worklogs = Worklog.objects.filter(issue__in=queryset)
+    worklogs = Worklog.objects.filter(issue__in=queryset, deleted_at__isnull=True)
     if date_filter:
         start, end = date_filter
         worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)

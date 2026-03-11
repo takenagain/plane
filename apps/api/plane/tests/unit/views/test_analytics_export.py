@@ -71,6 +71,27 @@ def test_time_logged_export_endpoint_includes_active_tracking_time():
 
 
 @pytest.mark.django_db
+def test_time_logged_export_endpoint_excludes_soft_deleted_worklogs():
+    ws = WorkspaceFactory()
+    proj = ProjectFactory(workspace=ws)
+    issue = Issue.issue_objects.create(project=proj, workspace=ws, name="Deleted worklog issue")
+
+    Worklog.objects.create(issue=issue, actor=ws.owner, duration=60, logged_at=date.today())
+    deleted_worklog = Worklog.objects.create(issue=issue, actor=ws.owner, duration=120, logged_at=date.today())
+    Worklog.objects.filter(pk=deleted_worklog.pk).update(deleted_at=timezone.now())
+
+    client = Client()
+    client.force_login(ws.owner)
+
+    response = client.get(f"/api/workspaces/{ws.slug}/analytics/time-logged-export/")
+
+    assert response.status_code == 200
+    lines = [line for line in response.content.decode("utf-8").splitlines() if line.strip()]
+    assert any("1.00" in line for line in lines[1:])
+    assert all("3.00" not in line for line in lines[1:])
+
+
+@pytest.mark.django_db
 def test_project_time_logged_export_endpoint_denies_workspace_guest_without_project_membership():
     ws = WorkspaceFactory()
     proj = ProjectFactory(workspace=ws)
