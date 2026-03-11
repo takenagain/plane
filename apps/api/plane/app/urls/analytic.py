@@ -18,13 +18,9 @@ from plane.app.views import (
     ProjectAdvanceAnalyticsEndpoint,
     ProjectAdvanceAnalyticsStatsEndpoint,
     ProjectAdvanceAnalyticsChartEndpoint,
-    # newly added export views
-    # we import lazily below to avoid circular imports
+    ProjectTimeLoggedExportEndpoint,
+    TimeLoggedExportEndpoint,
 )
-
-# import export endpoints after view definitions
-from plane.app.views.analytic.advance import TimeLoggedExportEndpoint, ProjectTimeLoggedExportEndpoint
-
 
 urlpatterns = [
     path(

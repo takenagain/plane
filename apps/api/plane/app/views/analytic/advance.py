@@ -2,13 +2,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+import csv
+from io import StringIO
+from typing import Any, Dict, List
+
 from rest_framework.response import Response
 from rest_framework import status
-from typing import Dict, List, Any
-from django.db.models import QuerySet, Q, Count, Sum
+from django.db.models import Case, Count, F, IntegerField, Q, QuerySet, Sum, Value, When
 from django.http import HttpRequest, HttpResponse
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import Cast, Coalesce, Extract, Greatest, Now, TruncMonth
 from django.utils import timezone
+
 from plane.app.views.base import BaseAPIView
 from plane.app.permissions import ROLE, allow_permission
 from plane.db.models import (
@@ -351,15 +355,32 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             start, end = date_range
             worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)
 
-        issue_hours = worklogs.values("issue_id").annotate(total_minutes=Sum("duration")).filter(total_minutes__gt=0)
+        elapsed_minutes = Greatest(
+            Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
+            Value(0),
+        )
+
+        issue_hours = list(
+            worklogs.values("issue_id")
+            .annotate(
+                total_minutes=Coalesce(
+                    Sum(
+                        Case(
+                            When(duration=0, then=elapsed_minutes),
+                            default=F("duration"),
+                            output_field=IntegerField(),
+                        )
+                    ),
+                    Value(0),
+                )
+            )
+            .filter(total_minutes__gt=0)
+        )
         issue_ids = [item["issue_id"] for item in issue_hours]
         issues = Issue.issue_objects.filter(id__in=issue_ids).select_related("state").prefetch_related("assignees")
         issue_map = {issue.id: issue for issue in issues}
 
         # build csv text
-        import csv
-        from io import StringIO
-
         output = StringIO()
         writer = csv.writer(output)
         writer.writerow(["issue_id", "title", "hours_logged", "status", "priority", "assignee"])
@@ -382,7 +403,8 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             )
         csv_content = output.getvalue()
         response = HttpResponse(csv_content, content_type="text/csv")
-        response["Content-Disposition"] = f"attachment; filename=hours_logged_{slug}.csv"
+        safe_slug = "".join(char for char in slug if char.isalnum() or char in ("-", "_")) or "workspace"
+        response["Content-Disposition"] = f"attachment; filename=hours_logged_{safe_slug}.csv"
         return response
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
@@ -394,7 +416,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
 class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
     """Project-scoped variant reuses most logic but restricts to a project."""
 
-    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def get(self, request: HttpRequest, slug: str, project_id: str) -> Response:
         # apply workspace base filters then add project constraint
         self.initialize_workspace(slug, type="chart")

@@ -96,7 +96,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
             className="mt-3"
           />
           <h5 className="mt-3 text-body-xs-medium">{t("common.properties")}</h5>
-          <div className={`mb-2 mt-4 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
+          <div className={`mt-4 mb-2 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
             <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
               <StateDropdown
                 value={issue?.state_id}

@@ -49,8 +49,14 @@ const CustomizedInsights = observer(function CustomizedInsights({
   const watchedYAxis = params.y_axis;
   useEffect(() => {
     if (watchedYAxis === ChartYAxisMetric.HOURS_LOGGED) {
-      setValue("x_axis", ChartXAxisProperty.LOGGED_DAY_OF_WEEK);
-      setValue("group_by", ChartXAxisProperty.WORK_ITEMS);
+      if (params.x_axis !== ChartXAxisProperty.LOGGED_DAY_OF_WEEK) {
+        setValue("x_axis", ChartXAxisProperty.LOGGED_DAY_OF_WEEK);
+      }
+
+      if (params.group_by !== ChartXAxisProperty.WORK_ITEMS) {
+        setValue("group_by", ChartXAxisProperty.WORK_ITEMS);
+      }
+
       return;
     }
 

@@ -176,7 +176,7 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
         <WorklogForm workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} onClose={handleFormClose} />
       )}
 
-      {error && <p className="text-caption-sm-regular text-red-500">{error}</p>}
+      {error && <p className="text-red-500 text-caption-sm-regular">{error}</p>}
     </div>
   );
 });

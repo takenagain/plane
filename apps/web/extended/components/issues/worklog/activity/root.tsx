@@ -191,11 +191,11 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
     <div
       className={`group relative flex items-center gap-3 text-caption-sm-regular ${ends === "top" ? "pb-2" : ends === "bottom" ? "pt-2" : "py-2"}`}
     >
-      <div className="absolute left-[13px] top-0 bottom-0 w-px bg-layer-3" aria-hidden />
-      <div className="flex-shrink-0 w-7 h-7 rounded-lg overflow-hidden flex justify-center items-center z-[4] bg-layer-2 text-secondary border border-subtle shadow-raised-100">
-        <Clock className="w-3.5 h-3.5" />
+      <div className="absolute top-0 bottom-0 left-[13px] w-px bg-layer-3" aria-hidden />
+      <div className="z-[4] flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-subtle bg-layer-2 text-secondary shadow-raised-100">
+        <Clock className="h-3.5 w-3.5" />
       </div>
-      <div className="w-full flex items-center justify-between gap-2">
+      <div className="flex w-full items-center justify-between gap-2">
         <div className="truncate text-secondary">
           <span className="font-medium text-primary">{activity.actor_detail?.display_name ?? "Someone"}</span>{" "}
           <span>{getActivityMessage()}</span>
@@ -209,11 +209,11 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
           </span>
         </div>
         {canModify && activity.verb === "created" && (
-          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               type="button"
               onClick={handleEdit}
-              className="rounded p-1 text-tertiary hover:text-primary hover:bg-layer-3 transition-colors"
+              className="rounded p-1 text-tertiary transition-colors hover:bg-layer-3 hover:text-primary"
               aria-label="Edit worklog"
             >
               <Pencil className="h-3 w-3" />
@@ -222,7 +222,7 @@ export const IssueActivityWorklog = observer(function IssueActivityWorklog(props
               type="button"
               onClick={() => void handleDelete()}
               disabled={isDeleting}
-              className="rounded p-1 text-tertiary hover:text-red-500 hover:bg-layer-3 transition-colors disabled:opacity-50"
+              className="hover:text-red-500 rounded p-1 text-tertiary transition-colors hover:bg-layer-3 disabled:opacity-50"
               aria-label="Delete worklog"
             >
               <Trash2 className="h-3 w-3" />

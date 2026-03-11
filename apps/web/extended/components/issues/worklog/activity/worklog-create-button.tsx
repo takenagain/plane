@@ -28,7 +28,7 @@ export function IssueActivityWorklogCreateButton(props: TIssueActivityWorklogCre
         <button
           type="button"
           onClick={() => setIsFormOpen(true)}
-          className="flex items-center gap-1.5 rounded px-2 py-1 text-caption-sm-medium text-secondary hover:bg-layer-3 transition-colors"
+          className="flex items-center gap-1.5 rounded px-2 py-1 text-caption-sm-medium text-secondary transition-colors hover:bg-layer-3"
         >
           <Clock className="h-3.5 w-3.5" />
           <span>Log time</span>

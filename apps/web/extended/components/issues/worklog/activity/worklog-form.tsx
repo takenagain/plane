@@ -127,13 +127,13 @@ export const WorklogForm = observer(function WorklogForm(props: TWorklogForm) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-lg border border-subtle bg-layer-1 p-4 space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-subtle bg-layer-1 p-4">
       <div className="flex items-center justify-between">
         <span className="text-body-sm-medium text-primary">{isEditMode ? "Edit Worklog" : "Log Time"}</span>
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center justify-center rounded p-0.5 text-secondary hover:text-primary hover:bg-layer-3 transition-colors"
+          className="flex items-center justify-center rounded p-0.5 text-secondary transition-colors hover:bg-layer-3 hover:text-primary"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -142,7 +142,7 @@ export const WorklogForm = observer(function WorklogForm(props: TWorklogForm) {
 
       {/* Duration inputs */}
       <div className="flex items-center gap-2">
-        <label className="text-body-xs-regular text-tertiary w-16 shrink-0">Duration</label>
+        <label className="w-16 shrink-0 text-body-xs-regular text-tertiary">Duration</label>
         <div className="flex items-center gap-1">
           <input
             type="number"
@@ -150,7 +150,7 @@ export const WorklogForm = observer(function WorklogForm(props: TWorklogForm) {
             max={1666}
             value={hours}
             onChange={(e) => setHours(e.target.value)}
-            className="w-16 rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary focus:border-primary focus:outline-none"
+            className="focus:border-primary w-16 rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary focus:outline-none"
             placeholder="0"
             aria-label="Hours"
           />
@@ -163,7 +163,7 @@ export const WorklogForm = observer(function WorklogForm(props: TWorklogForm) {
             max={59}
             value={minutes}
             onChange={(e) => setMinutes(e.target.value)}
-            className="w-16 rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary focus:border-primary focus:outline-none"
+            className="focus:border-primary w-16 rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary focus:outline-none"
             placeholder="0"
             aria-label="Minutes"
           />
@@ -173,31 +173,31 @@ export const WorklogForm = observer(function WorklogForm(props: TWorklogForm) {
 
       {/* Date picker */}
       <div className="flex items-center gap-2">
-        <label className="text-body-xs-regular text-tertiary w-16 shrink-0">Date</label>
+        <label className="w-16 shrink-0 text-body-xs-regular text-tertiary">Date</label>
         <input
           type="date"
           value={loggedAt}
           max={today}
           onChange={(e) => setLoggedAt(e.target.value)}
-          className="rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary focus:border-primary focus:outline-none"
+          className="focus:border-primary rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary focus:outline-none"
         />
       </div>
 
       {/* Description */}
       <div className="flex items-start gap-2">
-        <label className="text-body-xs-regular text-tertiary w-16 shrink-0 pt-1.5">Notes</label>
+        <label className="w-16 shrink-0 pt-1.5 text-body-xs-regular text-tertiary">Notes</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={10000}
           rows={2}
           placeholder="What did you work on? (optional)"
-          className="w-full rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary placeholder:text-tertiary focus:border-primary focus:outline-none resize-none"
+          className="focus:border-primary w-full resize-none rounded border border-subtle bg-layer-2 px-2 py-1.5 text-body-xs-regular text-primary placeholder:text-tertiary focus:outline-none"
         />
       </div>
 
       {/* Error message */}
-      {error && <p className="text-caption-sm-regular text-red-500">{error}</p>}
+      {error && <p className="text-red-500 text-caption-sm-regular">{error}</p>}
 
       {/* Action buttons */}
       <div className="flex items-center justify-end gap-2">
@@ -205,14 +205,14 @@ export const WorklogForm = observer(function WorklogForm(props: TWorklogForm) {
           type="button"
           onClick={onClose}
           disabled={isSubmitting}
-          className="rounded px-3 py-1.5 text-body-xs-medium text-secondary hover:bg-layer-3 transition-colors"
+          className="rounded px-3 py-1.5 text-body-xs-medium text-secondary transition-colors hover:bg-layer-3"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded bg-primary px-3 py-1.5 text-body-xs-medium text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="bg-primary hover:bg-primary/90 rounded px-3 py-1.5 text-body-xs-medium text-white transition-colors disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : isEditMode ? "Update" : "Log time"}
         </button>
