@@ -7,6 +7,7 @@
 import { useEffect, useContext, useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { Clock } from "lucide-react";
+import { useTranslation } from "@plane/i18n";
 import type { TIssue } from "@plane/types";
 // store
 import { StoreContext } from "@/lib/store-context";
@@ -25,6 +26,7 @@ type TIssueWorklogProperty = {
 
 export const IssueWorklogProperty = observer(function IssueWorklogProperty(props: TIssueWorklogProperty) {
   const { workspaceSlug, projectId, issueId, disabled } = props;
+  const { t } = useTranslation();
   const rootStore = useContext(StoreContext);
   const { worklogStore } = rootStore;
   const issueService = useMemo(() => new IssueService(), []);
@@ -119,7 +121,7 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
   const totalMinutes = issueTotalMinutes + descendantIssuesTotalMinutes;
 
   return (
-    <SidebarPropertyListItem icon={Clock} label="Time Logged">
+    <SidebarPropertyListItem icon={Clock} label={t("common.time_logged")}>
       <span className="text-body-xs-regular text-secondary" data-testid="issue-worklog-property-value">
         {formatDuration(totalMinutes)}
       </span>
