@@ -319,6 +319,7 @@ class WorklogViewSet(BaseViewSet):
                 project_id=project_id,
                 issue_id=issue_id,
                 pk=pk,
+                deleted_at__isnull=True,
             )
         except Worklog.DoesNotExist:
             return Response({"detail": "Worklog not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -348,6 +349,7 @@ class WorklogViewSet(BaseViewSet):
                 project_id=project_id,
                 issue_id=issue_id,
                 pk=pk,
+                deleted_at__isnull=True,
             )
         except Worklog.DoesNotExist:
             return Response({"detail": "Worklog not found."}, status=status.HTTP_404_NOT_FOUND)

@@ -1045,6 +1045,20 @@ class TestWorklogUpdate(TestWorklogBase):
         assert response.status_code in (status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN)
 
     @pytest.mark.django_db
+    def test_update_soft_deleted_worklog_returns_404(
+        self, member_client, test_workspace, test_project, test_issue, create_worklog
+    ):
+        worklog = create_worklog(duration=60)
+        Worklog.objects.filter(pk=worklog.id).update(deleted_at=timezone.now())
+        url = self.get_worklog_detail_url(test_workspace.slug, test_project.id, test_issue.id, worklog.id)
+
+        response = member_client.patch(url, {"duration": 120}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        worklog.refresh_from_db()
+        assert worklog.duration == 60
+
+    @pytest.mark.django_db
     def test_update_returns_full_serialized_worklog(
         self, member_client, test_workspace, test_project, test_issue, create_worklog
     ):
@@ -1156,6 +1170,19 @@ class TestWorklogDelete(TestWorklogBase):
         response = member_client.delete(url, format="json")
 
         assert response.status_code in (status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN)
+
+    @pytest.mark.django_db
+    def test_delete_soft_deleted_worklog_returns_404(
+        self, member_client, test_workspace, test_project, test_issue, create_worklog
+    ):
+        worklog = create_worklog(duration=60)
+        Worklog.objects.filter(pk=worklog.id).update(deleted_at=timezone.now())
+        url = self.get_worklog_detail_url(test_workspace.slug, test_project.id, test_issue.id, worklog.id)
+
+        response = member_client.delete(url, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert Worklog.objects.filter(pk=worklog.id).exists()
 
     @pytest.mark.django_db
     def test_delete_worklog_updates_total(
