@@ -224,12 +224,6 @@ const getTimeLoggedColumns = (): IGroupByColumn[] => {
     payload: {},
   }));
 
-  columns.push({
-    id: "None",
-    name: "None",
-    payload: {},
-  });
-
   return columns;
 };
 
