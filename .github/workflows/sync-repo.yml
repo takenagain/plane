@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - preview
+      - staging
 
 env:
   SOURCE_BRANCH_NAME: ${{ github.ref_name }}

@@ -33,6 +33,7 @@ on:
   push:
     branches:
       - preview
+      - staging
       - canary
 
 concurrency:
