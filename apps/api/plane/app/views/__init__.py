@@ -6,6 +6,8 @@ from .analytic.advance import (
     AdvanceAnalyticsChartEndpoint,
     AdvanceAnalyticsEndpoint,
     AdvanceAnalyticsStatsEndpoint,
+    ProjectTimeLoggedExportEndpoint,
+    TimeLoggedExportEndpoint,
 )
 from .analytic.base import (
     AnalyticsEndpoint,
