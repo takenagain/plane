@@ -1354,6 +1354,19 @@ class TestWorklogCreateAndList(TestWorklogBase):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
 
+    @pytest.mark.django_db
+    def test_list_worklogs_rejects_invalid_created_at_filter(
+        self, member_client, test_workspace, test_project, test_issue, create_worklog
+    ):
+        """Invalid created_at__gt filters return 400 instead of crashing the endpoint."""
+        create_worklog(duration=60)
+
+        url = self.get_worklogs_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.get(url, {"created_at__gt": "not-a-datetime"}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data == {"created_at__gt": "Invalid datetime format."}
+
 
 # ==============================================================================
 # Worklog Serializer Validation Tests

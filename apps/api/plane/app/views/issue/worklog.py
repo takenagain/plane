@@ -11,6 +11,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Case, F, IntegerField, Sum, Value, When
 from django.db.models.functions import Cast, Coalesce, Extract, Greatest, Now
 from django.db import IntegrityError, transaction
+from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -34,6 +35,15 @@ def _elapsed_minutes_from_created_at(created_at, now=None) -> int:
     current_time = now or timezone.now()
     elapsed_seconds = (current_time - created_at).total_seconds()
     return max(0, int(elapsed_seconds // 60))
+
+
+def _parse_created_at_filter(value):
+    parsed_datetime = parse_datetime(value)
+    if parsed_datetime is None:
+        return None
+    if timezone.is_naive(parsed_datetime):
+        return timezone.make_aware(parsed_datetime, timezone.get_current_timezone())
+    return parsed_datetime
 
 
 class WorklogViewSet(BaseViewSet):
@@ -299,8 +309,15 @@ class WorklogViewSet(BaseViewSet):
     def list(self, request, slug, project_id, issue_id):
         queryset = self.get_queryset()
         filters = {}
-        if request.GET.get("created_at__gt"):
-            filters["created_at__gt"] = request.GET.get("created_at__gt")
+        created_at_gt = request.GET.get("created_at__gt")
+        if created_at_gt:
+            parsed_created_at_gt = _parse_created_at_filter(created_at_gt)
+            if parsed_created_at_gt is None:
+                return Response(
+                    {"created_at__gt": "Invalid datetime format."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            filters["created_at__gt"] = parsed_created_at_gt
         queryset = queryset.filter(**filters)
         serializer = WorklogSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
