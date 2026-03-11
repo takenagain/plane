@@ -59,5 +59,10 @@ class Worklog(ProjectBaseModel):
             )
         ]
 
+    def save(self, *args, **kwargs):
+        if self.project_id is None and self.issue_id is not None:
+            self.project = self.issue.project
+        return super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.actor} — {self.duration}m on {self.issue}"

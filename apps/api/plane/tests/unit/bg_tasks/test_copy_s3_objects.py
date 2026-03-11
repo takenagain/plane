@@ -29,6 +29,7 @@ class TestCopyS3Objects:
             name="Test Issue",
             workspace=workspace,
             project_id=project.id,
+            description_json={},
             description_html='<div><image-component src="35e8b958-6ee5-43ce-ae56-fb0e776f421e"></image-component><image-component src="97988198-274f-4dfe-aa7a-4c0ffc684214"></image-component></div>',  # noqa: E501
         )
 
@@ -95,6 +96,7 @@ class TestCopyS3Objects:
 
         # Verify new assets were created
         assert new_assets.count() == 4  # 2 original + 2 copied
+        assert updated_issue.description_json == {}
 
     @pytest.mark.django_db
     @patch("plane.bgtasks.copy_s3_object.S3Storage")

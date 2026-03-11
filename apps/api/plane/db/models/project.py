@@ -167,7 +167,29 @@ class Project(BaseModel):
     def save(self, *args, **kwargs):
         from plane.db.models import Workspace
 
-        self.identifier = self.identifier.strip().upper()
+        if not self.identifier:
+            base_identifier = "".join(character for character in (self.name or "") if character.isalnum()).upper()[:12]
+            if not base_identifier:
+                base_identifier = uuid4().hex[:12].upper()
+
+            identifier = base_identifier
+            suffix = 1
+            while (
+                self.__class__.all_objects.filter(
+                    workspace_id=self.workspace_id,
+                    identifier=identifier,
+                    deleted_at__isnull=True,
+                )
+                .exclude(pk=self.pk)
+                .exists()
+            ):
+                suffix_text = str(suffix)
+                identifier = f"{base_identifier[: 12 - len(suffix_text)]}{suffix_text}"
+                suffix += 1
+
+            self.identifier = identifier
+        else:
+            self.identifier = self.identifier.strip().upper()
         is_creating = self._state.adding
 
         if is_creating and not self.is_timezone_provided:

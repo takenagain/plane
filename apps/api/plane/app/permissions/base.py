@@ -21,9 +21,10 @@ def allow_permission(allowed_roles, level="PROJECT", creator=False, model=None):
         @wraps(view_func)
         def _wrapped_view(instance, request, *args, **kwargs):
             # Check for creator if required
-            if creator and model:
-                obj = model.objects.filter(id=kwargs["pk"], created_by=request.user).exists()
-                if obj:
+            if creator and model and "pk" in kwargs:
+                creator_queryset = getattr(model, "all_objects", model._base_manager)
+                obj = creator_queryset.filter(id=kwargs["pk"]).values("created_by_id").first()
+                if obj and obj["created_by_id"] == request.user.id:
                     return view_func(instance, request, *args, **kwargs)
 
             # Convert allowed_roles to their values if they are enum members

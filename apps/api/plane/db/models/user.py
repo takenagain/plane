@@ -170,6 +170,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.email = self.email.lower().strip()
         self.mobile_number = self.mobile_number
 
+        if not self.username:
+            if self.email:
+                self.username = self.email[:128]
+            else:
+                self.username = uuid.uuid4().hex
+
         if self.token_updated_at is not None:
             self.token = uuid.uuid4().hex + uuid.uuid4().hex
             self.token_updated_at = timezone.now()
