@@ -346,7 +346,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             return f"'{value}"
         return value
 
-    def _build_export_response(self, slug: str) -> Response:
+    def _build_export_response(self, slug: str) -> HttpResponse:
         # allow subclass to override the base queryset (e.g. project-scoped)
         override_queryset = getattr(self, "_export_queryset", None)
         if override_queryset is None:
@@ -418,7 +418,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
         return response
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
-    def get(self, request: HttpRequest, slug: str) -> Response:
+    def get(self, request: HttpRequest, slug: str) -> HttpResponse:
         self.initialize_workspace(slug, type="chart")
         return self._build_export_response(slug)
 
@@ -427,7 +427,7 @@ class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
     """Project-scoped variant reuses most logic but restricts to a project."""
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
-    def get(self, request: HttpRequest, slug: str, project_id: str) -> Response:
+    def get(self, request: HttpRequest, slug: str, project_id: str) -> HttpResponse:
         # apply workspace base filters then add project constraint
         self.initialize_workspace(slug, type="chart")
         queryset = Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
