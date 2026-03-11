@@ -332,9 +332,7 @@ class AdvanceAnalyticsChartEndpoint(AdvanceAnalyticsBaseView):
 class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
     """CSV export of hours logged per issue for workspace-level filters."""
 
-    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
-    def get(self, request: HttpRequest, slug: str) -> Response:
-        self.initialize_workspace(slug, type="chart")
+    def _build_export_response(self, slug: str) -> Response:
         # allow subclass to override the base queryset (e.g. project-scoped)
         override_queryset = getattr(self, "_export_queryset", None)
         if override_queryset is None:
@@ -387,6 +385,11 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
         response["Content-Disposition"] = f"attachment; filename=hours_logged_{slug}.csv"
         return response
 
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def get(self, request: HttpRequest, slug: str) -> Response:
+        self.initialize_workspace(slug, type="chart")
+        return self._build_export_response(slug)
+
 
 class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
     """Project-scoped variant reuses most logic but restricts to a project."""
@@ -396,7 +399,6 @@ class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
         # apply workspace base filters then add project constraint
         self.initialize_workspace(slug, type="chart")
         queryset = Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
-        # reuse export logic from parent but with adjusted queryset
-        # monkey-patch by setting self._export_queryset
+        # reuse export logic with adjusted queryset
         self._export_queryset = queryset
-        return super().get(request, slug)
+        return self._build_export_response(slug)
