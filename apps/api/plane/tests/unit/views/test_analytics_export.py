@@ -17,6 +17,7 @@ from plane.tests.factories import (
     WorkspaceMemberFactory,
 )
 from plane.db.models import Issue, State, Worklog
+from plane.db.models import IssueAssignee
 
 
 @pytest.mark.django_db
@@ -108,6 +109,7 @@ def test_time_logged_export_endpoint_sanitizes_formula_like_cells():
     issue = Issue.issue_objects.create(project=proj, workspace=ws, name="=Dangerous formula", priority="@urgent")
     issue.state = State.objects.create(project=proj, workspace=ws, name="-In Progress", color="#000000")
     issue.save(update_fields=["state"])
+    IssueAssignee.objects.create(issue=issue, assignee=ws.owner, project=proj, workspace=ws)
     ws.owner.display_name = "+Owner"
     ws.owner.save(update_fields=["display_name"])
     Worklog.objects.create(issue=issue, actor=ws.owner, duration=60, logged_at=date.today())

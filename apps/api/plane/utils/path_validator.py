@@ -49,20 +49,23 @@ def _contains_suspicious_patterns(path: str) -> bool:
 
 def get_allowed_hosts() -> list[str]:
     """Get the allowed hosts from the settings."""
-    base_origin = settings.WEB_URL or settings.APP_BASE_URL
-
     allowed_hosts = []
-    if base_origin:
+    for base_origin in (settings.WEB_URL, settings.APP_BASE_URL):
+        if not base_origin:
+            continue
         host = urlparse(base_origin).netloc
-        allowed_hosts.append(host)
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
     if settings.ADMIN_BASE_URL:
         # Get only the host
         host = urlparse(settings.ADMIN_BASE_URL).netloc
-        allowed_hosts.append(host)
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
     if settings.SPACE_BASE_URL:
         # Get only the host
         host = urlparse(settings.SPACE_BASE_URL).netloc
-        allowed_hosts.append(host)
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
     return allowed_hosts
 
 
