@@ -45,7 +45,15 @@ class WorklogSerializer(BaseSerializer):
         return value
 
     def validate_duration(self, value):
-        """Ensure duration is positive and within bounds."""
+        """Ensure duration bounds while preserving active-tracker sentinel updates."""
+        if value < 0:
+            raise serializers.ValidationError("Duration cannot be negative.")
+        # Keep manual create/update duration >= 1, but allow existing active timers (duration=0)
+        # to be updated without forcing a duration bump in partial updates.
+        if value == 0:
+            if self.instance is None or self.instance.duration != 0:
+                raise serializers.ValidationError("Duration must be at least 1 minute.")
+            return value
         if value < 1:
             raise serializers.ValidationError("Duration must be at least 1 minute.")
         if value > 99999:
