@@ -524,6 +524,30 @@ class TestWorklogTracking(TestWorklogBase):
         assert not Worklog.objects.filter(pk=worklog_id, duration=0).exists()
 
     @pytest.mark.django_db
+    def test_stop_tracking_emits_activity_update(
+        self, member_client, test_workspace, test_project, test_issue, mocker
+    ):
+        activity_delay = mocker.patch("plane.app.views.issue.worklog.issue_activity.delay")
+        start_url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        stop_url = self.get_worklogs_stop_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        start_response = member_client.post(start_url, format="json")
+        assert start_response.status_code == status.HTTP_201_CREATED
+
+        activity_delay.reset_mock()
+        worklog_id = start_response.data["id"]
+        Worklog.objects.filter(pk=worklog_id).update(created_at=timezone.now() - timedelta(minutes=10, seconds=5))
+
+        stop_response = member_client.post(stop_url, format="json")
+
+        assert stop_response.status_code == status.HTTP_200_OK
+        activity_delay.assert_called_once()
+        activity_kwargs = activity_delay.call_args.kwargs
+        assert activity_kwargs["type"] == "worklog.activity.updated"
+        assert json.loads(activity_kwargs["current_instance"])["duration"] == 0
+        assert json.loads(activity_kwargs["requested_data"])["duration"] >= 10
+
+    @pytest.mark.django_db
     def test_total_includes_elapsed_minutes_for_active_timer(
         self, member_client, test_workspace, test_project, test_issue, create_worklog
     ):

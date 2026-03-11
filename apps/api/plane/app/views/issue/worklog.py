@@ -288,12 +288,24 @@ class WorklogViewSet(BaseViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        current_instance = json.dumps(WorklogSerializer(active_worklog).data, cls=DjangoJSONEncoder)
         elapsed_minutes = _elapsed_minutes_from_created_at(active_worklog.created_at)
         active_worklog.duration = max(1, elapsed_minutes)
         active_worklog.updated_by = request.user
         active_worklog.save(update_fields=["duration", "updated_by", "updated_at"])
 
         serializer = WorklogSerializer(active_worklog)
+        issue_activity.delay(
+            type="worklog.activity.updated",
+            requested_data=json.dumps(serializer.data, cls=DjangoJSONEncoder),
+            actor_id=str(request.user.id),
+            issue_id=str(issue_id),
+            project_id=str(project_id),
+            current_instance=current_instance,
+            epoch=int(timezone.now().timestamp()),
+            notification=False,
+            origin=base_host(request=request, is_app=True),
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
