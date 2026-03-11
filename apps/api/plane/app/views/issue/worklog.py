@@ -89,16 +89,7 @@ class WorklogViewSet(BaseViewSet):
 
         return int(total_duration or 0)
 
-    def _get_tracking_target_state(self, issue_id, project_id):
-        issue = (
-            Issue.issue_objects.select_related("state")
-            .filter(
-                pk=issue_id,
-                project_id=project_id,
-                workspace__slug=self.kwargs.get("slug"),
-            )
-            .first()
-        )
+    def _get_tracking_target_state(self, issue, project_id):
         if issue is None or issue.state is None:
             return None
 
@@ -139,7 +130,7 @@ class WorklogViewSet(BaseViewSet):
         current_instance = {}
         issue_update_fields = []
 
-        target_state = self._get_tracking_target_state(issue_id=issue_id, project_id=project_id)
+        target_state = self._get_tracking_target_state(issue=issue, project_id=project_id)
         if target_state is not None:
             requested_data["state"] = str(target_state.id)
             current_instance["state_id"] = str(issue.state_id) if issue.state_id else None
