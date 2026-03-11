@@ -30,31 +30,66 @@ type TDescendantIssueRef = {
 };
 
 const MAX_DESCENDANT_FETCH_REQUESTS = 50;
+const descendantIssueCache = new Map<string, TDescendantIssueRef[]>();
 
 export const IssueWorklogProperty = observer(function IssueWorklogProperty(props: TIssueWorklogProperty) {
   const { workspaceSlug, projectId, issueId, disabled } = props;
   const { t } = useTranslation();
   const rootStore = useContext(StoreContext);
   const { worklogStore } = rootStore;
+  const fetchTotal = worklogStore?.fetchTotal;
   const issueService = useMemo(() => new IssueService(), []);
   const [descendantIssues, setDescendantIssues] = useState<TDescendantIssueRef[]>([]);
+  const cacheKey = `${workspaceSlug}:${projectId}:${issueId}`;
 
   useEffect(() => {
-    if (!disabled && workspaceSlug && projectId && issueId && worklogStore) {
-      void worklogStore.fetchTotal(workspaceSlug, projectId, issueId);
+    if (!disabled && workspaceSlug && projectId && issueId && fetchTotal) {
+      void fetchTotal(workspaceSlug, projectId, issueId);
     }
-  }, [disabled, workspaceSlug, projectId, issueId, worklogStore]);
+  }, [disabled, workspaceSlug, projectId, issueId, fetchTotal]);
 
   useEffect(() => {
-    if (disabled || !workspaceSlug || !projectId || !issueId || !worklogStore) {
+    if (disabled || !workspaceSlug || !projectId || !issueId || !fetchTotal) {
       setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
       return;
     }
 
     let cancelled = false;
 
+    const hydrateDescendantTotals = async (issues: TDescendantIssueRef[]) => {
+      if (issues.length === 0) {
+        if (!cancelled) setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
+        return;
+      }
+
+      await Promise.all(
+        issues.map((descendantIssue) => fetchTotal(workspaceSlug, descendantIssue.projectId, descendantIssue.issueId))
+      );
+
+      if (!cancelled) {
+        setDescendantIssues((previousIssues) => {
+          if (
+            previousIssues.length === issues.length &&
+            previousIssues.every(
+              (previousIssue, index) =>
+                previousIssue.issueId === issues[index]?.issueId && previousIssue.projectId === issues[index]?.projectId
+            )
+          ) {
+            return previousIssues;
+          }
+          return issues;
+        });
+      }
+    };
+
     const fetchDescendantIssueTotals = async () => {
       try {
+        const cachedIssues = descendantIssueCache.get(cacheKey);
+        if (cachedIssues) {
+          await hydrateDescendantTotals(cachedIssues);
+          return;
+        }
+
         const visitedIssueIds = new Set<string>([issueId]);
         const discoveredIssues: TDescendantIssueRef[] = [];
         let requestCount = 0;
@@ -112,33 +147,8 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
         };
 
         await fetchIssueBatch([{ issueId, projectId }]);
-
-        if (discoveredIssues.length === 0) {
-          if (!cancelled) setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
-          return;
-        }
-
-        await Promise.all(
-          discoveredIssues.map((descendantIssue) =>
-            worklogStore.fetchTotal(workspaceSlug, descendantIssue.projectId, descendantIssue.issueId)
-          )
-        );
-
-        if (!cancelled) {
-          setDescendantIssues((previousIssues) => {
-            if (
-              previousIssues.length === discoveredIssues.length &&
-              previousIssues.every(
-                (previousIssue, index) =>
-                  previousIssue.issueId === discoveredIssues[index]?.issueId &&
-                  previousIssue.projectId === discoveredIssues[index]?.projectId
-              )
-            ) {
-              return previousIssues;
-            }
-            return discoveredIssues;
-          });
-        }
+        descendantIssueCache.set(cacheKey, discoveredIssues);
+        await hydrateDescendantTotals(discoveredIssues);
       } catch {
         if (!cancelled) setDescendantIssues((previousIssues) => (previousIssues.length === 0 ? previousIssues : []));
         // Keep parent display resilient even if child aggregation fetch fails.
@@ -150,7 +160,7 @@ export const IssueWorklogProperty = observer(function IssueWorklogProperty(props
     return () => {
       cancelled = true;
     };
-  }, [disabled, workspaceSlug, projectId, issueId, issueService, worklogStore]);
+  }, [cacheKey, disabled, workspaceSlug, projectId, issueId, issueService, fetchTotal]);
 
   if (!worklogStore || disabled) return <></>;
 
