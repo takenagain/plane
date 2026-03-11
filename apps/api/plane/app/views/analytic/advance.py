@@ -336,6 +336,16 @@ class AdvanceAnalyticsChartEndpoint(AdvanceAnalyticsBaseView):
 class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
     """CSV export of hours logged per issue for workspace-level filters."""
 
+    @staticmethod
+    def _sanitize_csv_cell(value: str) -> str:
+        if not value:
+            return ""
+
+        stripped_value = value.lstrip()
+        if stripped_value and stripped_value[0] in ("=", "+", "-", "@"):
+            return f"'{value}"
+        return value
+
     def _build_export_response(self, slug: str) -> Response:
         # allow subclass to override the base queryset (e.g. project-scoped)
         override_queryset = getattr(self, "_export_queryset", None)
@@ -394,11 +404,11 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             writer.writerow(
                 [
                     str(issue.id),
-                    issue.name,
+                    self._sanitize_csv_cell(issue.name),
                     f"{hours:.2f}",
-                    issue.state.name if issue.state else "",
-                    issue.priority,
-                    assignee,
+                    self._sanitize_csv_cell(issue.state.name if issue.state else ""),
+                    self._sanitize_csv_cell(issue.priority),
+                    self._sanitize_csv_cell(assignee),
                 ]
             )
         csv_content = output.getvalue()

@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+import csv
+from io import StringIO
 import pytest
 from datetime import date, timedelta
 from django.test import Client
@@ -89,6 +91,30 @@ def test_time_logged_export_endpoint_excludes_soft_deleted_worklogs():
     lines = [line for line in response.content.decode("utf-8").splitlines() if line.strip()]
     assert any("1.00" in line for line in lines[1:])
     assert all("3.00" not in line for line in lines[1:])
+
+
+@pytest.mark.django_db
+def test_time_logged_export_endpoint_sanitizes_formula_like_cells():
+    ws = WorkspaceFactory()
+    proj = ProjectFactory(workspace=ws)
+    issue = Issue.issue_objects.create(project=proj, workspace=ws, name="=Dangerous formula", priority="@urgent")
+    issue.state.name = "-In Progress"
+    issue.state.save(update_fields=["name"])
+    ws.owner.display_name = "+Owner"
+    ws.owner.save(update_fields=["display_name"])
+    Worklog.objects.create(issue=issue, actor=ws.owner, duration=60, logged_at=date.today())
+
+    client = Client()
+    client.force_login(ws.owner)
+
+    response = client.get(f"/api/workspaces/{ws.slug}/analytics/time-logged-export/")
+
+    assert response.status_code == 200
+    rows = list(csv.reader(StringIO(response.content.decode("utf-8"))))
+    assert rows[1][1] == "'=Dangerous formula"
+    assert rows[1][3] == "'-In Progress"
+    assert rows[1][4] == "'@urgent"
+    assert rows[1][5] == "'+Owner"
 
 
 @pytest.mark.django_db
