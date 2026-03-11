@@ -346,13 +346,9 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
             return f"'{value}"
         return value
 
-    def _build_export_response(self, slug: str) -> HttpResponse:
-        # allow subclass to override the base queryset (e.g. project-scoped)
-        override_queryset = getattr(self, "_export_queryset", None)
-        if override_queryset is None:
+    def _build_export_response(self, slug: str, queryset: QuerySet | None = None) -> HttpResponse:
+        if queryset is None:
             queryset = Issue.issue_objects.filter(**self.filters["base_filters"])
-        else:
-            queryset = override_queryset
         date_range = None
         if self.filters.get("chart_period_range"):
             start_date, end_date = self.filters["chart_period_range"]
@@ -431,6 +427,4 @@ class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
         # apply workspace base filters then add project constraint
         self.initialize_workspace(slug, type="chart")
         queryset = Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
-        # reuse export logic with adjusted queryset
-        self._export_queryset = queryset
-        return self._build_export_response(slug)
+        return self._build_export_response(slug, queryset=queryset)

@@ -150,3 +150,29 @@ def test_project_time_logged_export_endpoint_allows_project_member():
     response = client.get(f"/api/workspaces/{ws.slug}/projects/{proj.id}/analytics/time-logged-export/")
 
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_project_time_logged_export_endpoint_excludes_other_projects():
+    ws = WorkspaceFactory()
+    target_project = ProjectFactory(workspace=ws)
+    other_project = ProjectFactory(workspace=ws)
+    member = UserFactory()
+    WorkspaceMemberFactory(workspace=ws, member=member, role=15)
+    ProjectMemberFactory(project=target_project, member=member, role=15)
+    ProjectMemberFactory(project=other_project, member=member, role=15)
+
+    target_issue = Issue.issue_objects.create(project=target_project, workspace=ws, name="Target project issue")
+    other_issue = Issue.issue_objects.create(project=other_project, workspace=ws, name="Other project issue")
+    Worklog.objects.create(issue=target_issue, actor=ws.owner, duration=60, logged_at=date.today())
+    Worklog.objects.create(issue=other_issue, actor=ws.owner, duration=120, logged_at=date.today())
+
+    client = Client()
+    client.force_login(member)
+
+    response = client.get(f"/api/workspaces/{ws.slug}/projects/{target_project.id}/analytics/time-logged-export/")
+
+    assert response.status_code == 200
+    csv_text = response.content.decode("utf-8")
+    assert "Target project issue" in csv_text
+    assert "Other project issue" not in csv_text
