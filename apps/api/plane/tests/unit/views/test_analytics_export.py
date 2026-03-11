@@ -143,7 +143,26 @@ def test_time_logged_export_endpoint_sanitizes_tab_prefixed_formula_like_cells()
 
     assert response.status_code == 200
     rows = list(csv.reader(StringIO(response.content.decode("utf-8"))))
-    assert rows[1][1] == "'\t=Tabbed formula"
+    assert rows[1][1] == "'=Tabbed formula"
+
+
+@pytest.mark.django_db
+def test_time_logged_export_endpoint_sanitizes_newline_prefixed_formula_like_cells():
+    ws = WorkspaceFactory()
+    WorkspaceMemberFactory(workspace=ws, member=ws.owner, role=20)
+    proj = ProjectFactory(workspace=ws)
+    ProjectMemberFactory(project=proj, member=ws.owner, role=20)
+    issue = Issue.issue_objects.create(project=proj, workspace=ws, name="\n=Newline formula")
+    Worklog.objects.create(issue=issue, actor=ws.owner, duration=60, logged_at=date.today())
+
+    client = Client()
+    client.force_login(ws.owner)
+
+    response = client.get(f"/api/workspaces/{ws.slug}/analytics/time-logged-export/")
+
+    assert response.status_code == 200
+    rows = list(csv.reader(StringIO(response.content.decode("utf-8"))))
+    assert rows[1][1] == "'=Newline formula"
 
 
 @pytest.mark.django_db

@@ -343,7 +343,7 @@ class TimeLoggedExportEndpoint(AdvanceAnalyticsBaseView):
 
         stripped_value = value.lstrip()
         if stripped_value and stripped_value[0] in ("=", "+", "-", "@"):
-            return f"'{value}"
+            return f"'{stripped_value}"
         return value
 
     def _build_export_response(self, slug: str, queryset: QuerySet | None = None) -> HttpResponse:
