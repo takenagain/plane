@@ -393,6 +393,6 @@ class ProjectTimeLoggedExportEndpoint(TimeLoggedExportEndpoint):
         self.initialize_workspace(slug, type="chart")
         queryset = Issue.issue_objects.filter(**self.filters["base_filters"]).filter(project_id=project_id)
         # reuse export logic from parent but with adjusted queryset
-        # monkey-patch by setting self._override_queryset
+        # monkey-patch by setting self._export_queryset
         self._export_queryset = queryset
         return super().get(request, slug)
