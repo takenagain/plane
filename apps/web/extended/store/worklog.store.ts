@@ -164,6 +164,7 @@ export class WorklogStore implements IWorklogStore {
       return activeWorklog;
     } catch (error) {
       runInAction(() => {
+        this.activeWorklog = null;
         this.activeWorklogError = "Failed to restore the active timer.";
         this.hasBootstrappedActiveWorklog = true;
         this.isBootstrappingActiveWorklog = false;

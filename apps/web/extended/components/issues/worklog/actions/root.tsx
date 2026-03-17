@@ -42,6 +42,7 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
 
   const issue = getIssueById(issueId);
   const currentUserProjectRole = getProjectRoleByWorkspaceSlugAndProjectId(workspaceSlug, projectId);
@@ -71,6 +72,18 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
     activeWorklog?.workspace_slug === workspaceSlug &&
     activeWorklog.project === projectId &&
     activeWorklog.issue === issueId;
+
+  useEffect(() => {
+    if (!isCurrentIssueActive) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isCurrentIssueActive]);
 
   const handleStart = async () => {
     setError(null);
@@ -158,7 +171,7 @@ export const IssueTimeTrackingActions = observer(function IssueTimeTrackingActio
             className="inline-flex items-center rounded-md bg-layer-2 px-2 py-1 text-caption-sm-medium text-secondary"
             data-testid="issue-time-session-timer"
           >
-            {formatActiveDurationFull(activeWorklog)}
+            {formatActiveDurationFull(activeWorklog, nowTick)}
           </span>
         )}
       </div>

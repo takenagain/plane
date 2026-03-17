@@ -83,6 +83,9 @@ export const useActiveWorklogController = () => {
     return getElapsedSeconds(activeWorklog.created_at, nowMs);
   };
 
+  const resolveActiveWorklog = (activeWorklog?: IActiveWorklog | null) =>
+    activeWorklog === undefined ? worklogStore.activeWorklog : activeWorklog;
+
   return {
     activeWorklog: worklogStore.activeWorklog,
     activeWorklogError: worklogStore.activeWorklogError,
@@ -95,8 +98,8 @@ export const useActiveWorklogController = () => {
     openTrackedWorkItem,
     getActiveDurationSeconds,
     formatActiveDurationCompact: (activeWorklog?: IActiveWorklog | null, nowMs?: number) =>
-      formatElapsedDurationCompact(getActiveDurationSeconds(activeWorklog ?? worklogStore.activeWorklog, nowMs)),
+      formatElapsedDurationCompact(getActiveDurationSeconds(resolveActiveWorklog(activeWorklog), nowMs)),
     formatActiveDurationFull: (activeWorklog?: IActiveWorklog | null, nowMs?: number) =>
-      formatElapsedDurationFull(getActiveDurationSeconds(activeWorklog ?? worklogStore.activeWorklog, nowMs)),
+      formatElapsedDurationFull(getActiveDurationSeconds(resolveActiveWorklog(activeWorklog), nowMs)),
   };
 };

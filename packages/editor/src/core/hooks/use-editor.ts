@@ -23,13 +23,15 @@ declare module "@tiptap/core" {
   }
 }
 
+const EMPTY_EDITOR_PROPS = {};
+
 export const useEditor = (props: TEditorHookProps) => {
   const {
     autofocus = false,
     disabledExtensions,
     editable = true,
     editorClassName = "",
-    editorProps = {},
+    editorProps,
     enableHistory,
     extendedEditorProps,
     extensions = [],
@@ -52,47 +54,55 @@ export const useEditor = (props: TEditorHookProps) => {
     provider,
     value,
   } = props;
+  const effectiveEditorProps = editorProps ?? EMPTY_EDITOR_PROPS;
+  const initialValueRef = useRef(initialValue);
+  initialValueRef.current = initialValue;
 
   const resolvedEditorProps = useMemo(
     () => ({
       ...CoreEditorProps({
         editorClassName,
       }),
-      ...editorProps,
+      ...effectiveEditorProps,
     }),
-    [editorClassName, editorProps]
+    [editorClassName, effectiveEditorProps]
   );
-
-  const extensionsCacheRef = useRef<{ cacheKey: string; extensions: ReturnType<typeof CoreEditorExtensions> } | null>(
-    null
+  const resolvedExtensions = useMemo(
+    () => [
+      ...CoreEditorExtensions({
+        disabledExtensions,
+        editable,
+        enableHistory,
+        extendedEditorProps,
+        fileHandler,
+        flaggedExtensions,
+        getEditorMetaData,
+        isTouchDevice,
+        mentionHandler,
+        placeholder,
+        showPlaceholderOnEmpty,
+        tabIndex,
+        provider,
+      }),
+      ...extensions,
+    ],
+    [
+      disabledExtensions,
+      editable,
+      enableHistory,
+      extendedEditorProps,
+      extensions,
+      fileHandler,
+      flaggedExtensions,
+      getEditorMetaData,
+      isTouchDevice,
+      mentionHandler,
+      placeholder,
+      provider,
+      showPlaceholderOnEmpty,
+      tabIndex,
+    ]
   );
-  const extensionsCacheKey = `${id}:${editable ? "editable" : "readonly"}`;
-
-  if (!extensionsCacheRef.current || extensionsCacheRef.current.cacheKey !== extensionsCacheKey) {
-    extensionsCacheRef.current = {
-      cacheKey: extensionsCacheKey,
-      extensions: [
-        ...CoreEditorExtensions({
-          disabledExtensions,
-          editable,
-          enableHistory,
-          extendedEditorProps,
-          fileHandler,
-          flaggedExtensions,
-          getEditorMetaData,
-          isTouchDevice,
-          mentionHandler,
-          placeholder,
-          showPlaceholderOnEmpty,
-          tabIndex,
-          provider,
-        }),
-        ...extensions,
-      ],
-    };
-  }
-
-  const resolvedExtensions = extensionsCacheRef.current.extensions;
 
   const [editor, setEditor] = useState<Editor | null>(null);
   const callbacksRef = useRef({
@@ -115,7 +125,7 @@ export const useEditor = (props: TEditorHookProps) => {
       autofocus,
       editorProps: resolvedEditorProps,
       extensions: resolvedExtensions,
-      content: initialValue,
+      content: initialValueRef.current,
       parseOptions: { preserveWhitespace: true },
       onCreate: () => callbacksRef.current.handleEditorReady?.(true),
       onTransaction: () => {
@@ -137,7 +147,7 @@ export const useEditor = (props: TEditorHookProps) => {
       }
       setEditor((currentEditor) => (currentEditor === instance ? null : currentEditor));
     };
-  }, [autofocus, editable, id, initialValue, resolvedEditorProps, resolvedExtensions]);
+  }, [autofocus, editable, id, resolvedEditorProps, resolvedExtensions]);
 
   // Effect for syncing SWR data
   useEffect(() => {
