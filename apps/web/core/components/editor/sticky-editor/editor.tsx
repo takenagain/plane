@@ -4,12 +4,12 @@
  * See the LICENSE file for details.
  */
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 // plane constants
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane editor
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, ILiteTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, ILiteTextEditorProps, TExtensions, TFileHandler } from "@plane/editor";
 // components
 import type { TSticky } from "@plane/types";
 // helpers
@@ -40,6 +40,10 @@ interface StickyEditorWrapperProps extends Omit<
   parentClassName?: string;
   handleColorChange: (data: Partial<TSticky>) => Promise<void>;
   handleDelete: () => void;
+}
+
+function isMutableRefObject<T>(forwardedRef: React.ForwardedRef<T>): forwardedRef is React.MutableRefObject<T | null> {
+  return !!forwardedRef && typeof forwardedRef === "object" && "current" in forwardedRef;
 }
 
 export const StickyEditor = React.forwardRef(function StickyEditor(
@@ -74,11 +78,29 @@ export const StickyEditor = React.forwardRef(function StickyEditor(
   });
   // editor config
   const { getEditorFileHandlers } = useEditorConfig();
-  function isMutableRefObject<T>(ref: React.ForwardedRef<T>): ref is React.MutableRefObject<T | null> {
-    return !!ref && typeof ref === "object" && "current" in ref;
-  }
   // derived values
   const editorRef = isMutableRefObject<EditorRefApi>(ref) ? ref.current : null;
+  const disabledExtensions = useMemo<TExtensions[]>(
+    () => [...liteTextEditorExtensions.disabled, "enter-key"],
+    [liteTextEditorExtensions.disabled]
+  );
+  const fileHandler = useMemo(
+    () =>
+      getEditorFileHandlers({
+        projectId,
+        uploadFile,
+        duplicateFile,
+        workspaceId,
+        workspaceSlug,
+      }),
+    [duplicateFile, getEditorFileHandlers, projectId, uploadFile, workspaceId, workspaceSlug]
+  );
+  const mentionHandler = useMemo(
+    () => ({
+      renderComponent: () => <></>,
+    }),
+    []
+  );
 
   return (
     <div
@@ -88,21 +110,13 @@ export const StickyEditor = React.forwardRef(function StickyEditor(
     >
       <LiteTextEditorWithRef
         ref={ref}
-        disabledExtensions={[...liteTextEditorExtensions.disabled, "enter-key"]}
+        disabledExtensions={disabledExtensions}
         flaggedExtensions={liteTextEditorExtensions.flagged}
         editable
-        fileHandler={getEditorFileHandlers({
-          projectId,
-          uploadFile,
-          duplicateFile,
-          workspaceId,
-          workspaceSlug,
-        })}
+        fileHandler={fileHandler}
         getEditorMetaData={getEditorMetaData}
-        mentionHandler={{
-          renderComponent: () => <></>,
-        }}
-        extendedEditorProps={{}}
+        mentionHandler={mentionHandler}
+        extendedEditorProps={EMPTY_EXTENDED_EDITOR_PROPS}
         containerClassName={cn(containerClassName, "relative")}
         {...rest}
       />
@@ -133,3 +147,5 @@ export const StickyEditor = React.forwardRef(function StickyEditor(
 });
 
 StickyEditor.displayName = "StickyEditor";
+
+const EMPTY_EXTENDED_EDITOR_PROPS = {};

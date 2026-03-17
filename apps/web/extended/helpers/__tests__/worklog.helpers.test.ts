@@ -13,7 +13,13 @@ declare const describe: (name: string, callback: () => void) => void;
 declare const it: (name: string, callback: () => void) => void;
 declare const expect: (received: unknown) => TExpectMatcher;
 
-import { formatDuration, parseDuration } from "../worklog.helpers";
+import {
+  formatDuration,
+  formatElapsedDurationCompact,
+  formatElapsedDurationFull,
+  getElapsedSeconds,
+  parseDuration,
+} from "../worklog.helpers";
 
 describe("formatDuration", () => {
   it("formats 150 minutes as 2h 30m", () => {
@@ -109,5 +115,35 @@ describe("parseDuration", () => {
 
   it("returns NaN for Infinity minutes", () => {
     expect(parseDuration(0, Infinity)).toBeNaN();
+  });
+});
+
+describe("getElapsedSeconds", () => {
+  it("returns 0 for invalid dates", () => {
+    expect(getElapsedSeconds("not-a-date")).toBe(0);
+  });
+
+  it("calculates elapsed seconds from created_at", () => {
+    expect(getElapsedSeconds("2026-03-17T10:00:00.000Z", Date.parse("2026-03-17T10:01:05.000Z"))).toBe(65);
+  });
+});
+
+describe("formatElapsedDurationCompact", () => {
+  it("formats sub-hour durations as minutes and seconds", () => {
+    expect(formatElapsedDurationCompact(59)).toBe("0m 59s");
+  });
+
+  it("formats hourly durations as hours and minutes", () => {
+    expect(formatElapsedDurationCompact(3725)).toBe("1h 2m");
+  });
+});
+
+describe("formatElapsedDurationFull", () => {
+  it("formats elapsed seconds as hh:mm:ss", () => {
+    expect(formatElapsedDurationFull(3725)).toBe("01:02:05");
+  });
+
+  it("returns zeroed time for invalid values", () => {
+    expect(formatElapsedDurationFull(NaN)).toBe("00:00:00");
   });
 });

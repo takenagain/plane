@@ -5,21 +5,44 @@
  */
 
 import { action, makeObservable, observable, runInAction } from "mobx";
-import type { IWorklog, IWorklogCreatePayload, IWorklogUpdatePayload } from "@plane/types";
+import type { IActiveWorklog, IWorklog, IWorklogCreatePayload, IWorklogUpdatePayload } from "@plane/types";
 import { WorklogService } from "@plane/services";
 
 const worklogService = new WorklogService();
+
+type TStartTrackingOptions = {
+  issueName?: string;
+};
+
+export type TCurrentWorklogTarget = {
+  workspaceSlug: string;
+  projectId: string;
+  issueId: string;
+  issueName?: string;
+  afterTrackingChange?: () => Promise<void> | void;
+};
 
 export interface IWorklogStore {
   // observables
   worklogsByIssue: Record<string, IWorklog[]>;
   totalByIssue: Record<string, number>;
+  activeWorklog: IActiveWorklog | null;
+  currentWorklogTarget: TCurrentWorklogTarget | null;
+  activeWorklogError: string | null;
+  isBootstrappingActiveWorklog: boolean;
+  hasBootstrappedActiveWorklog: boolean;
   isLoading: boolean;
 
   // actions
   fetchWorklogs: (workspaceSlug: string, projectId: string, issueId: string) => Promise<IWorklog[]>;
 
   fetchTotal: (workspaceSlug: string, projectId: string, issueId: string) => Promise<number>;
+
+  fetchActiveWorklog: (workspaceSlug: string) => Promise<IActiveWorklog | null>;
+
+  clearActiveWorklog: () => void;
+
+  setCurrentWorklogTarget: (target: TCurrentWorklogTarget | null) => void;
 
   createWorklog: (
     workspaceSlug: string,
@@ -28,7 +51,12 @@ export interface IWorklogStore {
     data: IWorklogCreatePayload
   ) => Promise<IWorklog>;
 
-  startTracking: (workspaceSlug: string, projectId: string, issueId: string) => Promise<IWorklog>;
+  startTracking: (
+    workspaceSlug: string,
+    projectId: string,
+    issueId: string,
+    options?: TStartTrackingOptions
+  ) => Promise<IWorklog>;
 
   stopTracking: (workspaceSlug: string, projectId: string, issueId: string) => Promise<IWorklog>;
 
@@ -46,21 +74,55 @@ export interface IWorklogStore {
 export class WorklogStore implements IWorklogStore {
   worklogsByIssue: Record<string, IWorklog[]> = {};
   totalByIssue: Record<string, number> = {};
+  activeWorklog: IActiveWorklog | null = null;
+  currentWorklogTarget: TCurrentWorklogTarget | null = null;
+  activeWorklogError: string | null = null;
+  isBootstrappingActiveWorklog = false;
+  hasBootstrappedActiveWorklog = false;
   isLoading = false;
 
   constructor() {
     makeObservable(this, {
       worklogsByIssue: observable,
       totalByIssue: observable,
+      activeWorklog: observable,
+      currentWorklogTarget: observable.ref,
+      activeWorklogError: observable,
+      isBootstrappingActiveWorklog: observable,
+      hasBootstrappedActiveWorklog: observable,
       isLoading: observable,
       fetchWorklogs: action,
       fetchTotal: action,
+      fetchActiveWorklog: action,
+      clearActiveWorklog: action,
+      setCurrentWorklogTarget: action,
       createWorklog: action,
       startTracking: action,
       stopTracking: action,
       updateWorklog: action,
       deleteWorklog: action,
     });
+  }
+
+  private upsertIssueWorklog(issueId: string, worklog: IWorklog) {
+    const existing = this.worklogsByIssue[issueId] ?? [];
+    const existingIndex = existing.findIndex((candidate) => candidate.id === worklog.id);
+
+    if (existingIndex !== -1) {
+      existing[existingIndex] = worklog;
+      this.worklogsByIssue[issueId] = [...existing];
+      return;
+    }
+
+    this.worklogsByIssue[issueId] = [worklog, ...existing];
+  }
+
+  private toActiveWorklog(worklog: IWorklog, workspaceSlug: string, issueName?: string): IActiveWorklog {
+    return {
+      ...worklog,
+      issue_name: issueName ?? (this.activeWorklog?.issue === worklog.issue ? this.activeWorklog.issue_name : "") ?? "",
+      workspace_slug: workspaceSlug,
+    };
   }
 
   fetchWorklogs = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog[]> => {
@@ -88,6 +150,37 @@ export class WorklogStore implements IWorklogStore {
     return response.total_duration;
   };
 
+  fetchActiveWorklog = async (workspaceSlug: string): Promise<IActiveWorklog | null> => {
+    this.isBootstrappingActiveWorklog = true;
+    this.activeWorklogError = null;
+
+    try {
+      const activeWorklog = await worklogService.getActive(workspaceSlug);
+      runInAction(() => {
+        this.activeWorklog = activeWorklog;
+        this.hasBootstrappedActiveWorklog = true;
+        this.isBootstrappingActiveWorklog = false;
+      });
+      return activeWorklog;
+    } catch (error) {
+      runInAction(() => {
+        this.activeWorklogError = "Failed to restore the active timer.";
+        this.hasBootstrappedActiveWorklog = true;
+        this.isBootstrappingActiveWorklog = false;
+      });
+      throw error;
+    }
+  };
+
+  clearActiveWorklog = () => {
+    this.activeWorklog = null;
+    this.activeWorklogError = null;
+  };
+
+  setCurrentWorklogTarget = (target: TCurrentWorklogTarget | null) => {
+    this.currentWorklogTarget = target;
+  };
+
   createWorklog = async (
     workspaceSlug: string,
     projectId: string,
@@ -104,17 +197,17 @@ export class WorklogStore implements IWorklogStore {
     return worklog;
   };
 
-  startTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
+  startTracking = async (
+    workspaceSlug: string,
+    projectId: string,
+    issueId: string,
+    options?: TStartTrackingOptions
+  ): Promise<IWorklog> => {
     const worklog = await worklogService.startTracking(workspaceSlug, projectId, issueId);
     runInAction(() => {
-      const existing = this.worklogsByIssue[issueId] ?? [];
-      const existingIndex = existing.findIndex((w) => w.id === worklog.id);
-      if (existingIndex !== -1) {
-        existing[existingIndex] = worklog;
-        this.worklogsByIssue[issueId] = [...existing];
-      } else {
-        this.worklogsByIssue[issueId] = [worklog, ...existing];
-      }
+      this.upsertIssueWorklog(issueId, worklog);
+      this.activeWorklog = this.toActiveWorklog(worklog, workspaceSlug, options?.issueName);
+      this.activeWorklogError = null;
     });
     await this.fetchTotal(workspaceSlug, projectId, issueId);
     return worklog;
@@ -123,13 +216,10 @@ export class WorklogStore implements IWorklogStore {
   stopTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
     const updated = await worklogService.stopTracking(workspaceSlug, projectId, issueId);
     runInAction(() => {
-      const existing = this.worklogsByIssue[issueId] ?? [];
-      const existingIndex = existing.findIndex((w) => w.id === updated.id);
-      if (existingIndex !== -1) {
-        existing[existingIndex] = updated;
-        this.worklogsByIssue[issueId] = [...existing];
-      } else {
-        this.worklogsByIssue[issueId] = [updated, ...existing];
+      this.upsertIssueWorklog(issueId, updated);
+
+      if (this.activeWorklog?.id === updated.id) {
+        this.activeWorklog = null;
       }
     });
     await this.fetchTotal(workspaceSlug, projectId, issueId);

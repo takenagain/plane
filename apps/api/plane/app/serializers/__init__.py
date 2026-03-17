@@ -107,7 +107,7 @@ from .user import (
 )
 from .view import IssueViewSerializer, ViewIssueListSerializer
 from .webhook import WebhookLogSerializer, WebhookSerializer
-from .worklog import WorklogSerializer, WorklogTotalSerializer
+from .worklog import ActiveWorklogSerializer, WorklogSerializer, WorklogTotalSerializer
 from .workspace import (
     StickySerializer,
     WorkspaceHomePreferenceSerializer,

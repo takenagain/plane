@@ -34,6 +34,9 @@ class TestWorklogBase:
     def get_worklogs_total_url(self, workspace_slug: str, project_id: uuid.UUID, issue_id: uuid.UUID) -> str:
         return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/worklogs/total/"
 
+    def get_active_worklog_url(self, workspace_slug: str) -> str:
+        return f"/api/workspaces/{workspace_slug}/worklogs/active/"
+
     def get_worklogs_start_url(self, workspace_slug: str, project_id: uuid.UUID, issue_id: uuid.UUID) -> str:
         return f"/api/workspaces/{workspace_slug}/projects/{project_id}/issues/{issue_id}/worklogs/start/"
 
@@ -524,9 +527,7 @@ class TestWorklogTracking(TestWorklogBase):
         assert not Worklog.objects.filter(pk=worklog_id, duration=0).exists()
 
     @pytest.mark.django_db
-    def test_stop_tracking_emits_activity_update(
-        self, member_client, test_workspace, test_project, test_issue, mocker
-    ):
+    def test_stop_tracking_emits_activity_update(self, member_client, test_workspace, test_project, test_issue, mocker):
         activity_delay = mocker.patch("plane.app.views.issue.worklog.issue_activity.delay")
         start_url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
         stop_url = self.get_worklogs_stop_url(test_workspace.slug, test_project.id, test_issue.id)
@@ -675,6 +676,64 @@ class TestWorklogTracking(TestWorklogBase):
         assert test_issue.state is not None
         assert test_issue.state.name == "In Progress"
         assert IssueAssignee.objects.filter(issue=test_issue, assignee=member_user).exists()
+
+
+@pytest.mark.contract
+class TestActiveWorklogRead(TestWorklogBase):
+    @pytest.mark.django_db
+    def test_active_worklog_returns_latest_active_timer(
+        self, member_client, member_user, test_workspace, test_project, test_issue
+    ):
+        second_issue = Issue.objects.create(
+            name="Second Issue",
+            project=test_project,
+            workspace=test_workspace,
+            state=test_issue.state,
+            created_by=test_issue.created_by,
+            updated_by=test_issue.updated_by,
+        )
+
+        older_worklog = Worklog.objects.create(
+            issue=test_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=0,
+            description="older active timer",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        newer_worklog = Worklog.objects.create(
+            issue=second_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            duration=0,
+            description="newer active timer",
+            logged_at=date.today(),
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.filter(pk=older_worklog.pk).update(created_at=timezone.now() - timedelta(minutes=10))
+        Worklog.objects.filter(pk=newer_worklog.pk).update(created_at=timezone.now() - timedelta(minutes=2))
+
+        response = member_client.get(self.get_active_worklog_url(test_workspace.slug), format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert str(response.data["id"]) == str(newer_worklog.id)
+        assert str(response.data["issue"]) == str(second_issue.id)
+        assert response.data["issue_name"] == second_issue.name
+        assert response.data["workspace_slug"] == test_workspace.slug
+
+    @pytest.mark.django_db
+    def test_active_worklog_returns_empty_response_when_absent(
+        self, member_client, test_workspace, test_project, test_issue
+    ):
+        response = member_client.get(self.get_active_worklog_url(test_workspace.slug), format="json")
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.content == b""
 
 
 # ==============================================================================

@@ -15,6 +15,34 @@ export function formatDuration(totalMinutes: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+export function getElapsedSeconds(createdAt: string, nowMs = Date.now()): number {
+  const createdAtMs = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdAtMs)) return 0;
+
+  return Math.max(0, Math.floor((nowMs - createdAtMs) / 1000));
+}
+
+export function formatElapsedDurationFull(totalSeconds: number): string {
+  if (typeof totalSeconds !== "number" || !isFinite(totalSeconds) || totalSeconds < 0) return "00:00:00";
+
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+export function formatElapsedDurationCompact(totalSeconds: number): string {
+  if (typeof totalSeconds !== "number" || !isFinite(totalSeconds) || totalSeconds < 0) return "0m 0s";
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m ${seconds}s`;
+}
+
 /**
  * Parse hours and minutes inputs into total minutes.
  * Returns NaN if inputs are invalid.

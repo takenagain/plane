@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useMemo } from "react";
 // components
 import { EditorWrapper } from "@/components/editors";
 import { BlockMenu, EditorBubbleMenu } from "@/components/menus";
@@ -27,8 +27,8 @@ function RichTextEditor(props: IRichTextEditorProps) {
     workItemIdentifier,
   } = props;
 
-  const getExtensions = useCallback(() => {
-    const extensions = [
+  const extensions = useMemo(
+    () => [
       ...externalExtensions,
       SideMenuExtension({
         aiEnabled: false,
@@ -40,13 +40,12 @@ function RichTextEditor(props: IRichTextEditorProps) {
         flaggedExtensions,
         extendedEditorProps,
       }),
-    ];
-
-    return extensions;
-  }, [dragDropEnabled, disabledExtensions, externalExtensions, fileHandler, flaggedExtensions, extendedEditorProps]);
+    ],
+    [dragDropEnabled, disabledExtensions, externalExtensions, fileHandler, flaggedExtensions, extendedEditorProps]
+  );
 
   return (
-    <EditorWrapper {...props} extensions={getExtensions()}>
+    <EditorWrapper {...props} extensions={extensions}>
       {(editor) => (
         <>
           {editor && bubbleMenuEnabled && (

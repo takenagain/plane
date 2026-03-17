@@ -4,8 +4,9 @@
  * See the LICENSE file for details.
  */
 
-import { useEditorState, useEditor as useTiptapEditor } from "@tiptap/react";
-import { useImperativeHandle, useEffect } from "react";
+import { Editor } from "@tiptap/core";
+import { useEditorState } from "@tiptap/react";
+import { useImperativeHandle, useEffect, useMemo, useRef, useState } from "react";
 import type { MarkdownStorage } from "tiptap-markdown";
 // extensions
 import { CoreEditorExtensions } from "@/extensions";
@@ -52,19 +53,24 @@ export const useEditor = (props: TEditorHookProps) => {
     value,
   } = props;
 
-  const editor = useTiptapEditor(
-    {
-      editable,
-      immediatelyRender: false,
-      shouldRerenderOnTransaction: false,
-      autofocus,
-      parseOptions: { preserveWhitespace: true },
-      editorProps: {
-        ...CoreEditorProps({
-          editorClassName,
-        }),
-        ...editorProps,
-      },
+  const resolvedEditorProps = useMemo(
+    () => ({
+      ...CoreEditorProps({
+        editorClassName,
+      }),
+      ...editorProps,
+    }),
+    [editorClassName, editorProps]
+  );
+
+  const extensionsCacheRef = useRef<{ cacheKey: string; extensions: ReturnType<typeof CoreEditorExtensions> } | null>(
+    null
+  );
+  const extensionsCacheKey = `${id}:${editable ? "editable" : "readonly"}`;
+
+  if (!extensionsCacheRef.current || extensionsCacheRef.current.cacheKey !== extensionsCacheKey) {
+    extensionsCacheRef.current = {
+      cacheKey: extensionsCacheKey,
       extensions: [
         ...CoreEditorExtensions({
           disabledExtensions,
@@ -83,21 +89,55 @@ export const useEditor = (props: TEditorHookProps) => {
         }),
         ...extensions,
       ],
+    };
+  }
+
+  const resolvedExtensions = extensionsCacheRef.current.extensions;
+
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const callbacksRef = useRef({
+    handleEditorReady,
+    onChange,
+    onEditorFocus,
+    onTransaction,
+  });
+
+  callbacksRef.current = {
+    handleEditorReady,
+    onChange,
+    onEditorFocus,
+    onTransaction,
+  };
+
+  useEffect(() => {
+    const instance = new Editor({
+      editable,
+      autofocus,
+      editorProps: resolvedEditorProps,
+      extensions: resolvedExtensions,
       content: initialValue,
-      onCreate: () => handleEditorReady?.(true),
+      parseOptions: { preserveWhitespace: true },
+      onCreate: () => callbacksRef.current.handleEditorReady?.(true),
       onTransaction: () => {
-        onTransaction?.();
+        callbacksRef.current.onTransaction?.();
       },
-      onUpdate: ({ editor, transaction }) => {
-        // Check if this update is only due to migration update
+      onUpdate: ({ editor: currentEditor, transaction }) => {
         const isMigrationUpdate = transaction?.getMeta("uniqueIdOnlyChange") === true;
-        onChange?.(editor.getJSON(), editor.getHTML(), { isMigrationUpdate });
+        callbacksRef.current.onChange?.(currentEditor.getJSON(), currentEditor.getHTML(), { isMigrationUpdate });
       },
-      onDestroy: () => handleEditorReady?.(false),
-      onFocus: onEditorFocus,
-    },
-    [editable]
-  );
+      onDestroy: () => callbacksRef.current.handleEditorReady?.(false),
+      onFocus: () => callbacksRef.current.onEditorFocus?.(),
+    });
+
+    setEditor(instance);
+
+    return () => {
+      if (!instance.isDestroyed) {
+        instance.destroy();
+      }
+      setEditor((currentEditor) => (currentEditor === instance ? null : currentEditor));
+    };
+  }, [autofocus, editable, id, initialValue, resolvedEditorProps, resolvedExtensions]);
 
   // Effect for syncing SWR data
   useEffect(() => {
@@ -133,8 +173,8 @@ export const useEditor = (props: TEditorHookProps) => {
   // subscribe to assets list changes
   const assetsList = useEditorState({
     editor,
-    selector: ({ editor }) => ({
-      assets: editor?.storage.utility?.assetsList ?? [],
+    selector: ({ editor: currentEditor }) => ({
+      assets: currentEditor?.storage.utility?.assetsList ?? [],
     }),
   });
   // trigger callback when assets list changes

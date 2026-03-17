@@ -5,7 +5,13 @@
  */
 
 import { API_BASE_URL } from "@plane/constants";
-import type { IWorklog, IWorklogCreatePayload, IWorklogUpdatePayload, IWorklogTotalResponse } from "@plane/types";
+import type {
+  IActiveWorklog,
+  IWorklog,
+  IWorklogCreatePayload,
+  IWorklogUpdatePayload,
+  IWorklogTotalResponse,
+} from "@plane/types";
 import { APIService } from "../api.service";
 
 /**
@@ -18,6 +24,10 @@ export class WorklogService extends APIService {
 
   private basePath(workspaceSlug: string, projectId: string, issueId: string): string {
     return `/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}/worklogs/`;
+  }
+
+  private activePath(workspaceSlug: string): string {
+    return `/api/workspaces/${workspaceSlug}/worklogs/active/`;
   }
 
   /**
@@ -36,6 +46,20 @@ export class WorklogService extends APIService {
   ): Promise<IWorklog> {
     return this.post(this.basePath(workspaceSlug, projectId, issueId), data)
       .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  /**
+   * Get the current user's active timer for the workspace, if any.
+   */
+  async getActive(workspaceSlug: string): Promise<IActiveWorklog | null> {
+    return this.get(this.activePath(workspaceSlug))
+      .then((response) => {
+        if (response?.status === 204) return null;
+        return response?.data ?? null;
+      })
       .catch((error) => {
         throw error?.response;
       });

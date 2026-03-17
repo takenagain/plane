@@ -106,6 +106,8 @@ storybook-static
 
 CLAUDE.md
 
+/docs/spec/
+
 build/
 .react-router/
 

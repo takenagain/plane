@@ -21,6 +21,11 @@ export interface IWorklog {
   created_by: string;
 }
 
+export interface IActiveWorklog extends IWorklog {
+  issue_name: string;
+  workspace_slug: string;
+}
+
 /**
  * Payload for creating a new worklog.
  */

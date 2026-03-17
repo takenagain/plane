@@ -99,6 +99,15 @@ overrides:
   chokidar: 3.6.0
   happy-dom: 20.0.2
   tar-fs: 3.0.9
+  prosemirror-changeset: 2.4.0
+  prosemirror-history: 1.5.0
+  prosemirror-inputrules: 1.5.1
+  prosemirror-markdown: 1.13.4
+  prosemirror-menu: 1.3.0
+  prosemirror-model: 1.25.4
+  prosemirror-state: 1.4.4
+  prosemirror-tables: 1.8.5
+  prosemirror-transform: 1.11.0
   prosemirror-view: 1.40.0
   '@types/express': 4.17.23
   typescript: 5.8.3
@@ -395,7 +404,7 @@ importers:
         version: 8.18.1
       '@vitest/coverage-v8':
         specifier: ^4.0.8
-        version: 4.0.17(vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1))
+        version: 4.0.17(vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1))
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
@@ -407,7 +416,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^4.0.8
-        version: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
+        version: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
 
   apps/space:
     dependencies:
@@ -740,6 +749,15 @@ importers:
       '@tailwindcss/typography':
         specifier: 0.5.19
         version: 0.5.19
+      '@testing-library/jest-dom':
+        specifier: ^6.9.1
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.3.0
+        version: 16.3.2(@testing-library/dom@10.4.0)(@types/react-dom@18.3.1)(@types/react@18.3.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@testing-library/user-event':
+        specifier: ^14.6.1
+        version: 14.6.1(@testing-library/dom@10.4.0)
       '@types/lodash-es':
         specifier: 'catalog:'
         version: 4.17.12
@@ -755,6 +773,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 18.3.1
+      happy-dom:
+        specifier: 20.0.2
+        version: 20.0.2
       typescript:
         specifier: 5.8.3
         version: 5.8.3
@@ -764,6 +785,9 @@ importers:
       vite-tsconfig-paths:
         specifier: ^5.1.4
         version: 5.1.4(typescript@5.8.3)(vite@7.3.1(@types/node@22.12.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1))
+      vitest:
+        specifier: ^4.0.8
+        version: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
 
   packages/codemods:
     devDependencies:
@@ -781,7 +805,7 @@ importers:
         version: 17.3.0
       vitest:
         specifier: ^4.0.8
-        version: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
+        version: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
 
   packages/constants:
     dependencies:
@@ -3921,6 +3945,21 @@ packages:
     resolution: {integrity: sha512-zIcONa+hVtVSSep9UT3jZ5rizo2BsxgyDYU7WFD5eICBE7no3881HGeb/QkGfsJs6JTkY1aQhT7rIPC7e+0nnA==}
     engines: {node: '>=14', npm: '>=6', yarn: '>=1'}
 
+  '@testing-library/react@16.3.2':
+    resolution: {integrity: sha512-XU5/SytQM+ykqMnAnvB2umaJNIOsLF3PVv//1Ew4CTcpz0/BRyy/af40qqrt7SjKpDdT1saBMc42CUok5gaw+g==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@testing-library/dom': ^10.0.0
+      '@types/react': ^18.0.0 || ^19.0.0
+      '@types/react-dom': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true
+
   '@testing-library/user-event@14.5.2':
     resolution: {integrity: sha512-YAh82Wh4TIrxYLmfGcixwD18oIjyC1pFQC2Y01F2lzV2HTMiYrI0nze0FD0ocB//CKS/7jIUgae+adPqxK5yCQ==}
     engines: {node: '>=12', npm: '>=6'}
@@ -4298,6 +4337,9 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
+  '@types/node@20.19.35':
+    resolution: {integrity: sha512-Uarfe6J91b9HAUXxjvSOdiO2UPOKLm07Q1oh0JHxoZ1y8HoqxDAu3gVrsrOHeiio0kSsoVBt4wFrKOm0dKxVPQ==}
+
   '@types/node@22.12.0':
     resolution: {integrity: sha512-Fll2FZ1riMjNmlmJOdAyY5pUbkftXslB5DgEzlIuNaiWhXd00FhWxVC/r4yV/4wBb9JfImTu+jiSvXTkJ7F/gA==}
 
@@ -4364,6 +4406,9 @@ packages:
 
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
+
+  '@types/whatwg-mimetype@3.0.2':
+    resolution: {integrity: sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA==}
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
@@ -5820,6 +5865,10 @@ packages:
   gud@1.0.0:
     resolution: {integrity: sha512-zGEOVKFM5sVPPrYs7J5/hYEw2Pof8KCyOwyhG8sAF26mCAeUFAcYPu1mwB7hhpIP29zOIBaDqwuHdLp0jvZXjw==}
 
+  happy-dom@20.0.2:
+    resolution: {integrity: sha512-pYOyu624+6HDbY+qkjILpQGnpvZOusItCk+rvF5/V+6NkcgTKnbOldpIy22tBnxoaLtlM9nXgoqAcW29/B7CIw==}
+    engines: {node: '>=20.0.0'}
+
   has-flag@3.0.0:
     resolution: {integrity: sha512-sKJf1+ceQBr4SMkvQnBDNDtf4TXpVhVGateu0t918bl30FnbE2m4vNLX+VWe/dpjlb+HugGYzW7uQXH98HPEYw==}
     engines: {node: '>=4'}
@@ -6846,9 +6895,6 @@ packages:
   msgpackr@1.11.8:
     resolution: {integrity: sha512-bC4UGzHhVvgDNS7kn9tV8fAucIYUBuGojcaLiz7v+P63Lmtm0Xeji8B/8tYKddALXxJLpwIeBmUN3u64C4YkRA==}
 
-  msgpackr@1.11.9:
-    resolution: {integrity: sha512-FkoAAyyA6HM8wL882EcEyFZ9s7hVADSwG9xrVx3dxxNQAtgADTrJoEWivID82Iv1zWDsv/OtbrrcZAzGzOMdNw==}
-
   multipasta@0.2.7:
     resolution: {integrity: sha512-KPA58d68KgGil15oDqXjkUBEBYc00XvbPj5/X+dyzeo/lWm9Nc25pQRlf1D+gv4OpK7NM0J1odrbu9JNNGvynA==}
 
@@ -7301,18 +7347,15 @@ packages:
   property-information@7.1.0:
     resolution: {integrity: sha512-TwEZ+X+yCJmYfL7TPUOcvBZ4QfoT5YenQiJuX//0th53DE6w0xxLEtfK3iyryQFddXuvkIk51EEgrJQ0WJkOmQ==}
 
-  prosemirror-changeset@2.3.1:
-    resolution: {integrity: sha512-j0kORIBm8ayJNl3zQvD1TTPHJX3g042et6y/KQhZhnPrruO8exkTgG8X+NRpj7kIyMMEx74Xb3DyMIBtO0IKkQ==}
-
   prosemirror-changeset@2.4.0:
     resolution: {integrity: sha512-LvqH2v7Q2SF6yxatuPP2e8vSUKS/L+xAU7dPDC4RMyHMhZoGDfBC74mYuyYF4gLqOEG758wajtyhNnsTkuhvng==}
 
   prosemirror-codemark@0.4.2:
     resolution: {integrity: sha512-4n+PnGQToa/vTjn0OiivUvE8/moLtguUAfry8UA4Q8p47MhqT2Qpf2zBLustX5Upi4mSp3z1ZYBqLLovZC6abA==}
     peerDependencies:
-      prosemirror-inputrules: ^1.2.0
-      prosemirror-model: ^1.18.1
-      prosemirror-state: ^1.4.1
+      prosemirror-inputrules: 1.5.1
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
       prosemirror-view: 1.40.0
 
   prosemirror-collab@1.3.1:
@@ -7327,17 +7370,8 @@ packages:
   prosemirror-gapcursor@1.3.2:
     resolution: {integrity: sha512-wtjswVBd2vaQRrnYZaBCbyDqr232Ed4p2QPtRIUK5FuqHYKGWkEwl08oQM4Tw7DOR0FsasARV5uJFvMZWxdNxQ==}
 
-  prosemirror-gapcursor@1.4.1:
-    resolution: {integrity: sha512-pMdYaEnjNMSwl11yjEGtgTmLkR08m/Vl+Jj443167p9eB3HVQKhYCc4gmHVDsLPODfZfjr/MmirsdyZziXbQKw==}
-
-  prosemirror-history@1.4.1:
-    resolution: {integrity: sha512-2JZD8z2JviJrboD9cPuX/Sv/1ChFng+xh2tChQ2X4bB2HeK+rra/bmJ3xGntCcjhOqIzSDG6Id7e8RJ9QPXLEQ==}
-
   prosemirror-history@1.5.0:
     resolution: {integrity: sha512-zlzTiH01eKA55UAf1MEjtssJeHnGxO0j4K4Dpx+gnmX9n+SHNlDqI2oO1Kv1iPN5B1dm5fsljCfqKF9nFL6HRg==}
-
-  prosemirror-inputrules@1.5.0:
-    resolution: {integrity: sha512-K0xJRCmt+uSw7xesnHmcn72yBGTbY45vm8gXI4LZXbx2Z0jwh5aF9xrGQgrVPu0WbyFVFF3E/o9VhJYz6SQWnA==}
 
   prosemirror-inputrules@1.5.1:
     resolution: {integrity: sha512-7wj4uMjKaXWAQ1CDgxNzNtR9AlsuwzHfdFH1ygEHA2KHF2DOEaXl1CJfNPAKCg9qNEh4rum975QLaCiQPyY6Fw==}
@@ -7345,20 +7379,11 @@ packages:
   prosemirror-keymap@1.2.3:
     resolution: {integrity: sha512-4HucRlpiLd1IPQQXNqeo81BGtkY8Ai5smHhKW9jjPKRc2wQIxksg7Hl1tTI2IfT2B/LgX6bfYvXxEpJl7aKYKw==}
 
-  prosemirror-markdown@1.13.2:
-    resolution: {integrity: sha512-FPD9rHPdA9fqzNmIIDhhnYQ6WgNoSWX9StUZ8LEKapaXU9i6XgykaHKhp6XMyXlOWetmaFgGDS/nu/w9/vUc5g==}
-
   prosemirror-markdown@1.13.4:
     resolution: {integrity: sha512-D98dm4cQ3Hs6EmjK500TdAOew4Z03EV71ajEFiWra3Upr7diytJsjF4mPV2dW+eK5uNectiRj0xFxYI9NLXDbw==}
 
-  prosemirror-menu@1.2.5:
-    resolution: {integrity: sha512-qwXzynnpBIeg1D7BAtjOusR+81xCp53j7iWu/IargiRZqRjGIlQuu1f3jFi+ehrHhWMLoyOQTSRx/IWZJqOYtQ==}
-
   prosemirror-menu@1.3.0:
     resolution: {integrity: sha512-TImyPXCHPcDsSka2/lwJ6WjTASr4re/qWq1yoTTuLOqfXucwF6VcRa2LWCkM/EyTD1UO3CUwiH8qURJoWJRxwg==}
-
-  prosemirror-model@1.25.3:
-    resolution: {integrity: sha512-dY2HdaNXlARknJbrManZ1WyUtos+AP97AmvqdOQtWtrrC5g4mohVX5DTi9rXNFSk09eczLq9GuNTtq3EfMeMGA==}
 
   prosemirror-model@1.25.4:
     resolution: {integrity: sha512-PIM7E43PBxKce8OQeezAs9j4TP+5yDpZVbuurd1h5phUxEKIu+G2a+EUZzIC5nS1mJktDJWzbqS23n1tsAf5QA==}
@@ -7369,14 +7394,8 @@ packages:
   prosemirror-schema-list@1.5.1:
     resolution: {integrity: sha512-927lFx/uwyQaGwJxLWCZRkjXG0p48KpMj6ueoYiu4JX05GGuGcgzAy62dfiV8eFZftgyBUvLx76RsMe20fJl+Q==}
 
-  prosemirror-state@1.4.3:
-    resolution: {integrity: sha512-goFKORVbvPuAQaXhpbemJFRKJ2aixr+AZMGiquiqKxaucC6hlpHNZHWgz5R7dS4roHiwq9vDctE//CZ++o0W1Q==}
-
   prosemirror-state@1.4.4:
     resolution: {integrity: sha512-6jiYHH2CIGbCfnxdHbXZ12gySFY/fz/ulZE333G6bPqIZ4F+TXo9ifiR86nAHpWnfoNjOb3o5ESi7J8Uz1jXHw==}
-
-  prosemirror-tables@1.7.1:
-    resolution: {integrity: sha512-eRQ97Bf+i9Eby99QbyAiyov43iOKgWa7QCGly+lrDt7efZ1v8NWolhXiB43hSDGIXT1UXgbs4KJN3a06FGpr1Q==}
 
   prosemirror-tables@1.8.5:
     resolution: {integrity: sha512-V/0cDCsHKHe/tfWkeCmthNUcEp1IVO3p6vwN8XtwE9PZQLAZJigbw3QoraAdfJPir4NKJtNvOB8oYGKRl+t0Dw==}
@@ -7384,12 +7403,9 @@ packages:
   prosemirror-trailing-node@3.0.0:
     resolution: {integrity: sha512-xiun5/3q0w5eRnGYfNlW1uU9W6x5MoFKWwq/0TIRgt09lv7Hcser2QYV8t4muXbEr+Fwo0geYn79Xs4GKywrRQ==}
     peerDependencies:
-      prosemirror-model: ^1.22.1
-      prosemirror-state: ^1.4.2
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
       prosemirror-view: 1.40.0
-
-  prosemirror-transform@1.10.4:
-    resolution: {integrity: sha512-pwDy22nAnGqNR1feOQKHxoFkkUtepoFAd3r2hbEDsnf4wp57kKA36hXsB3njA9FtONBEwSDnDeCiJe+ItD+ykw==}
 
   prosemirror-transform@1.11.0:
     resolution: {integrity: sha512-4I7Ce4KpygXb9bkiPS3hTEk4dSHorfRw8uI0pE8IhxlK2GXsqv5tIA7JUSxtSu7u8APVOTtbUBxTmnHIxVkIJw==}
@@ -8354,6 +8370,9 @@ packages:
   undici-types@6.20.0:
     resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
 
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
   undici@7.18.2:
     resolution: {integrity: sha512-y+8YjDFzWdQlSE9N5nzKMT3g4a5UBX1HKowfdXh0uvAnTaqqwqB92Jt4UXBAeKekDs5IaDKyJFR4X1gYVCgXcw==}
     engines: {node: '>=20.18.1'}
@@ -8683,6 +8702,10 @@ packages:
     engines: {node: '>=18'}
     deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
+  whatwg-mimetype@3.0.0:
+    resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+    engines: {node: '>=12'}
+
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
     engines: {node: '>=18'}
@@ -8794,8 +8817,8 @@ packages:
     resolution: {integrity: sha512-NpM99WSdD4Fx4if5xOMDpPtU3oAmTSjlzh5U4353ABbRHl1HtAFUx6HlebLZfyFxXN9jzKMDkVbcRjqOZVkYQg==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
     peerDependencies:
-      prosemirror-model: ^1.7.1
-      prosemirror-state: ^1.2.3
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
       prosemirror-view: 1.40.0
       y-protocols: ^1.0.1
       yjs: ^13.5.38
@@ -9428,7 +9451,7 @@ snapshots:
     dependencies:
       '@effect/platform': 0.94.1(effect@3.19.14)
       effect: 3.19.14
-      msgpackr: 1.11.9
+      msgpackr: 1.11.8
 
   '@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.1(effect@3.19.14))(effect@3.19.14)(ioredis@5.7.0))(@effect/platform@0.94.1(effect@3.19.14))(effect@3.19.14)':
     dependencies:
@@ -11281,6 +11304,16 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
 
+  '@testing-library/react@16.3.2(@testing-library/dom@10.4.0)(@types/react-dom@18.3.1)(@types/react@18.3.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@babel/runtime': 7.26.10
+      '@testing-library/dom': 10.4.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 18.3.11
+      '@types/react-dom': 18.3.1
+
   '@testing-library/user-event@14.5.2(@testing-library/dom@10.4.0)':
     dependencies:
       '@testing-library/dom': 10.4.0
@@ -11458,23 +11491,23 @@ snapshots:
 
   '@tiptap/pm@2.26.1':
     dependencies:
-      prosemirror-changeset: 2.3.1
+      prosemirror-changeset: 2.4.0
       prosemirror-collab: 1.3.1
       prosemirror-commands: 1.7.1
       prosemirror-dropcursor: 1.8.2
       prosemirror-gapcursor: 1.3.2
-      prosemirror-history: 1.4.1
-      prosemirror-inputrules: 1.5.0
+      prosemirror-history: 1.5.0
+      prosemirror-inputrules: 1.5.1
       prosemirror-keymap: 1.2.3
-      prosemirror-markdown: 1.13.2
-      prosemirror-menu: 1.2.5
-      prosemirror-model: 1.25.3
+      prosemirror-markdown: 1.13.4
+      prosemirror-menu: 1.3.0
+      prosemirror-model: 1.25.4
       prosemirror-schema-basic: 1.2.4
       prosemirror-schema-list: 1.5.1
-      prosemirror-state: 1.4.3
-      prosemirror-tables: 1.7.1
-      prosemirror-trailing-node: 3.0.0(prosemirror-model@1.25.3)(prosemirror-state@1.4.3)(prosemirror-view@1.40.0)
-      prosemirror-transform: 1.10.4
+      prosemirror-state: 1.4.4
+      prosemirror-tables: 1.8.5
+      prosemirror-trailing-node: 3.0.0(prosemirror-model@1.25.4)(prosemirror-state@1.4.4)(prosemirror-view@1.40.0)
+      prosemirror-transform: 1.11.0
       prosemirror-view: 1.40.0
 
   '@tiptap/pm@3.6.6':
@@ -11483,7 +11516,7 @@ snapshots:
       prosemirror-collab: 1.3.1
       prosemirror-commands: 1.7.1
       prosemirror-dropcursor: 1.8.2
-      prosemirror-gapcursor: 1.4.1
+      prosemirror-gapcursor: 1.3.2
       prosemirror-history: 1.5.0
       prosemirror-inputrules: 1.5.1
       prosemirror-keymap: 1.2.3
@@ -11730,6 +11763,10 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/node@20.19.35':
+    dependencies:
+      undici-types: 6.21.0
+
   '@types/node@22.12.0':
     dependencies:
       undici-types: 6.20.0
@@ -11795,13 +11832,15 @@ snapshots:
 
   '@types/uuid@9.0.8': {}
 
+  '@types/whatwg-mimetype@3.0.2': {}
+
   '@types/ws@8.18.1':
     dependencies:
       '@types/node': 22.12.0
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@vitest/coverage-v8@4.0.17(vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1))':
+  '@vitest/coverage-v8@4.0.17(vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1))':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/utils': 4.0.17
@@ -11813,7 +11852,7 @@ snapshots:
       obug: 2.1.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
+      vitest: 4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1)
 
   '@vitest/expect@2.0.5':
     dependencies:
@@ -13324,6 +13363,12 @@ snapshots:
 
   gud@1.0.0: {}
 
+  happy-dom@20.0.2:
+    dependencies:
+      '@types/node': 20.19.35
+      '@types/whatwg-mimetype': 3.0.2
+      whatwg-mimetype: 3.0.0
+
   has-flag@3.0.0: {}
 
   has-flag@4.0.0: {}
@@ -14658,10 +14703,6 @@ snapshots:
     optionalDependencies:
       msgpackr-extract: 3.0.3
 
-  msgpackr@1.11.9:
-    optionalDependencies:
-      msgpackr-extract: 3.0.3
-
   multipasta@0.2.7: {}
 
   nano-spawn@2.0.0: {}
@@ -15086,10 +15127,6 @@ snapshots:
 
   property-information@7.1.0: {}
 
-  prosemirror-changeset@2.3.1:
-    dependencies:
-      prosemirror-transform: 1.10.4
-
   prosemirror-changeset@2.4.0:
     dependencies:
       prosemirror-transform: 1.11.0
@@ -15103,40 +15140,26 @@ snapshots:
 
   prosemirror-collab@1.3.1:
     dependencies:
-      prosemirror-state: 1.4.3
+      prosemirror-state: 1.4.4
 
   prosemirror-commands@1.7.1:
     dependencies:
-      prosemirror-model: 1.25.3
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
+      prosemirror-transform: 1.11.0
 
   prosemirror-dropcursor@1.8.2:
     dependencies:
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
+      prosemirror-state: 1.4.4
+      prosemirror-transform: 1.11.0
       prosemirror-view: 1.40.0
 
   prosemirror-gapcursor@1.3.2:
     dependencies:
       prosemirror-keymap: 1.2.3
-      prosemirror-model: 1.25.3
-      prosemirror-state: 1.4.3
-      prosemirror-view: 1.40.0
-
-  prosemirror-gapcursor@1.4.1:
-    dependencies:
-      prosemirror-keymap: 1.2.3
       prosemirror-model: 1.25.4
       prosemirror-state: 1.4.4
       prosemirror-view: 1.40.0
-
-  prosemirror-history@1.4.1:
-    dependencies:
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
-      prosemirror-view: 1.40.0
-      rope-sequence: 1.3.4
 
   prosemirror-history@1.5.0:
     dependencies:
@@ -15145,11 +15168,6 @@ snapshots:
       prosemirror-view: 1.40.0
       rope-sequence: 1.3.4
 
-  prosemirror-inputrules@1.5.0:
-    dependencies:
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
-
   prosemirror-inputrules@1.5.1:
     dependencies:
       prosemirror-state: 1.4.4
@@ -15157,27 +15175,14 @@ snapshots:
 
   prosemirror-keymap@1.2.3:
     dependencies:
-      prosemirror-state: 1.4.3
+      prosemirror-state: 1.4.4
       w3c-keyname: 2.2.8
-
-  prosemirror-markdown@1.13.2:
-    dependencies:
-      '@types/markdown-it': 14.1.2
-      markdown-it: 14.1.1
-      prosemirror-model: 1.25.3
 
   prosemirror-markdown@1.13.4:
     dependencies:
       '@types/markdown-it': 14.1.2
       markdown-it: 14.1.1
       prosemirror-model: 1.25.4
-
-  prosemirror-menu@1.2.5:
-    dependencies:
-      crelt: 1.0.6
-      prosemirror-commands: 1.7.1
-      prosemirror-history: 1.4.1
-      prosemirror-state: 1.4.3
 
   prosemirror-menu@1.3.0:
     dependencies:
@@ -15186,42 +15191,24 @@ snapshots:
       prosemirror-history: 1.5.0
       prosemirror-state: 1.4.4
 
-  prosemirror-model@1.25.3:
-    dependencies:
-      orderedmap: 2.1.1
-
   prosemirror-model@1.25.4:
     dependencies:
       orderedmap: 2.1.1
 
   prosemirror-schema-basic@1.2.4:
     dependencies:
-      prosemirror-model: 1.25.3
+      prosemirror-model: 1.25.4
 
   prosemirror-schema-list@1.5.1:
     dependencies:
-      prosemirror-model: 1.25.3
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
-
-  prosemirror-state@1.4.3:
-    dependencies:
-      prosemirror-model: 1.25.3
-      prosemirror-transform: 1.10.4
-      prosemirror-view: 1.40.0
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
+      prosemirror-transform: 1.11.0
 
   prosemirror-state@1.4.4:
     dependencies:
       prosemirror-model: 1.25.4
       prosemirror-transform: 1.11.0
-      prosemirror-view: 1.40.0
-
-  prosemirror-tables@1.7.1:
-    dependencies:
-      prosemirror-keymap: 1.2.3
-      prosemirror-model: 1.25.3
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
       prosemirror-view: 1.40.0
 
   prosemirror-tables@1.8.5:
@@ -15232,14 +15219,6 @@ snapshots:
       prosemirror-transform: 1.11.0
       prosemirror-view: 1.40.0
 
-  prosemirror-trailing-node@3.0.0(prosemirror-model@1.25.3)(prosemirror-state@1.4.3)(prosemirror-view@1.40.0):
-    dependencies:
-      '@remirror/core-constants': 3.0.0
-      escape-string-regexp: 4.0.0
-      prosemirror-model: 1.25.3
-      prosemirror-state: 1.4.3
-      prosemirror-view: 1.40.0
-
   prosemirror-trailing-node@3.0.0(prosemirror-model@1.25.4)(prosemirror-state@1.4.4)(prosemirror-view@1.40.0):
     dependencies:
       '@remirror/core-constants': 3.0.0
@@ -15248,19 +15227,15 @@ snapshots:
       prosemirror-state: 1.4.4
       prosemirror-view: 1.40.0
 
-  prosemirror-transform@1.10.4:
-    dependencies:
-      prosemirror-model: 1.25.3
-
   prosemirror-transform@1.11.0:
     dependencies:
       prosemirror-model: 1.25.4
 
   prosemirror-view@1.40.0:
     dependencies:
-      prosemirror-model: 1.25.3
-      prosemirror-state: 1.4.3
-      prosemirror-transform: 1.10.4
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
+      prosemirror-transform: 1.11.0
 
   proxy-addr@2.0.7:
     dependencies:
@@ -16238,7 +16213,7 @@ snapshots:
       '@types/markdown-it': 13.0.9
       markdown-it: 14.1.1
       markdown-it-task-lists: 2.1.1
-      prosemirror-markdown: 1.13.2
+      prosemirror-markdown: 1.13.4
 
   tldts-core@6.1.86:
     optional: true
@@ -16377,6 +16352,8 @@ snapshots:
       quansync: 0.2.11
 
   undici-types@6.20.0: {}
+
+  undici-types@6.21.0: {}
 
   undici@7.18.2: {}
 
@@ -16657,7 +16634,7 @@ snapshots:
       terser: 5.43.1
       yaml: 2.8.1
 
-  vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1):
+  vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@22.12.0)(happy-dom@20.0.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1):
     dependencies:
       '@vitest/expect': 4.0.15
       '@vitest/mocker': 4.0.15(vite@7.3.1(@types/node@22.12.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.43.1)(yaml@2.8.1))
@@ -16682,6 +16659,7 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/node': 22.12.0
+      happy-dom: 20.0.2
       jsdom: 26.1.0
     transitivePeerDependencies:
       - jiti
@@ -16775,6 +16753,8 @@ snapshots:
     dependencies:
       iconv-lite: 0.6.3
     optional: true
+
+  whatwg-mimetype@3.0.0: {}
 
   whatwg-mimetype@4.0.0:
     optional: true
