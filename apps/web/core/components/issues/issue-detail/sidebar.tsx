@@ -29,6 +29,7 @@ import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -43,10 +44,10 @@ import { DateAlert } from "@/plane-web/components/issues/issue-details/sidebar/d
 import { TransferHopInfo } from "@/plane-web/components/issues/issue-details/sidebar/transfer-hop-info";
 import { IssueTimeTrackingActions } from "@/plane-web/components/issues/worklog/actions";
 import { IssueWorklogProperty } from "@/plane-web/components/issues/worklog/property";
-import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
+import { IssueRecurrenceProperties } from "./recurrence-properties";
 import type { TIssueOperations } from "./root";
 
 type Props = {
@@ -176,11 +177,19 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 <DateDropdown
                   placeholder={t("issue.add.due_date")}
                   value={issue.target_date}
-                  onChange={(val) =>
-                    issueOperations.update(workspaceSlug, projectId, issueId, {
-                      target_date: val ? renderFormattedPayloadDate(val) : null,
-                    })
-                  }
+                  onChange={(val) => {
+                    const targetDate = val ? renderFormattedPayloadDate(val) : null;
+
+                    return issueOperations.update(workspaceSlug, projectId, issueId, {
+                      target_date: targetDate,
+                      ...(targetDate === null && issue.recurrence_pattern
+                        ? {
+                            recurrence_pattern: null,
+                            recurrence_max_occurrences: null,
+                          }
+                        : {}),
+                    });
+                  }}
                   minDate={minDate ?? undefined}
                   disabled={!isEditable}
                   buttonVariant="transparent-with-text"
@@ -196,6 +205,12 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 {issue.target_date && <DateAlert date={issue.target_date} workItem={issue} projectId={projectId} />}
               </div>
             </SidebarPropertyListItem>
+
+            <IssueRecurrenceProperties
+              issue={issue}
+              disabled={!isEditable}
+              updateIssue={(data) => issueOperations.update(workspaceSlug, projectId, issueId, data)}
+            />
 
             {projectId && areEstimateEnabledByProjectId(projectId) && (
               <SidebarPropertyListItem icon={EstimatePropertyIcon} label={t("common.estimate")}>

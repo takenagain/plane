@@ -42,6 +42,15 @@ export enum EIssuesStoreType {
   TEAM_PROJECT_WORK_ITEMS = "TEAM_PROJECT_WORK_ITEMS",
 }
 
+export type TIssueRecurrencePattern =
+  | "daily"
+  | "weekly"
+  | "bi_weekly"
+  | "monthly"
+  | "yearly"
+  | "every_minute"
+  | "once";
+
 export type TBaseIssue = {
   id: string;
   sequence_id: number;
@@ -69,6 +78,12 @@ export type TBaseIssue = {
   updated_at: string;
   start_date: string | null;
   target_date: string | null;
+  recurrence_pattern: TIssueRecurrencePattern | null;
+  recurrence_max_occurrences: number | null;
+  recurrence_generated_count: number;
+  recurrence_next_run_at: string | null;
+  recurrence_last_run_at: string | null;
+  recurrence_source_issue_id: string | null;
   completed_at: string | null;
   archived_at: string | null;
 
