@@ -115,7 +115,13 @@ issue = Issue.objects.create(
     updated_by=user,
 )
 
-next_run = compute_issue_recurrence_next_run_at(issue)
+next_run = compute_issue_recurrence_next_run_at(
+    project_id=issue.project_id,
+    target_date=issue.target_date,
+    recurrence_pattern=issue.recurrence_pattern,
+    recurrence_max_occurrences=issue.recurrence_max_occurrences,
+    recurrence_generated_count=issue.recurrence_generated_count,
+)
 if next_run:
     issue.recurrence_next_run_at = next_run
     issue.save(update_fields=["recurrence_next_run_at"])

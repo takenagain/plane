@@ -62,7 +62,7 @@ def get_effective_issue_recurrence_values(validated_data, instance=None):
     }
 
 
-def get_issue_recurrence_validation_error(*, recurrence_pattern, target_date, recurrence_max_occurrences):
+def get_issue_recurrence_validation_error(*, recurrence_pattern, target_date, recurrence_max_occurrences, **_kwargs):
     if not recurrence_pattern:
         return None
 
@@ -134,7 +134,10 @@ def get_recurrence_occurrence_date(*, project_id, recurrence_run_at):
 
 
 def is_recurrence_exhausted(issue):
-    return issue.recurrence_max_occurrences is not None and issue.recurrence_generated_count >= issue.recurrence_max_occurrences
+    return (
+        issue.recurrence_max_occurrences is not None
+        and issue.recurrence_generated_count >= issue.recurrence_max_occurrences
+    )
 
 
 def get_current_recurrence_cycle(*, project_id, current_time=None):

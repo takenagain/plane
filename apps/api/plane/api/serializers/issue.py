@@ -3,32 +3,35 @@
 # See the LICENSE file for details.
 
 # Django imports
+# Django imports
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
+from django.db import IntegrityError
 from django.utils import timezone
 from lxml import html
-from django.db import IntegrityError
 
 #  Third party imports
 from rest_framework import serializers
 
 # Module imports
 from plane.db.models import (
+    EstimatePoint,
+    FileAsset,
     Issue,
-    IssueType,
     IssueActivity,
     IssueAssignee,
-    FileAsset,
     IssueComment,
     IssueLabel,
     IssueLink,
+    IssueType,
     Label,
     ProjectMember,
     State,
     User,
-    EstimatePoint,
 )
 from plane.utils.content_validator import (
-    validate_html_content,
     validate_binary_data,
+    validate_html_content,
 )
 from plane.utils.issue_recurrence import (
     compute_issue_recurrence_next_run_at,
@@ -42,10 +45,6 @@ from .cycle import CycleLiteSerializer, CycleSerializer
 from .module import ModuleLiteSerializer, ModuleSerializer
 from .state import StateLiteSerializer
 from .user import UserLiteSerializer
-
-# Django imports
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
 
 
 class IssueSerializer(BaseSerializer):
@@ -169,7 +168,7 @@ class IssueSerializer(BaseSerializer):
 
         if should_recompute_issue_recurrence(data, self.instance):
             data["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
-                project_id=self.context.get("project_id"),
+                project_id=self.context.get("project_id") or getattr(self.instance, "project_id", None),
                 **recurrence_values,
             )
 

@@ -45,6 +45,10 @@ def process_recurring_issues(batch_size=RECURRENCE_BATCH_SIZE):
         for key, value in batch_summary.items():
             summary[key] += value
 
+        # Terminate if no forward progress was made (all items failed)
+        if batch_summary["created"] == 0 and batch_summary["exhausted"] == 0 and batch_summary["skipped"] == 0:
+            break
+
     logger.info("Recurring issue processing completed", extra={"recurring_issue_summary": summary})
     return summary
 
@@ -61,9 +65,11 @@ def _process_recurrence_batch(*, batch_size, current_time):
 
     with transaction.atomic():
         due_sources = list(
-            Issue.objects.select_for_update(skip_locked=True)
+            Issue.objects.select_for_update(skip_locked=True, of=("self",))
             .select_related("project", "project__default_state", "state", "estimate_point", "type")
             .filter(
+                deleted_at__isnull=True,
+                project__archived_at__isnull=True,
                 archived_at__isnull=True,
                 is_draft=False,
                 recurrence_pattern__in=get_allowed_recurrence_patterns(),
@@ -87,8 +93,17 @@ def _process_recurrence_batch(*, batch_size, current_time):
                         continue
 
                     if is_recurrence_exhausted(source_issue):
+                        source_issue.recurrence_pattern = None
+                        source_issue.recurrence_max_occurrences = None
                         source_issue.recurrence_next_run_at = None
-                        source_issue.save(update_fields=["recurrence_next_run_at"], disable_auto_set_user=True)
+                        source_issue.save(
+                            update_fields=[
+                                "recurrence_pattern",
+                                "recurrence_max_occurrences",
+                                "recurrence_next_run_at",
+                            ],
+                            disable_auto_set_user=True,
+                        )
                         batch_summary["exhausted"] += 1
                         continue
 
@@ -116,7 +131,11 @@ def _process_recurrence_batch(*, batch_size, current_time):
                             },
                             cls=DjangoJSONEncoder,
                         ),
-                        actor_id=str(source_issue.updated_by_id or source_issue.created_by_id or source_issue.project.created_by_id),
+                        actor_id=str(
+                            source_issue.updated_by_id
+                            or source_issue.created_by_id
+                            or source_issue.project.created_by_id
+                        ),
                         issue_id=str(duplicate_issue.id),
                         project_id=str(source_issue.project_id),
                         current_instance=None,
@@ -127,17 +146,27 @@ def _process_recurrence_batch(*, batch_size, current_time):
                     source_issue.recurrence_last_run_at = current_time
 
                     if is_recurrence_exhausted(source_issue):
+                        source_issue.recurrence_pattern = None
+                        source_issue.recurrence_max_occurrences = None
                         source_issue.recurrence_next_run_at = None
                         batch_summary["exhausted"] += 1
                     else:
-                        source_issue.recurrence_next_run_at = get_next_recurrence_run_at(
+                        next_run = get_next_recurrence_run_at(
                             project_id=source_issue.project_id,
                             current_run_at=source_issue.recurrence_next_run_at,
                             recurrence_pattern=source_issue.recurrence_pattern,
                         )
+                        source_issue.recurrence_next_run_at = next_run
+                        if next_run is None:
+                            # Pattern exhausted naturally (e.g. "once" cadence)
+                            source_issue.recurrence_pattern = None
+                            source_issue.recurrence_max_occurrences = None
+                            batch_summary["exhausted"] += 1
 
                     source_issue.save(
                         update_fields=[
+                            "recurrence_pattern",
+                            "recurrence_max_occurrences",
                             "recurrence_generated_count",
                             "recurrence_last_run_at",
                             "recurrence_next_run_at",

@@ -3,49 +3,43 @@
 # See the LICENSE file for details.
 
 # Django imports
-from django.utils import timezone
-from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import IntegrityError
+from django.utils import timezone
 
 # Third Party imports
 from rest_framework import serializers
 
-# Module imports
-from .base import BaseSerializer, DynamicBaseSerializer
-from .user import UserLiteSerializer
-from .state import StateLiteSerializer
-from .project import ProjectLiteSerializer
-from .workspace import WorkspaceLiteSerializer
 from plane.db.models import (
-    User,
+    CommentReaction,
+    Cycle,
+    CycleIssue,
+    EstimatePoint,
+    FileAsset,
     Issue,
     IssueActivity,
-    IssueComment,
-    ProjectUserProperty,
     IssueAssignee,
-    IssueSubscriber,
+    IssueComment,
+    IssueDescriptionVersion,
     IssueLabel,
+    IssueLink,
+    IssueReaction,
+    IssueRelation,
+    IssueSubscriber,
+    IssueVersion,
+    IssueVote,
     Label,
-    CycleIssue,
-    Cycle,
     Module,
     ModuleIssue,
-    IssueLink,
-    FileAsset,
-    IssueReaction,
-    CommentReaction,
-    IssueVote,
-    IssueRelation,
-    State,
-    IssueVersion,
-    IssueDescriptionVersion,
     ProjectMember,
-    EstimatePoint,
+    ProjectUserProperty,
+    State,
+    User,
 )
 from plane.utils.content_validator import (
-    validate_html_content,
     validate_binary_data,
+    validate_html_content,
 )
 from plane.utils.issue_recurrence import (
     compute_issue_recurrence_next_run_at,
@@ -53,6 +47,13 @@ from plane.utils.issue_recurrence import (
     get_issue_recurrence_validation_error,
     should_recompute_issue_recurrence,
 )
+
+# Module imports
+from .base import BaseSerializer, DynamicBaseSerializer
+from .project import ProjectLiteSerializer
+from .state import StateLiteSerializer
+from .user import UserLiteSerializer
+from .workspace import WorkspaceLiteSerializer
 
 
 class IssueFlatSerializer(BaseSerializer):
@@ -211,7 +212,7 @@ class IssueCreateSerializer(BaseSerializer):
 
         if should_recompute_issue_recurrence(attrs, self.instance):
             attrs["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
-                project_id=self.context.get("project_id"),
+                project_id=self.context.get("project_id") or getattr(self.instance, "project_id", None),
                 **recurrence_values,
             )
 

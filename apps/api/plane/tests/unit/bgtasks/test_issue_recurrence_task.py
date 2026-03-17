@@ -202,6 +202,8 @@ class TestIssueRecurrenceTask:
             "without_cycle": 1,
         }
         assert source_issue.recurrence_generated_count == 1
+        assert source_issue.recurrence_pattern is None
+        assert source_issue.recurrence_max_occurrences is None
         assert source_issue.recurrence_next_run_at is None
         assert duplicate_issue.state_id == default_state.id
         assert duplicate_issue.issue_cycle.count() == 0
@@ -570,6 +572,8 @@ class TestIssueRecurrenceExhaustion:
         assert summary["scanned"] == 1
         assert summary["exhausted"] == 1
         assert summary["created"] == 0
+        assert source_issue.recurrence_pattern is None
+        assert source_issue.recurrence_max_occurrences is None
         assert source_issue.recurrence_next_run_at is None
         assert Issue.objects.filter(recurrence_source_issue=source_issue).count() == 0
 
@@ -597,6 +601,8 @@ class TestIssueRecurrenceExhaustion:
         source_issue.refresh_from_db()
         assert summary["created"] == 1
         assert summary["exhausted"] == 1
+        assert source_issue.recurrence_pattern is None
+        assert source_issue.recurrence_max_occurrences is None
         assert source_issue.recurrence_next_run_at is None
         assert source_issue.recurrence_generated_count == 3
 

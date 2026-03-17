@@ -8,33 +8,25 @@ from django.utils import timezone
 # Third Party imports
 from rest_framework import serializers
 
-# Module imports
-from .base import BaseSerializer
-from .user import UserLiteSerializer
-from .state import StateSerializer, StateLiteSerializer
-from .project import ProjectLiteSerializer
-from .cycle import CycleBaseSerializer
-from .module import ModuleBaseSerializer
-from .workspace import WorkspaceLiteSerializer
 from plane.db.models import (
-    User,
-    Issue,
-    IssueComment,
-    IssueAssignee,
-    IssueLabel,
-    Label,
-    CycleIssue,
-    ModuleIssue,
-    IssueLink,
-    FileAsset,
-    IssueReaction,
     CommentReaction,
-    IssueVote,
+    CycleIssue,
+    FileAsset,
+    Issue,
+    IssueAssignee,
+    IssueComment,
+    IssueLabel,
+    IssueLink,
+    IssueReaction,
     IssueRelation,
+    IssueVote,
+    Label,
+    ModuleIssue,
+    User,
 )
 from plane.utils.content_validator import (
-    validate_html_content,
     validate_binary_data,
+    validate_html_content,
 )
 from plane.utils.issue_recurrence import (
     compute_issue_recurrence_next_run_at,
@@ -42,6 +34,15 @@ from plane.utils.issue_recurrence import (
     get_issue_recurrence_validation_error,
     should_recompute_issue_recurrence,
 )
+
+# Module imports
+from .base import BaseSerializer
+from .cycle import CycleBaseSerializer
+from .module import ModuleBaseSerializer
+from .project import ProjectLiteSerializer
+from .state import StateLiteSerializer, StateSerializer
+from .user import UserLiteSerializer
+from .workspace import WorkspaceLiteSerializer
 
 
 class IssueStateFlatSerializer(BaseSerializer):
@@ -322,7 +323,7 @@ class IssueCreateSerializer(BaseSerializer):
 
         if should_recompute_issue_recurrence(data, self.instance):
             data["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
-                project_id=self.context.get("project_id"),
+                project_id=self.context.get("project_id") or getattr(self.instance, "project_id", None),
                 **recurrence_values,
             )
 

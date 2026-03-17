@@ -84,14 +84,13 @@ const IssueRecurrenceInlineControls = observer(function IssueRecurrenceInlineCon
   props: TIssueRecurrenceInlineControlsProps
 ) {
   const { issue, updateIssue, isReadOnly, handleEventPropagation } = props;
-  const [maxRepetitionsValue, setMaxRepetitionsValue] = useState(
-    issue.recurrence_max_occurrences?.toString() ?? ""
-  );
+  const [maxRepetitionsValue, setMaxRepetitionsValue] = useState(issue.recurrence_max_occurrences?.toString() ?? "");
   const [maxRepetitionsError, setMaxRepetitionsError] = useState(false);
 
   const allowTestRepeatOptions = process.env.NODE_ENV !== "production";
   const repeatOptions = allowTestRepeatOptions ? [...REPEAT_OPTIONS, ...TEST_REPEAT_OPTIONS] : REPEAT_OPTIONS;
-  const selectedRepeatOption = repeatOptions.find((option) => option.value === issue.recurrence_pattern) ?? REPEAT_OPTIONS[0];
+  const selectedRepeatOption =
+    repeatOptions.find((option) => option.value === issue.recurrence_pattern) ?? REPEAT_OPTIONS[0];
   const isDueDateMissing = !issue.target_date;
   const isRepeatDisabled = isReadOnly || !updateIssue || isDueDateMissing;
   const isMaxRepetitionsDisabled = isReadOnly || !updateIssue || !issue.recurrence_pattern;
@@ -198,6 +197,11 @@ const IssueRecurrenceInlineControls = observer(function IssueRecurrenceInlineCon
     </>
   );
 });
+
+const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
+  e.stopPropagation();
+  e.preventDefault();
+};
 
 export const IssueProperties = observer(function IssueProperties(props: IIssueProperties) {
   const { issue, updateIssue, displayProperties, isReadOnly, className, isEpic = false } = props;
@@ -334,11 +338,6 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
 
   const minDate = getDate(issue.start_date);
   const maxDate = getDate(issue.target_date);
-
-  const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    e.preventDefault();
-  };
 
   return (
     <div className={className}>

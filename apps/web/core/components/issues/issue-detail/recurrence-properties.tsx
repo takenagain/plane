@@ -34,9 +34,7 @@ type Props = {
 
 export function IssueRecurrenceProperties(props: Props) {
   const { issue, disabled, updateIssue, textClassName = "text-body-xs-regular" } = props;
-  const [maxRepetitionsValue, setMaxRepetitionsValue] = useState(
-    issue.recurrence_max_occurrences?.toString() ?? ""
-  );
+  const [maxRepetitionsValue, setMaxRepetitionsValue] = useState(issue.recurrence_max_occurrences?.toString() ?? "");
   const [maxRepetitionsError, setMaxRepetitionsError] = useState<string | null>(null);
 
   const allowTestRepeatOptions = process.env.NODE_ENV !== "production";
@@ -44,7 +42,8 @@ export function IssueRecurrenceProperties(props: Props) {
     () => (allowTestRepeatOptions ? [...REPEAT_OPTIONS, ...TEST_REPEAT_OPTIONS] : REPEAT_OPTIONS),
     [allowTestRepeatOptions]
   );
-  const selectedRepeatOption = repeatOptions.find((option) => option.value === issue.recurrence_pattern) ?? REPEAT_OPTIONS[0];
+  const selectedRepeatOption =
+    repeatOptions.find((option) => option.value === issue.recurrence_pattern) ?? REPEAT_OPTIONS[0];
   const isDueDateMissing = !issue.target_date;
   const isRepeatDisabled = disabled || isDueDateMissing;
   const isMaxRepetitionsDisabled = disabled || !issue.recurrence_pattern;
@@ -93,7 +92,8 @@ export function IssueRecurrenceProperties(props: Props) {
 
   const helperText = isDueDateMissing
     ? "Set a due date first."
-    : maxRepetitionsError ?? (!issue.recurrence_pattern ? "Select a repeat cadence to enable limits." : "Infinite by default.");
+    : (maxRepetitionsError ??
+      (!issue.recurrence_pattern ? "Select a repeat cadence to enable limits." : "Infinite by default."));
 
   return (
     <>

@@ -42,14 +42,7 @@ export enum EIssuesStoreType {
   TEAM_PROJECT_WORK_ITEMS = "TEAM_PROJECT_WORK_ITEMS",
 }
 
-export type TIssueRecurrencePattern =
-  | "daily"
-  | "weekly"
-  | "bi_weekly"
-  | "monthly"
-  | "yearly"
-  | "every_minute"
-  | "once";
+export type TIssueRecurrencePattern = "daily" | "weekly" | "bi_weekly" | "monthly" | "yearly" | "every_minute" | "once";
 
 export type TBaseIssue = {
   id: string;
