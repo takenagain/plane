@@ -109,6 +109,15 @@ class Issue(ProjectBaseModel):
         ("low", "Low"),
         ("none", "None"),
     )
+    RECURRENCE_PATTERN_CHOICES = (
+        ("daily", "Daily"),
+        ("weekly", "Weekly"),
+        ("bi_weekly", "Bi-weekly"),
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+        ("every_minute", "Every minute"),
+        ("once", "Once-off"),
+    )
     parent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
@@ -159,6 +168,27 @@ class Issue(ProjectBaseModel):
     is_draft = models.BooleanField(default=False)
     external_source = models.CharField(max_length=255, null=True, blank=True)
     external_id = models.CharField(max_length=255, blank=True, null=True)
+    recurrence_pattern = models.CharField(
+        max_length=32,
+        choices=RECURRENCE_PATTERN_CHOICES,
+        null=True,
+        blank=True,
+    )
+    recurrence_max_occurrences = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        null=True,
+        blank=True,
+    )
+    recurrence_generated_count = models.PositiveIntegerField(default=0)
+    recurrence_next_run_at = models.DateTimeField(null=True, blank=True)
+    recurrence_last_run_at = models.DateTimeField(null=True, blank=True)
+    recurrence_source_issue = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="generated_recurrence_issues",
+    )
     type = models.ForeignKey(
         "db.IssueType",
         on_delete=models.SET_NULL,
@@ -174,6 +204,19 @@ class Issue(ProjectBaseModel):
         verbose_name_plural = "Issues"
         db_table = "issues"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["recurrence_next_run_at"], name="issue_recur_next_run_idx"),
+            models.Index(
+                fields=["recurrence_next_run_at"],
+                name="issue_recur_active_source_idx",
+                condition=Q(
+                    recurrence_pattern__isnull=False,
+                    recurrence_source_issue__isnull=True,
+                    deleted_at__isnull=True,
+                    archived_at__isnull=True,
+                ),
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         if self.state is None:

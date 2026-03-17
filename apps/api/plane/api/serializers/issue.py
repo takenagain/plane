@@ -30,6 +30,12 @@ from plane.utils.content_validator import (
     validate_html_content,
     validate_binary_data,
 )
+from plane.utils.issue_recurrence import (
+    compute_issue_recurrence_next_run_at,
+    get_effective_issue_recurrence_values,
+    get_issue_recurrence_validation_error,
+    should_recompute_issue_recurrence,
+)
 
 from .base import BaseSerializer
 from .cycle import CycleLiteSerializer, CycleSerializer
@@ -65,11 +71,22 @@ class IssueSerializer(BaseSerializer):
     type_id = serializers.PrimaryKeyRelatedField(
         source="type", queryset=IssueType.objects.all(), required=False, allow_null=True
     )
+    recurrence_source_issue_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Issue
-        read_only_fields = ["id", "workspace", "project", "updated_by", "updated_at"]
-        exclude = ["description_json", "description_stripped"]
+        read_only_fields = [
+            "id",
+            "workspace",
+            "project",
+            "updated_by",
+            "updated_at",
+            "recurrence_generated_count",
+            "recurrence_next_run_at",
+            "recurrence_last_run_at",
+            "recurrence_source_issue_id",
+        ]
+        exclude = ["description_json", "description_stripped", "recurrence_source_issue"]
 
     def validate(self, data):
         if (
@@ -144,6 +161,17 @@ class IssueSerializer(BaseSerializer):
             ).exists()
         ):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
+
+        recurrence_values = get_effective_issue_recurrence_values(data, self.instance)
+        recurrence_error = get_issue_recurrence_validation_error(**recurrence_values)
+        if recurrence_error:
+            raise serializers.ValidationError(recurrence_error)
+
+        if should_recompute_issue_recurrence(data, self.instance):
+            data["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
+                project_id=self.context.get("project_id"),
+                **recurrence_values,
+            )
 
         return data
 
