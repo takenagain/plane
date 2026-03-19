@@ -292,9 +292,9 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         target_date: date ? renderFormattedPayloadDate(date) : null,
         ...(date === null && issue.recurrence_pattern
           ? {
-            recurrence_pattern: null,
-            recurrence_max_occurrences: null,
-          }
+              recurrence_pattern: null,
+              recurrence_max_occurrences: null,
+            }
           : {}),
       });
   };
