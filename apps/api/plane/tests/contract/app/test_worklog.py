@@ -524,9 +524,7 @@ class TestWorklogTracking(TestWorklogBase):
         assert not Worklog.objects.filter(pk=worklog_id, duration=0).exists()
 
     @pytest.mark.django_db
-    def test_stop_tracking_emits_activity_update(
-        self, member_client, test_workspace, test_project, test_issue, mocker
-    ):
+    def test_stop_tracking_emits_activity_update(self, member_client, test_workspace, test_project, test_issue, mocker):
         activity_delay = mocker.patch("plane.app.views.issue.worklog.issue_activity.delay")
         start_url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
         stop_url = self.get_worklogs_stop_url(test_workspace.slug, test_project.id, test_issue.id)

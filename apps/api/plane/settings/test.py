@@ -4,6 +4,8 @@
 
 """Test Settings"""
 
+import os
+
 from .common import *  # noqa
 
 DEBUG = True
@@ -11,6 +13,9 @@ DEBUG = True
 # Send it in a dummy outbox
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 CELERY_BROKER_URL = "memory://"
+
+# Ensure EMAIL_HOST is set for tests (matches CI environment where EMAIL_HOST=localhost)
+os.environ.setdefault("EMAIL_HOST", "localhost")
 
 INSTALLED_APPS.append(  # noqa
     "plane.tests"
