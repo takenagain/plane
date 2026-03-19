@@ -180,6 +180,7 @@ export interface IIssueDisplayProperties {
   modules?: boolean;
   cycle?: boolean;
   issue_type?: boolean;
+  recurrence?: boolean;
 }
 
 export type TIssueKanbanFilters = {

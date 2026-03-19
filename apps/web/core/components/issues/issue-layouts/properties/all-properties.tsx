@@ -292,9 +292,9 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         target_date: date ? renderFormattedPayloadDate(date) : null,
         ...(date === null && issue.recurrence_pattern
           ? {
-              recurrence_pattern: null,
-              recurrence_max_occurrences: null,
-            }
+            recurrence_pattern: null,
+            recurrence_max_occurrences: null,
+          }
           : {}),
       });
   };
@@ -445,12 +445,14 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         </div>
       </WithDisplayPropertiesHOC>
 
-      <IssueRecurrenceInlineControls
-        issue={issue}
-        updateIssue={updateIssue}
-        isReadOnly={isReadOnly}
-        handleEventPropagation={handleEventPropagation}
-      />
+      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="recurrence">
+        <IssueRecurrenceInlineControls
+          issue={issue}
+          updateIssue={updateIssue}
+          isReadOnly={isReadOnly}
+          handleEventPropagation={handleEventPropagation}
+        />
+      </WithDisplayPropertiesHOC>
 
       {/* assignee */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="assignee">
