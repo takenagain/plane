@@ -11,19 +11,7 @@ import { cn } from "@plane/utils";
 import { CustomSelect, Input } from "@plane/ui";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 
-const REPEAT_OPTIONS: { label: string; value: TIssueRecurrencePattern | null }[] = [
-  { label: "None", value: null },
-  { label: "Daily", value: "daily" },
-  { label: "Weekly", value: "weekly" },
-  { label: "Bi-weekly", value: "bi_weekly" },
-  { label: "Monthly", value: "monthly" },
-  { label: "Yearly", value: "yearly" },
-];
-
-const TEST_REPEAT_OPTIONS: { label: string; value: TIssueRecurrencePattern }[] = [
-  { label: "Every minute", value: "every_minute" },
-  { label: "Once-off", value: "once" },
-];
+import { REPEAT_OPTIONS, TEST_REPEAT_OPTIONS } from "@/constants/recurrence";
 
 type Props = {
   issue: TIssue;

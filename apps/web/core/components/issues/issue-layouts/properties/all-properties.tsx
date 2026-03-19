@@ -18,6 +18,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { TIssue, IIssueDisplayProperties, TIssuePriorities, TIssueRecurrencePattern } from "@plane/types";
 import { CustomSelect, Input } from "@plane/ui";
 // ui
+import { REPEAT_OPTIONS, TEST_REPEAT_OPTIONS } from "@/constants/recurrence";
 import {
   cn,
   getDate,
@@ -58,20 +59,6 @@ export interface IIssueProperties {
   activeLayout: string;
   isEpic?: boolean;
 }
-
-const REPEAT_OPTIONS: { label: string; value: TIssueRecurrencePattern | null }[] = [
-  { label: "None", value: null },
-  { label: "Daily", value: "daily" },
-  { label: "Weekly", value: "weekly" },
-  { label: "Bi-weekly", value: "bi_weekly" },
-  { label: "Monthly", value: "monthly" },
-  { label: "Yearly", value: "yearly" },
-];
-
-const TEST_REPEAT_OPTIONS: { label: string; value: TIssueRecurrencePattern }[] = [
-  { label: "Every minute", value: "every_minute" },
-  { label: "Once-off", value: "once" },
-];
 
 type TIssueRecurrenceInlineControlsProps = {
   issue: TIssue;
@@ -205,6 +192,7 @@ const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
 
 export const IssueProperties = observer(function IssueProperties(props: IIssueProperties) {
   const { issue, updateIssue, displayProperties, isReadOnly, className, isEpic = false } = props;
+
   // i18n
   const { t } = useTranslation();
   // store hooks
