@@ -155,7 +155,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
         <IssueEditorErrorBoundary>
           <DescriptionInput
             issueSequenceId={issue.sequence_id}
-            containerClassName="p-0 border-none"
+            containerClassName="-ml-6 border-none p-0! pl-6!"
             disabled={isArchived || !isEditable}
             editorRef={editorRef}
             entityId={issue.id}
@@ -196,10 +196,10 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
                 isRestoreDisabled: !isEditable || isArchived,
               }}
               fetchHandlers={{
-                listDescriptionVersions: (id) =>
-                  workItemVersionService.listDescriptionVersions(workspaceSlug, projectId, id),
-                retrieveDescriptionVersion: (id, versionId) =>
-                  workItemVersionService.retrieveDescriptionVersion(workspaceSlug, projectId, id, versionId),
+                listDescriptionVersions: (workItemId) =>
+                  workItemVersionService.listDescriptionVersions(workspaceSlug, projectId, workItemId),
+                retrieveDescriptionVersion: (workItemId, versionId) =>
+                  workItemVersionService.retrieveDescriptionVersion(workspaceSlug, projectId, workItemId, versionId),
               }}
               handleRestore={(descriptionHTML) => editorRef.current?.setEditorValue(descriptionHTML, true)}
               projectId={projectId}
