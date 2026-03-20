@@ -82,7 +82,7 @@ def _create_issue(*, project, workspace, state, name, recurrence_pattern, recurr
 
 @pytest.mark.unit
 class TestIssueRecurrenceTask:
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True)
     def test_process_batch_creates_duplicate_copies_relations_and_assigns_current_cycle(self):
         workspace, project, default_state, completed_state = _create_project_context()
         current_time = datetime(2026, 3, 17, tzinfo=datetime_timezone.utc)
@@ -806,7 +806,7 @@ class TestIssueRecurrenceTaskResilience:
         assert summary["failed"] == 1
         assert summary["created"] == 1
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True)
     def test_activity_delay_called_once_per_created_duplicate(self):
         """issue_activity.delay must be called exactly once for each successfully
         created duplicate."""
