@@ -62,6 +62,9 @@ def _process_recurrence_batch(*, batch_size, current_time):
         "failed": 0,
         "without_cycle": 0,
     }
+    # Collect activity payloads to dispatch only after the outer transaction
+    # commits, so Celery workers never reference data from a rolled-back txn.
+    deferred_activities: list[dict] = []
 
     with transaction.atomic():
         due_sources = list(
@@ -152,27 +155,30 @@ def _process_recurrence_batch(*, batch_size, current_time):
                         ],
                         disable_auto_set_user=True,
                     )
-                    # Enqueue activity AFTER all DB writes succeed so the message
-                    # never references a duplicate_issue that was rolled back.
-                    issue_activity.delay(
-                        type="issue.activity.created",
-                        requested_data=json.dumps(
-                            {
-                                "automation": True,
-                                "recurrence_source_issue_id": str(source_issue.id),
-                                "target_date": str(occurrence_date),
-                            },
-                            cls=DjangoJSONEncoder,
-                        ),
-                        actor_id=str(
-                            source_issue.updated_by_id
-                            or source_issue.created_by_id
-                            or source_issue.project.created_by_id
-                        ),
-                        issue_id=str(duplicate_issue.id),
-                        project_id=str(source_issue.project_id),
-                        current_instance=None,
-                        epoch=int(current_time.timestamp()),
+                    # Stage the activity dispatch; it will fire via on_commit
+                    # after the outer transaction commits (not the savepoint),
+                    # ensuring the Celery worker can always read committed data.
+                    deferred_activities.append(
+                        dict(
+                            type="issue.activity.created",
+                            requested_data=json.dumps(
+                                {
+                                    "automation": True,
+                                    "recurrence_source_issue_id": str(source_issue.id),
+                                    "target_date": str(occurrence_date),
+                                },
+                                cls=DjangoJSONEncoder,
+                            ),
+                            actor_id=str(
+                                source_issue.updated_by_id
+                                or source_issue.created_by_id
+                                or source_issue.project.created_by_id
+                            ),
+                            issue_id=str(duplicate_issue.id),
+                            project_id=str(source_issue.project_id),
+                            current_instance=None,
+                            epoch=int(current_time.timestamp()),
+                        )
                     )
                     batch_summary["created"] += 1
                     if current_cycle is None:
@@ -188,6 +194,14 @@ def _process_recurrence_batch(*, batch_size, current_time):
                     },
                 )
                 continue
+
+        if deferred_activities:
+
+            def _dispatch_activities(activities=deferred_activities):
+                for kwargs in activities:
+                    issue_activity.delay(**kwargs)
+
+            transaction.on_commit(_dispatch_activities)
 
     return batch_summary
 

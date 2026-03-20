@@ -105,11 +105,15 @@ def compute_issue_recurrence_next_run_at(
         once_run_at = anchor_local_datetime.astimezone(pytz.utc)
         return max(once_run_at, current_time)
 
-    next_local_datetime = _advance_recurrence_datetime(anchor_local_datetime, recurrence_pattern)
+    next_local_datetime = project_timezone.normalize(
+        _advance_recurrence_datetime(anchor_local_datetime, recurrence_pattern)
+    )
     next_run_at = next_local_datetime.astimezone(pytz.utc)
 
     while next_run_at <= current_time:
-        next_local_datetime = _advance_recurrence_datetime(next_local_datetime, recurrence_pattern)
+        next_local_datetime = project_timezone.normalize(
+            _advance_recurrence_datetime(next_local_datetime, recurrence_pattern)
+        )
         next_run_at = next_local_datetime.astimezone(pytz.utc)
 
     return next_run_at
@@ -124,7 +128,9 @@ def get_next_recurrence_run_at(*, project_id, current_run_at, recurrence_pattern
 
     project_timezone = _get_project_timezone(project_id)
     current_local_datetime = current_run_at.astimezone(project_timezone)
-    next_local_datetime = _advance_recurrence_datetime(current_local_datetime, recurrence_pattern)
+    next_local_datetime = project_timezone.normalize(
+        _advance_recurrence_datetime(current_local_datetime, recurrence_pattern)
+    )
     return next_local_datetime.astimezone(pytz.utc)
 
 

@@ -316,6 +316,13 @@ class IssueCreateSerializer(BaseSerializer):
             if not is_valid:
                 raise serializers.ValidationError({"description_binary": "Invalid binary data"})
 
+        # When due date is explicitly cleared, implicitly clear recurrence so
+        # callers that only send {target_date: null} don't get a validation
+        # error (e.g. inline date editors outside the recurrence sidebar).
+        if "target_date" in data and data["target_date"] is None and getattr(self.instance, "recurrence_pattern", None):
+            data.setdefault("recurrence_pattern", None)
+            data.setdefault("recurrence_max_occurrences", None)
+
         recurrence_values = get_effective_issue_recurrence_values(data, self.instance)
         recurrence_error = get_issue_recurrence_validation_error(**recurrence_values)
         if recurrence_error:
