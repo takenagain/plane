@@ -173,17 +173,18 @@ export class WorklogStore implements IWorklogStore {
       });
       return activeWorklog;
     } catch (error) {
+      const staleRequest = isStaleRequest();
       runInAction(() => {
         this.hasBootstrappedActiveWorklog = true;
         this.isBootstrappingActiveWorklog = false;
-        if (isStaleRequest()) {
+        if (staleRequest) {
           return;
         }
 
         this.activeWorklog = null;
         this.activeWorklogError = "Failed to restore the active timer.";
       });
-      if (isStaleRequest()) {
+      if (staleRequest) {
         return this.activeWorklog;
       }
       throw error;

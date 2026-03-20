@@ -11,6 +11,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework import status
 
+from plane.app.views.issue.worklog import WorklogViewSet
 from plane.db.models import (
     Issue,
     IssueAssignee,
@@ -485,6 +486,20 @@ class TestWorklogTracking(TestWorklogBase):
 
         assert response.status_code == status.HTTP_409_CONFLICT
         assert response.data["error"] == "An active time tracker already exists for another work item."
+
+    @pytest.mark.django_db
+    def test_start_tracking_locks_workspace_scope_before_creating_active_timer(
+        self, member_client, test_workspace, test_project, test_issue, mocker
+    ):
+        lock_scope_spy = mocker.spy(WorklogViewSet, "_lock_workspace_active_worklog_scope")
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        lock_scope_spy.assert_called_once()
+        _, locked_workspace_id = lock_scope_spy.call_args.args
+        assert locked_workspace_id == test_workspace.id
 
     @pytest.mark.django_db
     def test_start_tracking_rejects_issue_from_different_project(

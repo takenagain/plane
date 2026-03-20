@@ -22,7 +22,7 @@ from rest_framework.response import Response
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import ActiveWorklogSerializer, WorklogSerializer
 from plane.bgtasks.issue_activities_task import issue_activity
-from plane.db.models import Issue, IssueActivity, IssueAssignee, State, Worklog
+from plane.db.models import Issue, IssueActivity, IssueAssignee, State, Worklog, Workspace
 from plane.utils.host import base_host
 
 # Module imports
@@ -95,6 +95,9 @@ class WorklogViewSet(BaseViewSet):
             .order_by("-created_at")
             .first()
         )
+
+    def _lock_workspace_active_worklog_scope(self, workspace_id):
+        Workspace.objects.select_for_update().only("id").get(pk=workspace_id)
 
     def _get_total_duration_with_active_tracking(self) -> int:
         elapsed_minutes = Greatest(
@@ -268,6 +271,7 @@ class WorklogViewSet(BaseViewSet):
 
         try:
             with transaction.atomic():
+                self._lock_workspace_active_worklog_scope(issue.workspace_id)
                 existing_active_worklog = self._get_workspace_active_worklog_for_actor(issue.workspace_id)
                 if existing_active_worklog is not None:
                     error_message = "An active time tracker already exists for this work item."
