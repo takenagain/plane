@@ -765,8 +765,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}`);
       await waitForPageLoad(page);
 
-      const timeLoggedRow = page.locator("div", { has: page.getByText("Time Logged", { exact: true }) }).first();
-      await expect(timeLoggedRow).toContainText(/1h 30m/, { timeout: 20_000 });
+      await expect(page.getByTestId("issue-worklog-property-value")).toHaveText(/1h 30m/, { timeout: 20_000 });
 
       const parentTotalAfterRenderResponse = await page.request.get(
         `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${parentIssueId}/worklogs/total/`

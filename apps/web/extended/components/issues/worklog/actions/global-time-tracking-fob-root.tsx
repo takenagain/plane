@@ -22,7 +22,7 @@ export const GlobalTimeTrackingFOBRoot = observer(function GlobalTimeTrackingFOB
 
   useEffect(() => {
     if (!workspaceSlug) return;
-    void worklogStore.fetchActiveWorklog(workspaceSlug);
+    void worklogStore.fetchActiveWorklog(workspaceSlug).catch(() => undefined);
   }, [workspaceSlug, worklogStore]);
 
   const activeWorklog = worklogStore.activeWorklog;

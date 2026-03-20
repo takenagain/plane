@@ -80,6 +80,8 @@ export class WorklogStore implements IWorklogStore {
   isBootstrappingActiveWorklog = false;
   hasBootstrappedActiveWorklog = false;
   isLoading = false;
+  private activeWorklogBootstrapRequestId = 0;
+  private activeWorklogMutationId = 0;
 
   constructor() {
     makeObservable(this, {
@@ -151,29 +153,46 @@ export class WorklogStore implements IWorklogStore {
   };
 
   fetchActiveWorklog = async (workspaceSlug: string): Promise<IActiveWorklog | null> => {
+    const requestId = ++this.activeWorklogBootstrapRequestId;
+    const mutationIdAtRequestStart = this.activeWorklogMutationId;
     this.isBootstrappingActiveWorklog = true;
     this.activeWorklogError = null;
 
     try {
       const activeWorklog = await worklogService.getActive(workspaceSlug);
       runInAction(() => {
-        this.activeWorklog = activeWorklog;
         this.hasBootstrappedActiveWorklog = true;
         this.isBootstrappingActiveWorklog = false;
+        if (
+          requestId !== this.activeWorklogBootstrapRequestId ||
+          mutationIdAtRequestStart !== this.activeWorklogMutationId
+        ) {
+          return;
+        }
+
+        this.activeWorklog = activeWorklog;
       });
       return activeWorklog;
     } catch (error) {
       runInAction(() => {
-        this.activeWorklog = null;
-        this.activeWorklogError = "Failed to restore the active timer.";
         this.hasBootstrappedActiveWorklog = true;
         this.isBootstrappingActiveWorklog = false;
+        if (
+          requestId !== this.activeWorklogBootstrapRequestId ||
+          mutationIdAtRequestStart !== this.activeWorklogMutationId
+        ) {
+          return;
+        }
+
+        this.activeWorklog = null;
+        this.activeWorklogError = "Failed to restore the active timer.";
       });
       throw error;
     }
   };
 
   clearActiveWorklog = () => {
+    this.activeWorklogMutationId += 1;
     this.activeWorklog = null;
     this.activeWorklogError = null;
   };
@@ -206,6 +225,7 @@ export class WorklogStore implements IWorklogStore {
   ): Promise<IWorklog> => {
     const worklog = await worklogService.startTracking(workspaceSlug, projectId, issueId);
     runInAction(() => {
+      this.activeWorklogMutationId += 1;
       this.upsertIssueWorklog(issueId, worklog);
       this.activeWorklog = this.toActiveWorklog(worklog, workspaceSlug, options?.issueName);
       this.activeWorklogError = null;
@@ -217,6 +237,7 @@ export class WorklogStore implements IWorklogStore {
   stopTracking = async (workspaceSlug: string, projectId: string, issueId: string): Promise<IWorklog> => {
     const updated = await worklogService.stopTracking(workspaceSlug, projectId, issueId);
     runInAction(() => {
+      this.activeWorklogMutationId += 1;
       this.upsertIssueWorklog(issueId, updated);
 
       if (this.activeWorklog?.id === updated.id) {
