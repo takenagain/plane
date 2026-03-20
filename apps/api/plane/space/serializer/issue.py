@@ -8,34 +8,41 @@ from django.utils import timezone
 # Third Party imports
 from rest_framework import serializers
 
-# Module imports
-from .base import BaseSerializer
-from .user import UserLiteSerializer
-from .state import StateSerializer, StateLiteSerializer
-from .project import ProjectLiteSerializer
-from .cycle import CycleBaseSerializer
-from .module import ModuleBaseSerializer
-from .workspace import WorkspaceLiteSerializer
 from plane.db.models import (
-    User,
-    Issue,
-    IssueComment,
-    IssueAssignee,
-    IssueLabel,
-    Label,
-    CycleIssue,
-    ModuleIssue,
-    IssueLink,
-    FileAsset,
-    IssueReaction,
     CommentReaction,
-    IssueVote,
+    CycleIssue,
+    FileAsset,
+    Issue,
+    IssueAssignee,
+    IssueComment,
+    IssueLabel,
+    IssueLink,
+    IssueReaction,
     IssueRelation,
+    IssueVote,
+    Label,
+    ModuleIssue,
+    User,
 )
 from plane.utils.content_validator import (
-    validate_html_content,
     validate_binary_data,
+    validate_html_content,
 )
+from plane.utils.issue_recurrence import (
+    compute_issue_recurrence_next_run_at,
+    get_effective_issue_recurrence_values,
+    get_issue_recurrence_validation_error,
+    should_recompute_issue_recurrence,
+)
+
+# Module imports
+from .base import BaseSerializer
+from .cycle import CycleBaseSerializer
+from .module import ModuleBaseSerializer
+from .project import ProjectLiteSerializer
+from .state import StateLiteSerializer, StateSerializer
+from .user import UserLiteSerializer
+from .workspace import WorkspaceLiteSerializer
 
 
 class IssueStateFlatSerializer(BaseSerializer):
@@ -176,10 +183,11 @@ class IssueSerializer(BaseSerializer):
     sub_issues_count = serializers.IntegerField(read_only=True)
     time_logged = serializers.IntegerField(read_only=True)
     issue_reactions = IssueReactionSerializer(read_only=True, many=True)
+    recurrence_source_issue_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Issue
-        fields = "__all__"
+        exclude = ["recurrence_source_issue"]
         read_only_fields = [
             "workspace",
             "project",
@@ -187,6 +195,10 @@ class IssueSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            "recurrence_generated_count",
+            "recurrence_next_run_at",
+            "recurrence_last_run_at",
+            "recurrence_source_issue_id",
         ]
 
 
@@ -258,10 +270,11 @@ class IssueCreateSerializer(BaseSerializer):
         write_only=True,
         required=False,
     )
+    recurrence_source_issue_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Issue
-        fields = "__all__"
+        exclude = ["recurrence_source_issue"]
         read_only_fields = [
             "workspace",
             "project",
@@ -269,6 +282,10 @@ class IssueCreateSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            "recurrence_generated_count",
+            "recurrence_next_run_at",
+            "recurrence_last_run_at",
+            "recurrence_source_issue_id",
         ]
 
     def to_representation(self, instance):
@@ -298,6 +315,24 @@ class IssueCreateSerializer(BaseSerializer):
             is_valid, error_msg = validate_binary_data(data["description_binary"])
             if not is_valid:
                 raise serializers.ValidationError({"description_binary": "Invalid binary data"})
+
+        # When due date is explicitly cleared, implicitly clear recurrence so
+        # callers that only send {target_date: null} don't get a validation
+        # error (e.g. inline date editors outside the recurrence sidebar).
+        if "target_date" in data and data["target_date"] is None and getattr(self.instance, "recurrence_pattern", None):
+            data.setdefault("recurrence_pattern", None)
+            data.setdefault("recurrence_max_occurrences", None)
+
+        recurrence_values = get_effective_issue_recurrence_values(data, self.instance)
+        recurrence_error = get_issue_recurrence_validation_error(**recurrence_values)
+        if recurrence_error:
+            raise serializers.ValidationError(recurrence_error)
+
+        if should_recompute_issue_recurrence(data, self.instance):
+            data["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
+                project_id=self.context.get("project_id") or getattr(self.instance, "project_id", None),
+                **recurrence_values,
+            )
 
         return data
 

@@ -102,7 +102,7 @@ export class IssueStore implements IIssueStore {
     // parent
     if (issue && issue?.parent && issue?.parent?.id && issue?.parent?.project_id) {
       this.issueService.retrieve(workspaceSlug, issue.parent.project_id, issue?.parent?.id).then((res) => {
-        this.rootIssueDetailStore.rootIssueStore.issues.addIssue([res]);
+        return this.rootIssueDetailStore.rootIssueStore.issues.addIssue([res]);
       });
     }
     // assignees
@@ -163,6 +163,12 @@ export class IssueStore implements IIssueStore {
       updated_at: issue?.updated_at,
       start_date: issue?.start_date,
       target_date: issue?.target_date,
+      recurrence_pattern: issue?.recurrence_pattern,
+      recurrence_max_occurrences: issue?.recurrence_max_occurrences,
+      recurrence_generated_count: issue?.recurrence_generated_count,
+      recurrence_next_run_at: issue?.recurrence_next_run_at,
+      recurrence_last_run_at: issue?.recurrence_last_run_at,
+      recurrence_source_issue_id: issue?.recurrence_source_issue_id,
       completed_at: issue?.completed_at,
       archived_at: issue?.archived_at,
       created_by: issue?.created_by,
@@ -287,7 +293,7 @@ export class IssueStore implements IIssueStore {
     // handle parent issue if exists
     if (issue?.parent && issue?.parent?.id && issue?.parent?.project_id) {
       this.issueService.retrieve(workspaceSlug, issue.parent.project_id, issue.parent.id).then((res) => {
-        this.rootIssueDetailStore.rootIssueStore.issues.addIssue([res]);
+        return this.rootIssueDetailStore.rootIssueStore.issues.addIssue([res]);
       });
     }
 

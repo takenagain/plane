@@ -46,6 +46,7 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { IssueRecurrenceProperties } from "../issue-detail/recurrence-properties";
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -176,11 +177,19 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <div className="flex w-full items-center gap-2">
             <DateDropdown
               value={issue.target_date}
-              onChange={(val) =>
-                issueOperations.update(workspaceSlug, projectId, issueId, {
-                  target_date: val ? renderFormattedPayloadDate(val) : null,
-                })
-              }
+              onChange={(val) => {
+                const targetDate = val ? renderFormattedPayloadDate(val) : null;
+
+                return issueOperations.update(workspaceSlug, projectId, issueId, {
+                  target_date: targetDate,
+                  ...(targetDate === null && issue.recurrence_pattern
+                    ? {
+                        recurrence_pattern: null,
+                        recurrence_max_occurrences: null,
+                      }
+                    : {}),
+                });
+              }}
               placeholder={t("issue.add.due_date")}
               buttonVariant="transparent-with-text"
               minDate={minDate ?? undefined}
@@ -197,6 +206,13 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             {issue.target_date && <DateAlert date={issue.target_date} workItem={issue} projectId={projectId} />}
           </div>
         </SidebarPropertyListItem>
+
+        <IssueRecurrenceProperties
+          issue={issue}
+          disabled={disabled}
+          updateIssue={(data) => issueOperations.update(workspaceSlug, projectId, issueId, data)}
+          textClassName="text-body-xs-medium"
+        />
 
         {isEstimateEnabled && (
           <SidebarPropertyListItem icon={EstimatePropertyIcon} label={t("common.estimate")}>

@@ -5,18 +5,20 @@
  */
 
 import type { SyntheticEvent } from "react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { xor } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
-import { Paperclip } from "lucide-react";
+import { Paperclip, RefreshCw } from "lucide-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, StartDatePropertyIcon, ViewsIcon, DueDatePropertyIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
-import type { TIssue, IIssueDisplayProperties, TIssuePriorities } from "@plane/types";
+import type { TIssue, IIssueDisplayProperties, TIssuePriorities, TIssueRecurrencePattern } from "@plane/types";
+import { CustomSelect, Input } from "@plane/ui";
 // ui
+import { REPEAT_OPTIONS, TEST_REPEAT_OPTIONS } from "@/constants/recurrence";
 import {
   cn,
   getDate,
@@ -58,8 +60,139 @@ export interface IIssueProperties {
   isEpic?: boolean;
 }
 
+type TIssueRecurrenceInlineControlsProps = {
+  issue: TIssue;
+  updateIssue: IIssueProperties["updateIssue"];
+  isReadOnly: boolean;
+  handleEventPropagation: (e: SyntheticEvent<HTMLDivElement>) => void;
+};
+
+const IssueRecurrenceInlineControls = observer(function IssueRecurrenceInlineControls(
+  props: TIssueRecurrenceInlineControlsProps
+) {
+  const { issue, updateIssue, isReadOnly, handleEventPropagation } = props;
+  const [maxRepetitionsValue, setMaxRepetitionsValue] = useState(issue.recurrence_max_occurrences?.toString() ?? "");
+  const [maxRepetitionsError, setMaxRepetitionsError] = useState(false);
+
+  const allowTestRepeatOptions = process.env.NODE_ENV !== "production";
+  const repeatOptions = allowTestRepeatOptions ? [...REPEAT_OPTIONS, ...TEST_REPEAT_OPTIONS] : REPEAT_OPTIONS;
+  const selectedRepeatOption =
+    repeatOptions.find((option) => option.value === issue.recurrence_pattern) ?? REPEAT_OPTIONS[0];
+  const isDueDateMissing = !issue.target_date;
+  const isRepeatDisabled = isReadOnly || !updateIssue || isDueDateMissing;
+  const isMaxRepetitionsDisabled = isReadOnly || !updateIssue || !issue.recurrence_pattern;
+
+  useEffect(() => {
+    setMaxRepetitionsValue(issue.recurrence_max_occurrences?.toString() ?? "");
+    setMaxRepetitionsError(false);
+  }, [issue.recurrence_max_occurrences]);
+
+  const handleRepeatChange = async (value: TIssueRecurrencePattern | null) => {
+    if (!updateIssue) return;
+
+    if (!value) {
+      setMaxRepetitionsValue("");
+      setMaxRepetitionsError(false);
+      await updateIssue(issue.project_id, issue.id, {
+        recurrence_pattern: null,
+        recurrence_max_occurrences: null,
+      });
+      return;
+    }
+
+    await updateIssue(issue.project_id, issue.id, { recurrence_pattern: value });
+  };
+
+  const commitMaxRepetitions = async () => {
+    if (!updateIssue || isMaxRepetitionsDisabled) return;
+
+    const trimmedValue = maxRepetitionsValue.trim();
+    if (!trimmedValue) {
+      setMaxRepetitionsError(false);
+      await updateIssue(issue.project_id, issue.id, { recurrence_max_occurrences: null });
+      return;
+    }
+
+    const parsedValue = Number(trimmedValue);
+    if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+      setMaxRepetitionsError(true);
+      return;
+    }
+
+    setMaxRepetitionsError(false);
+    await updateIssue(issue.project_id, issue.id, { recurrence_max_occurrences: parsedValue });
+  };
+
+  return (
+    <>
+      <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <CustomSelect
+          value={issue.recurrence_pattern}
+          onChange={handleRepeatChange}
+          disabled={isRepeatDisabled}
+          label={
+            <div className="flex items-center gap-1">
+              <RefreshCw className="h-3 w-3 flex-shrink-0" />
+              <span
+                className={cn("text-caption-sm-regular", {
+                  "text-placeholder": !issue.recurrence_pattern,
+                })}
+              >
+                {isDueDateMissing ? "Repeat" : selectedRepeatOption.label}
+              </span>
+            </div>
+          }
+          buttonClassName="h-5 rounded-md border-subtle-1 px-1.5 py-0.5"
+        >
+          {repeatOptions.map((option) => (
+            <CustomSelect.Option key={option.value ?? "none"} value={option.value}>
+              {option.label}
+            </CustomSelect.Option>
+          ))}
+        </CustomSelect>
+      </div>
+
+      <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div
+          className={cn("flex h-5 items-center rounded-md border border-subtle-1 px-1.5", {
+            "border-danger-primary": maxRepetitionsError,
+          })}
+        >
+          <Input
+            type="number"
+            min={1}
+            mode="true-transparent"
+            inputSize="xs"
+            value={maxRepetitionsValue}
+            onChange={(event) => {
+              setMaxRepetitionsValue(event.target.value);
+              if (maxRepetitionsError) setMaxRepetitionsError(false);
+            }}
+            onBlur={commitMaxRepetitions}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitMaxRepetitions();
+              }
+            }}
+            disabled={isMaxRepetitionsDisabled}
+            placeholder={isDueDateMissing ? "Max" : "Infinite"}
+            className="w-20 px-0 text-caption-sm-regular"
+          />
+        </div>
+      </div>
+    </>
+  );
+});
+
+const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
+  e.stopPropagation();
+  e.preventDefault();
+};
+
 export const IssueProperties = observer(function IssueProperties(props: IIssueProperties) {
   const { issue, updateIssue, displayProperties, isReadOnly, className, isEpic = false } = props;
+
   // i18n
   const { t } = useTranslation();
   // store hooks
@@ -155,7 +288,15 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
 
   const handleTargetDate = async (date: Date | null) => {
     if (updateIssue)
-      await updateIssue(issue.project_id, issue.id, { target_date: date ? renderFormattedPayloadDate(date) : null });
+      await updateIssue(issue.project_id, issue.id, {
+        target_date: date ? renderFormattedPayloadDate(date) : null,
+        ...(date === null && issue.recurrence_pattern
+          ? {
+              recurrence_pattern: null,
+              recurrence_max_occurrences: null,
+            }
+          : {}),
+      });
   };
 
   const handleEstimate = async (value: string | undefined) => {
@@ -185,11 +326,6 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
 
   const minDate = getDate(issue.start_date);
   const maxDate = getDate(issue.target_date);
-
-  const handleEventPropagation = (e: SyntheticEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    e.preventDefault();
-  };
 
   return (
     <div className={className}>
@@ -307,6 +443,15 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             labelClassName="text-caption-sm-regular"
           />
         </div>
+      </WithDisplayPropertiesHOC>
+
+      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="recurrence">
+        <IssueRecurrenceInlineControls
+          issue={issue}
+          updateIssue={updateIssue}
+          isReadOnly={isReadOnly}
+          handleEventPropagation={handleEventPropagation}
+        />
       </WithDisplayPropertiesHOC>
 
       {/* assignee */}

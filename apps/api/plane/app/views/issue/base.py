@@ -1080,9 +1080,9 @@ class IssueDetailEndpoint(BaseAPIView):
             order_by=order_by_param,
             queryset=issue,
             total_count_queryset=total_issue_queryset,
-            on_results=lambda issue: IssueListDetailSerializer(
-                issue, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue: (
+                IssueListDetailSerializer(issue, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
 

@@ -3,50 +3,57 @@
 # See the LICENSE file for details.
 
 # Django imports
-from django.utils import timezone
-from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import IntegrityError
+from django.utils import timezone
 
 # Third Party imports
 from rest_framework import serializers
 
-# Module imports
-from .base import BaseSerializer, DynamicBaseSerializer
-from .user import UserLiteSerializer
-from .state import StateLiteSerializer
-from .project import ProjectLiteSerializer
-from .workspace import WorkspaceLiteSerializer
 from plane.db.models import (
-    User,
+    CommentReaction,
+    Cycle,
+    CycleIssue,
+    EstimatePoint,
+    FileAsset,
     Issue,
     IssueActivity,
-    IssueComment,
-    ProjectUserProperty,
     IssueAssignee,
-    IssueSubscriber,
+    IssueComment,
+    IssueDescriptionVersion,
     IssueLabel,
+    IssueLink,
+    IssueReaction,
+    IssueRelation,
+    IssueSubscriber,
+    IssueVersion,
+    IssueVote,
     Label,
-    CycleIssue,
-    Cycle,
     Module,
     ModuleIssue,
-    IssueLink,
-    FileAsset,
-    IssueReaction,
-    CommentReaction,
-    IssueVote,
-    IssueRelation,
-    State,
-    IssueVersion,
-    IssueDescriptionVersion,
     ProjectMember,
-    EstimatePoint,
+    ProjectUserProperty,
+    State,
+    User,
 )
 from plane.utils.content_validator import (
-    validate_html_content,
     validate_binary_data,
+    validate_html_content,
 )
+from plane.utils.issue_recurrence import (
+    compute_issue_recurrence_next_run_at,
+    get_effective_issue_recurrence_values,
+    get_issue_recurrence_validation_error,
+    should_recompute_issue_recurrence,
+)
+
+# Module imports
+from .base import BaseSerializer, DynamicBaseSerializer
+from .project import ProjectLiteSerializer
+from .state import StateLiteSerializer
+from .user import UserLiteSerializer
+from .workspace import WorkspaceLiteSerializer
 
 
 class IssueFlatSerializer(BaseSerializer):
@@ -99,10 +106,11 @@ class IssueCreateSerializer(BaseSerializer):
     )
     project_id = serializers.UUIDField(source="project.id", read_only=True)
     workspace_id = serializers.UUIDField(source="workspace.id", read_only=True)
+    recurrence_source_issue_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Issue
-        fields = "__all__"
+        exclude = ["recurrence_source_issue"]
         read_only_fields = [
             "workspace",
             "project",
@@ -110,6 +118,10 @@ class IssueCreateSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            "recurrence_generated_count",
+            "recurrence_next_run_at",
+            "recurrence_last_run_at",
+            "recurrence_source_issue_id",
         ]
 
     def to_representation(self, instance):
@@ -192,6 +204,28 @@ class IssueCreateSerializer(BaseSerializer):
             ).exists()
         ):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
+
+        # When due date is explicitly cleared, implicitly clear recurrence so
+        # callers that only send {target_date: null} don't get a validation
+        # error (e.g. inline date editors outside the recurrence sidebar).
+        if (
+            "target_date" in attrs
+            and attrs["target_date"] is None
+            and getattr(self.instance, "recurrence_pattern", None)
+        ):
+            attrs.setdefault("recurrence_pattern", None)
+            attrs.setdefault("recurrence_max_occurrences", None)
+
+        recurrence_values = get_effective_issue_recurrence_values(attrs, self.instance)
+        recurrence_error = get_issue_recurrence_validation_error(**recurrence_values)
+        if recurrence_error:
+            raise serializers.ValidationError(recurrence_error)
+
+        if should_recompute_issue_recurrence(attrs, self.instance):
+            attrs["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
+                project_id=self.context.get("project_id") or getattr(self.instance, "project_id", None),
+                **recurrence_values,
+            )
 
         return attrs
 
@@ -762,6 +796,7 @@ class IssueSerializer(DynamicBaseSerializer):
     # ids
     cycle_id = serializers.PrimaryKeyRelatedField(read_only=True)
     module_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
+    recurrence_source_issue_id = serializers.UUIDField(read_only=True)
 
     # Many to many
     label_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
@@ -785,6 +820,12 @@ class IssueSerializer(DynamicBaseSerializer):
             "priority",
             "start_date",
             "target_date",
+            "recurrence_pattern",
+            "recurrence_max_occurrences",
+            "recurrence_generated_count",
+            "recurrence_next_run_at",
+            "recurrence_last_run_at",
+            "recurrence_source_issue_id",
             "sequence_id",
             "project_id",
             "parent_id",
@@ -843,6 +884,12 @@ class IssueListDetailSerializer(serializers.Serializer):
             "priority": instance.priority,
             "start_date": instance.start_date,
             "target_date": instance.target_date,
+            "recurrence_pattern": instance.recurrence_pattern,
+            "recurrence_max_occurrences": instance.recurrence_max_occurrences,
+            "recurrence_generated_count": instance.recurrence_generated_count,
+            "recurrence_next_run_at": instance.recurrence_next_run_at,
+            "recurrence_last_run_at": instance.recurrence_last_run_at,
+            "recurrence_source_issue_id": instance.recurrence_source_issue_id,
             "sequence_id": instance.sequence_id,
             "project_id": instance.project_id,
             "parent_id": instance.parent_id,

@@ -1089,9 +1089,9 @@ class IssueLinkListCreateAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(self.get_queryset()),
-            on_results=lambda issue_links: IssueLinkSerializer(
-                issue_links, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue_links: (
+                IssueLinkSerializer(issue_links, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
     @issue_link_docs(
@@ -1196,9 +1196,9 @@ class IssueLinkDetailAPIEndpoint(BaseAPIView):
             return self.paginate(
                 request=request,
                 queryset=(self.get_queryset()),
-                on_results=lambda issue_links: IssueLinkSerializer(
-                    issue_links, many=True, fields=self.fields, expand=self.expand
-                ).data,
+                on_results=lambda issue_links: (
+                    IssueLinkSerializer(issue_links, many=True, fields=self.fields, expand=self.expand).data
+                ),
             )
         issue_link = self.get_queryset().get(pk=pk)
         serializer = IssueLinkSerializer(issue_link, fields=self.fields, expand=self.expand)
@@ -1347,9 +1347,9 @@ class IssueCommentListCreateAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(self.get_queryset()),
-            on_results=lambda issue_comments: IssueCommentSerializer(
-                issue_comments, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue_comments: (
+                IssueCommentSerializer(issue_comments, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
     @issue_comment_docs(
@@ -1658,9 +1658,9 @@ class IssueActivityListAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(issue_activities),
-            on_results=lambda issue_activity: IssueActivitySerializer(
-                issue_activity, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue_activity: (
+                IssueActivitySerializer(issue_activity, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
 

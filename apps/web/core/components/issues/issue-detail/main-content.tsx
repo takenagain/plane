@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import type { EditorRefApi } from "@plane/editor";
@@ -38,6 +38,26 @@ import { IssueReaction } from "./reactions";
 import type { TIssueOperations } from "./root";
 // services init
 const workItemVersionService = new WorkItemVersionService();
+
+class IssueEditorErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-sm text-custom-text-300 p-3">
+          Unable to load description editor. Please refresh the page.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type Props = {
   workspaceSlug: string;
@@ -132,26 +152,28 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           containerClassName="-ml-3"
         />
 
-        <DescriptionInput
-          issueSequenceId={issue.sequence_id}
-          containerClassName="-ml-6 border-none p-0! pl-6!"
-          disabled={isArchived || !isEditable}
-          editorRef={editorRef}
-          entityId={issue.id}
-          fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
-          initialValue={issue.description_html}
-          key={issue.id}
-          onSubmit={async (value, isMigrationUpdate) => {
-            if (!issue.id || !issue.project_id) return;
-            await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
-              description_html: value.description_html,
-              ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
-            });
-          }}
-          projectId={issue.project_id}
-          setIsSubmitting={(value) => setIsSubmitting(value)}
-          workspaceSlug={workspaceSlug}
-        />
+        <IssueEditorErrorBoundary>
+          <DescriptionInput
+            issueSequenceId={issue.sequence_id}
+            containerClassName="-ml-6 border-none p-0! pl-6!"
+            disabled={isArchived || !isEditable}
+            editorRef={editorRef}
+            entityId={issue.id}
+            fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
+            initialValue={issue.description_html}
+            key={issue.id}
+            onSubmit={async (value, isMigrationUpdate) => {
+              if (!issue.id || !issue.project_id) return;
+              await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
+                description_html: value.description_html,
+                ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
+              });
+            }}
+            projectId={issue.project_id}
+            setIsSubmitting={(value) => setIsSubmitting(value)}
+            workspaceSlug={workspaceSlug}
+          />
+        </IssueEditorErrorBoundary>
 
         <div className="flex items-center justify-between gap-2">
           {currentUser && (

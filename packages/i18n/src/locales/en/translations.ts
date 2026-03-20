@@ -633,6 +633,7 @@ export default {
     toggle_peek_view_layout: "Toggle peek view layout",
     options: "Options",
     duration: "Duration",
+    time_logged: "Time Logged",
     today: "Today",
     week: "Week",
     month: "Month",
