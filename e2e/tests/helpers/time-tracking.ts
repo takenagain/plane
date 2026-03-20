@@ -1,4 +1,5 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
+/* oxlint-disable no-await-in-loop */
 /**
  * Copyright (c) 2023-present Plane Software, Inc. and contributors
  * SPDX-License-Identifier: AGPL-3.0-only
@@ -55,12 +56,14 @@ function resolveApiContainerName() {
 export function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
   const seedScript = `
 import re
+from django.core.cache import cache
 from plane.db.models.user import User, Profile
 from plane.db.models.workspace import Workspace, WorkspaceMember
 from plane.db.models.project import Project, ProjectMember
 from plane.db.models.issue import Issue, IssueAssignee
 from plane.db.models.state import State, DEFAULT_STATES
 from plane.db.models.worklog import Worklog
+from plane.license.models import Instance, InstanceAdmin
 
 email = "${ADMIN_EMAIL}".strip().lower()
 password = "${ADMIN_PASSWORD}"
@@ -94,6 +97,25 @@ user.is_active = True
 user.is_email_verified = True
 user.set_password(password)
 user.save()
+
+instance, _ = Instance.objects.get_or_create(
+    defaults={
+        "instance_name": company_name,
+        "is_setup_done": True,
+        "is_signup_screen_visited": True,
+    },
+)
+instance.instance_name = company_name
+instance.is_setup_done = True
+instance.is_signup_screen_visited = True
+instance.save(update_fields=["instance_name", "is_setup_done", "is_signup_screen_visited", "updated_at"])
+
+InstanceAdmin.objects.update_or_create(
+    instance=instance,
+    user=user,
+    defaults={"role": 20},
+)
+cache.clear()
 
 workspace, _ = Workspace.objects.get_or_create(
     slug=workspace_slug,
@@ -286,7 +308,7 @@ async function loginWithEmailAndPassword(page: Page) {
       .first();
 
     if (!(await emailInput.isVisible({ timeout: 5_000 }).catch(() => false))) {
-      await page.goto(`${BASE_URL}/auth/sign-in/`);
+      await page.goto(`${BASE_URL}/sign-in`);
       await waitForPageLoad(page);
       await page.waitForTimeout(1000);
       continue;
@@ -451,7 +473,7 @@ export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
   if (url.includes("/sign-in")) {
     await loginWithEmailAndPassword(page);
   } else {
-    await page.goto(`${BASE_URL}/auth/sign-in/`);
+    await page.goto(`${BASE_URL}/sign-in`);
     await waitForPageLoad(page);
     await loginWithEmailAndPassword(page);
   }

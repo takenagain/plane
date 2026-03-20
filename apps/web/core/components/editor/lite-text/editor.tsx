@@ -4,14 +4,14 @@
  * See the LICENSE file for details.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 // plane constants
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane imports
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, ILiteTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, ILiteTextEditorProps, TExtensions, TFileHandler } from "@plane/editor";
 import { useTranslation } from "@plane/i18n";
-import type { MakeOptional } from "@plane/types";
+import type { MakeOptional, TSearchEntityRequestPayload } from "@plane/types";
 import { cn, isCommentEmpty } from "@plane/utils";
 // components
 import { EditorMentionsRoot } from "@/components/editor/embeds/mentions";
@@ -56,6 +56,10 @@ type LiteTextEditorWrapperProps = MakeOptional<
       }
   );
 
+function isMutableRefObject<T>(forwardedRef: React.ForwardedRef<T>): forwardedRef is React.MutableRefObject<T | null> {
+  return !!forwardedRef && typeof forwardedRef === "object" && "current" in forwardedRef;
+}
+
 export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
   props: LiteTextEditorWrapperProps,
   ref: React.ForwardedRef<EditorRefApi>
@@ -77,7 +81,7 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
     variant = "full",
     parentClassName = "",
     placeholder = t("issue.comments.placeholder"),
-    disabledExtensions: additionalDisabledExtensions = [],
+    disabledExtensions: additionalDisabledExtensions = EMPTY_DISABLED_EXTENSIONS,
     editorClassName = "",
     showPlaceholderOnEmpty = true,
     submitButtonText = "common.comment",
@@ -100,22 +104,54 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
     projectId,
     workspaceSlug,
   });
-  // use editor mention
-  const { fetchMentions } = useEditorMention({
-    searchEntity: async (payload) =>
+  const searchEntity = useCallback(
+    async (payload: TSearchEntityRequestPayload) =>
       await workspaceService.searchEntity(workspaceSlug, {
         ...payload,
         project_id: projectId,
         issue_id,
       }),
+    [issue_id, projectId, workspaceSlug]
+  );
+  // use editor mention
+  const { fetchMentions } = useEditorMention({
+    searchEntity,
   });
   // editor config
   const { getEditorFileHandlers } = useEditorConfig();
-  function isMutableRefObject<T>(ref: React.ForwardedRef<T>): ref is React.MutableRefObject<T | null> {
-    return !!ref && typeof ref === "object" && "current" in ref;
-  }
+  const uploadFile = "uploadFile" in props ? props.uploadFile : NOOP_FILE_UPLOAD;
+  const duplicateFile = "duplicateFile" in props ? props.duplicateFile : NOOP_FILE_DUPLICATE;
   // derived values
   const isEmpty = isCommentEmpty(props.initialValue);
+  const disabledExtensions = useMemo(
+    () => [...liteTextEditorExtensions.disabled, ...additionalDisabledExtensions],
+    [additionalDisabledExtensions, liteTextEditorExtensions.disabled]
+  );
+  const fileHandler = useMemo(
+    () =>
+      getEditorFileHandlers({
+        projectId,
+        uploadFile,
+        duplicateFile,
+        workspaceId,
+        workspaceSlug,
+      }),
+    [duplicateFile, getEditorFileHandlers, projectId, uploadFile, workspaceId, workspaceSlug]
+  );
+  const mentionHandler = useMemo(
+    () => ({
+      searchCallback: async (query: string) => {
+        const res = await fetchMentions(query);
+        if (!res) throw new Error("Failed in fetching mentions");
+        return res;
+      },
+      renderComponent: EditorMentionsRoot,
+      getMentionedEntityDetails: (id: string) => ({
+        display_name: getUserDetails(id)?.display_name ?? "",
+      }),
+    }),
+    [fetchMentions, getUserDetails]
+  );
 
   return (
     <div
@@ -135,39 +171,23 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
         <div className={cn(isLiteVariant && editable ? "min-w-0 flex-1" : "")}>
           <LiteTextEditorWithRef
             ref={ref}
-            disabledExtensions={[...liteTextEditorExtensions.disabled, ...additionalDisabledExtensions]}
+            disabledExtensions={disabledExtensions}
             editable={editable}
             flaggedExtensions={liteTextEditorExtensions.flagged}
-            fileHandler={getEditorFileHandlers({
-              projectId,
-              uploadFile: editable ? props.uploadFile : async () => "",
-              duplicateFile: editable ? props.duplicateFile : async () => "",
-              workspaceId,
-              workspaceSlug,
-            })}
+            fileHandler={fileHandler}
             getEditorMetaData={getEditorMetaData}
             handleEditorReady={(ready) => {
               if (ready) {
                 setEditorRef(isMutableRefObject<EditorRefApi>(ref) ? ref.current : null);
               }
             }}
-            mentionHandler={{
-              searchCallback: async (query) => {
-                const res = await fetchMentions(query);
-                if (!res) throw new Error("Failed in fetching mentions");
-                return res;
-              },
-              renderComponent: EditorMentionsRoot,
-              getMentionedEntityDetails: (id) => ({
-                display_name: getUserDetails(id)?.display_name ?? "",
-              }),
-            }}
+            mentionHandler={mentionHandler}
             placeholder={placeholder}
             showPlaceholderOnEmpty={showPlaceholderOnEmpty}
             containerClassName={cn(containerClassName, "relative", {
               "p-2": !editable,
             })}
-            extendedEditorProps={{}}
+            extendedEditorProps={EMPTY_EXTENDED_EDITOR_PROPS}
             editorClassName={editorClassName}
             {...rest}
           />
@@ -225,3 +245,8 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
 });
 
 LiteTextEditor.displayName = "LiteTextEditor";
+
+const EMPTY_EXTENDED_EDITOR_PROPS = {};
+const EMPTY_DISABLED_EXTENSIONS: TExtensions[] = [];
+const NOOP_FILE_UPLOAD: TFileHandler["upload"] = async () => "";
+const NOOP_FILE_DUPLICATE: TFileHandler["duplicate"] = async () => "";

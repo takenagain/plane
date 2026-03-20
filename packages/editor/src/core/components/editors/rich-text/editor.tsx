@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useMemo } from "react";
 // components
 import { EditorWrapper } from "@/components/editors";
 import { BlockMenu, EditorBubbleMenu } from "@/components/menus";
@@ -15,20 +15,22 @@ import { RichTextEditorAdditionalExtensions } from "@/plane-editor/extensions/ri
 // types
 import type { EditorRefApi, IRichTextEditorProps } from "@/types";
 
+const EMPTY_EXTENSIONS: NonNullable<IRichTextEditorProps["extensions"]> = [];
+
 function RichTextEditor(props: IRichTextEditorProps) {
   const {
     bubbleMenuEnabled = true,
     disabledExtensions,
     dragDropEnabled,
-    extensions: externalExtensions = [],
+    extensions: externalExtensions = EMPTY_EXTENSIONS,
     fileHandler,
     flaggedExtensions,
     extendedEditorProps,
     workItemIdentifier,
   } = props;
 
-  const getExtensions = useCallback(() => {
-    const extensions = [
+  const extensions = useMemo(
+    () => [
       ...externalExtensions,
       SideMenuExtension({
         aiEnabled: false,
@@ -40,13 +42,12 @@ function RichTextEditor(props: IRichTextEditorProps) {
         flaggedExtensions,
         extendedEditorProps,
       }),
-    ];
-
-    return extensions;
-  }, [dragDropEnabled, disabledExtensions, externalExtensions, fileHandler, flaggedExtensions, extendedEditorProps]);
+    ],
+    [dragDropEnabled, disabledExtensions, externalExtensions, fileHandler, flaggedExtensions, extendedEditorProps]
+  );
 
   return (
-    <EditorWrapper {...props} extensions={getExtensions()}>
+    <EditorWrapper {...props} extensions={extensions}>
       {(editor) => (
         <>
           {editor && bubbleMenuEnabled && (

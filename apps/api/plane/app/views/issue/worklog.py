@@ -20,9 +20,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from plane.app.permissions import ROLE, allow_permission
-from plane.app.serializers import WorklogSerializer
+from plane.app.serializers import ActiveWorklogSerializer, WorklogSerializer
 from plane.bgtasks.issue_activities_task import issue_activity
-from plane.db.models import Issue, IssueActivity, IssueAssignee, State, Worklog
+from plane.db.models import Issue, IssueActivity, IssueAssignee, State, Worklog, Workspace
 from plane.utils.host import base_host
 
 # Module imports
@@ -51,12 +51,10 @@ class WorklogViewSet(BaseViewSet):
     model = Worklog
 
     def get_queryset(self):
-        return (
+        queryset = (
             super()
             .get_queryset()
             .filter(workspace__slug=self.kwargs.get("slug"))
-            .filter(project_id=self.kwargs.get("project_id"))
-            .filter(issue_id=self.kwargs.get("issue_id"))
             .filter(
                 project__project_projectmember__member=self.request.user,
                 project__project_projectmember__is_active=True,
@@ -66,8 +64,40 @@ class WorklogViewSet(BaseViewSet):
             .distinct()
         )
 
+        project_id = self.kwargs.get("project_id")
+        if project_id is not None:
+            queryset = queryset.filter(project_id=project_id)
+
+        issue_id = self.kwargs.get("issue_id")
+        if issue_id is not None:
+            queryset = queryset.filter(issue_id=issue_id)
+
+        return queryset
+
     def _get_active_worklog_for_actor(self):
         return self.get_queryset().filter(actor=self.request.user, duration=0).order_by("-created_at").first()
+
+    def _get_workspace_active_worklog_for_actor(self, workspace_id):
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                workspace_id=workspace_id,
+                actor=self.request.user,
+                duration=0,
+                deleted_at__isnull=True,
+                project__project_projectmember__member=self.request.user,
+                project__project_projectmember__is_active=True,
+                project__archived_at__isnull=True,
+            )
+            .select_related("actor", "project", "workspace", "issue")
+            .distinct()
+            .order_by("-created_at")
+            .first()
+        )
+
+    def _lock_workspace_active_worklog_scope(self, workspace_id):
+        Workspace.objects.select_for_update().only("id").get(pk=workspace_id)
 
     def _get_total_duration_with_active_tracking(self) -> int:
         elapsed_minutes = Greatest(
@@ -241,6 +271,17 @@ class WorklogViewSet(BaseViewSet):
 
         try:
             with transaction.atomic():
+                self._lock_workspace_active_worklog_scope(issue.workspace_id)
+                existing_active_worklog = self._get_workspace_active_worklog_for_actor(issue.workspace_id)
+                if existing_active_worklog is not None:
+                    error_message = "An active time tracker already exists for this work item."
+                    if existing_active_worklog.issue_id != issue_id:
+                        error_message = "An active time tracker already exists for another work item."
+                    return Response(
+                        {"error": error_message},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
                 worklog, created = Worklog.objects.filter(deleted_at__isnull=True).get_or_create(
                     project_id=project_id,
                     issue_id=issue_id,
@@ -308,6 +349,17 @@ class WorklogViewSet(BaseViewSet):
             notification=False,
             origin=base_host(request=request, is_app=True),
         )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="active")
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def active(self, request, slug):
+        active_worklog = self._get_active_worklog_for_actor()
+
+        if active_worklog is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        serializer = ActiveWorklogSerializer(active_worklog)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])

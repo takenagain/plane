@@ -67,6 +67,15 @@ class WorklogSerializer(BaseSerializer):
         return value
 
 
+class ActiveWorklogSerializer(WorklogSerializer):
+    issue_name = serializers.CharField(source="issue.name", read_only=True)
+    workspace_slug = serializers.CharField(source="workspace.slug", read_only=True)
+
+    class Meta(WorklogSerializer.Meta):
+        fields = [*WorklogSerializer.Meta.fields, "issue_name", "workspace_slug"]
+        read_only_fields = [*WorklogSerializer.Meta.read_only_fields, "issue_name", "workspace_slug"]
+
+
 class WorklogTotalSerializer(serializers.Serializer):
     """Read-only serializer for the total duration aggregation response."""
 

@@ -4,10 +4,10 @@
  * See the LICENSE file for details.
  */
 
-import { forwardRef } from "react";
+import { forwardRef, useCallback, useMemo } from "react";
 // plane imports
 import { RichTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, IRichTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, IRichTextEditorProps, TExtensions, TFileHandler } from "@plane/editor";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";
 // components
@@ -49,7 +49,7 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
     workspaceSlug,
     workspaceId,
     projectId,
-    disabledExtensions: additionalDisabledExtensions = [],
+    disabledExtensions: additionalDisabledExtensions = EMPTY_DISABLED_EXTENSIONS,
     ...rest
   } = props;
   // store hooks
@@ -59,9 +59,14 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
     workspaceSlug,
     projectId,
   });
+  const searchMentionCallback = "searchMentionCallback" in props ? props.searchMentionCallback : NOOP_SEARCH_ENTITY;
+  const searchEntity = useCallback(
+    async (payload: TSearchEntityRequestPayload) => await searchMentionCallback(payload),
+    [searchMentionCallback]
+  );
   // use editor mention
   const { fetchMentions } = useEditorMention({
-    searchEntity: editable ? async (payload) => await props.searchMentionCallback(payload) : async () => ({}),
+    searchEntity,
   });
   // editor config
   const { getEditorFileHandlers } = useEditorConfig();
@@ -70,33 +75,51 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
     projectId,
     workspaceSlug,
   });
+  const uploadFile = "uploadFile" in props ? props.uploadFile : NOOP_FILE_UPLOAD;
+  const duplicateFile = "duplicateFile" in props ? props.duplicateFile : NOOP_FILE_DUPLICATE;
+
+  const disabledExtensions = useMemo(
+    () => [...richTextEditorExtensions.disabled, ...(additionalDisabledExtensions ?? [])],
+    [additionalDisabledExtensions, richTextEditorExtensions.disabled]
+  );
+
+  const fileHandler = useMemo(
+    () =>
+      getEditorFileHandlers({
+        projectId,
+        uploadFile,
+        duplicateFile,
+        workspaceId,
+        workspaceSlug,
+      }),
+    [duplicateFile, getEditorFileHandlers, projectId, uploadFile, workspaceId, workspaceSlug]
+  );
+
+  const mentionHandler = useMemo(
+    () => ({
+      searchCallback: async (query: string) => {
+        const res = await fetchMentions(query);
+        if (!res) throw new Error("Failed in fetching mentions");
+        return res;
+      },
+      renderComponent: EditorMentionsRoot,
+      getMentionedEntityDetails: (id: string) => ({
+        display_name: getUserDetails(id)?.display_name ?? "",
+      }),
+    }),
+    [fetchMentions, getUserDetails]
+  );
 
   return (
     <RichTextEditorWithRef
       ref={ref}
-      disabledExtensions={[...richTextEditorExtensions.disabled, ...(additionalDisabledExtensions ?? [])]}
+      disabledExtensions={disabledExtensions}
       editable={editable}
       flaggedExtensions={richTextEditorExtensions.flagged}
-      fileHandler={getEditorFileHandlers({
-        projectId,
-        uploadFile: editable ? props.uploadFile : async () => "",
-        duplicateFile: editable ? props.duplicateFile : async () => "",
-        workspaceId,
-        workspaceSlug,
-      })}
+      fileHandler={fileHandler}
       getEditorMetaData={getEditorMetaData}
-      mentionHandler={{
-        searchCallback: async (query) => {
-          const res = await fetchMentions(query);
-          if (!res) throw new Error("Failed in fetching mentions");
-          return res;
-        },
-        renderComponent: EditorMentionsRoot,
-        getMentionedEntityDetails: (id) => ({
-          display_name: getUserDetails(id)?.display_name ?? "",
-        }),
-      }}
-      extendedEditorProps={{}}
+      mentionHandler={mentionHandler}
+      extendedEditorProps={EMPTY_EXTENDED_EDITOR_PROPS}
       {...rest}
       containerClassName={cn("relative pb-3 pl-3", containerClassName)}
     />
@@ -104,3 +127,9 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
 });
 
 RichTextEditor.displayName = "RichTextEditor";
+
+const EMPTY_EXTENDED_EDITOR_PROPS = {};
+const EMPTY_DISABLED_EXTENSIONS: TExtensions[] = [];
+const NOOP_FILE_UPLOAD: TFileHandler["upload"] = async () => "";
+const NOOP_FILE_DUPLICATE: TFileHandler["duplicate"] = async () => "";
+const NOOP_SEARCH_ENTITY = async () => ({});

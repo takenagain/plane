@@ -6,7 +6,7 @@
 
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import type { Extensions } from "@tiptap/core";
-import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationExtension from "@tiptap/extension-collaboration";
 // react
 import type React from "react";
 import { useEffect, useMemo } from "react";
@@ -37,6 +37,9 @@ type UseCollaborativeEditorArgs = Omit<TCollaborativeEditorHookProps, "realtimeC
   };
 };
 
+const EMPTY_EDITOR_PROPS = {};
+const EMPTY_EXTENSIONS: NonNullable<TCollaborativeEditorHookProps["extensions"]> = [];
+
 export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
   const {
     provider,
@@ -46,9 +49,9 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
     disabledExtensions,
     editable,
     editorClassName = "",
-    editorProps = {},
+    editorProps = EMPTY_EDITOR_PROPS,
     extendedEditorProps,
-    extensions = [],
+    extensions = EMPTY_EXTENSIONS,
     fileHandler,
     flaggedExtensions,
     forwardedRef,
@@ -65,7 +68,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
     titleRef,
     updatePageProperties,
     user,
-    actions,
+    actions: _actions,
   } = props;
 
   const { mainNavigationExtension, titleNavigationExtension, setMainEditor, setTitleEditor } = useEditorNavigation();
@@ -78,7 +81,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
         dragDropEnabled,
       }),
       HeadingListExtension,
-      Collaboration.configure({
+      CollaborationExtension.configure({
         document: provider.document,
         field: "default",
       }),
@@ -165,7 +168,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
 
   const titleExtensions = useMemo(
     () => [
-      Collaboration.configure({
+      CollaborationExtension.configure({
         document: provider.document,
         field: "title",
       }),

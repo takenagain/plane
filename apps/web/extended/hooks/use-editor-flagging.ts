@@ -29,20 +29,25 @@ export type TEditorFlaggingHookProps = {
   storeType?: EPageStoreType;
 };
 
-/**
- * @description extensions disabled in various editors
- */
-export const useEditorFlagging = (_props: TEditorFlaggingHookProps): TEditorFlaggingHookReturnType => ({
+const DISABLED_EXTENSIONS: TExtensions[] = ["ai", "collaboration-cursor"];
+
+const EDITOR_FLAGGING_CONFIG: TEditorFlaggingHookReturnType = {
   document: {
-    disabled: ["ai", "collaboration-cursor"],
+    disabled: DISABLED_EXTENSIONS,
     flagged: [],
   },
   liteText: {
-    disabled: ["ai", "collaboration-cursor"],
+    disabled: DISABLED_EXTENSIONS,
     flagged: [],
   },
   richText: {
-    disabled: ["ai", "collaboration-cursor"],
+    disabled: DISABLED_EXTENSIONS,
     flagged: [],
   },
-});
+};
+
+/**
+ * @description extensions disabled in various editors
+ */
+export const useEditorFlagging = (_props: TEditorFlaggingHookProps): TEditorFlaggingHookReturnType =>
+  EDITOR_FLAGGING_CONFIG;

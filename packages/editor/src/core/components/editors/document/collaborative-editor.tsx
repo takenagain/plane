@@ -20,6 +20,8 @@ import { useCollaborativeEditor } from "@/hooks/use-collaborative-editor";
 // types
 import type { EditorRefApi, ICollaborativeDocumentEditorProps } from "@/types";
 
+const EMPTY_EXTENSIONS: NonNullable<ICollaborativeDocumentEditorProps["extensions"]> = [];
+
 // Inner component that has access to collaboration context
 function CollaborativeDocumentEditorInner(props: ICollaborativeDocumentEditorProps) {
   const {
@@ -27,7 +29,7 @@ function CollaborativeDocumentEditorInner(props: ICollaborativeDocumentEditorPro
     bubbleMenuEnabled = true,
     containerClassName,
     documentLoaderClassName,
-    extensions = [],
+    extensions = EMPTY_EXTENSIONS,
     disabledExtensions,
     displayConfig = DEFAULT_DISPLAY_CONFIG,
     editable,

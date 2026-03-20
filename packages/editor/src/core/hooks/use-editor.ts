@@ -4,8 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { useEditorState, useEditor as useTiptapEditor } from "@tiptap/react";
-import { useImperativeHandle, useEffect } from "react";
+import { useEditor as useTiptapEditor, useEditorState } from "@tiptap/react";
+import { useImperativeHandle, useEffect, useMemo, useRef } from "react";
 import type { MarkdownStorage } from "tiptap-markdown";
 // extensions
 import { CoreEditorExtensions } from "@/extensions";
@@ -22,16 +22,19 @@ declare module "@tiptap/core" {
   }
 }
 
+const EMPTY_EDITOR_PROPS = {};
+const EMPTY_EXTENSIONS: NonNullable<TEditorHookProps["extensions"]> = [];
+
 export const useEditor = (props: TEditorHookProps) => {
   const {
     autofocus = false,
     disabledExtensions,
     editable = true,
     editorClassName = "",
-    editorProps = {},
+    editorProps,
     enableHistory,
     extendedEditorProps,
-    extensions = [],
+    extensions = EMPTY_EXTENSIONS,
     fileHandler,
     flaggedExtensions,
     forwardedRef,
@@ -51,6 +54,55 @@ export const useEditor = (props: TEditorHookProps) => {
     provider,
     value,
   } = props;
+  const effectiveEditorProps = editorProps ?? EMPTY_EDITOR_PROPS;
+  const initialValueRef = useRef(initialValue);
+  initialValueRef.current = initialValue;
+
+  const resolvedEditorProps = useMemo(
+    () => ({
+      ...CoreEditorProps({
+        editorClassName,
+      }),
+      ...effectiveEditorProps,
+    }),
+    [editorClassName, effectiveEditorProps]
+  );
+  const resolvedExtensions = useMemo(
+    () => [
+      ...CoreEditorExtensions({
+        disabledExtensions,
+        editable,
+        enableHistory,
+        extendedEditorProps,
+        fileHandler,
+        flaggedExtensions,
+        getEditorMetaData,
+        isTouchDevice,
+        mentionHandler,
+        placeholder,
+        showPlaceholderOnEmpty,
+        tabIndex,
+        provider,
+      }),
+      ...extensions,
+    ],
+    [
+      disabledExtensions,
+      editable,
+      enableHistory,
+      extendedEditorProps,
+      extensions,
+      fileHandler,
+      flaggedExtensions,
+      getEditorMetaData,
+      isTouchDevice,
+      mentionHandler,
+      placeholder,
+      provider,
+      showPlaceholderOnEmpty,
+      tabIndex,
+    ]
+  );
 
   const editor = useTiptapEditor(
     {
@@ -58,45 +110,22 @@ export const useEditor = (props: TEditorHookProps) => {
       immediatelyRender: false,
       shouldRerenderOnTransaction: false,
       autofocus,
+      editorProps: resolvedEditorProps,
+      extensions: resolvedExtensions,
+      content: initialValueRef.current,
       parseOptions: { preserveWhitespace: true },
-      editorProps: {
-        ...CoreEditorProps({
-          editorClassName,
-        }),
-        ...editorProps,
-      },
-      extensions: [
-        ...CoreEditorExtensions({
-          disabledExtensions,
-          editable,
-          enableHistory,
-          extendedEditorProps,
-          fileHandler,
-          flaggedExtensions,
-          getEditorMetaData,
-          isTouchDevice,
-          mentionHandler,
-          placeholder,
-          showPlaceholderOnEmpty,
-          tabIndex,
-          provider,
-        }),
-        ...extensions,
-      ],
-      content: initialValue,
       onCreate: () => handleEditorReady?.(true),
       onTransaction: () => {
         onTransaction?.();
       },
-      onUpdate: ({ editor, transaction }) => {
-        // Check if this update is only due to migration update
+      onUpdate: ({ editor: currentEditor, transaction }) => {
         const isMigrationUpdate = transaction?.getMeta("uniqueIdOnlyChange") === true;
-        onChange?.(editor.getJSON(), editor.getHTML(), { isMigrationUpdate });
+        onChange?.(currentEditor.getJSON(), currentEditor.getHTML(), { isMigrationUpdate });
       },
       onDestroy: () => handleEditorReady?.(false),
-      onFocus: onEditorFocus,
+      onFocus: () => onEditorFocus?.(),
     },
-    [editable]
+    [editable, id, resolvedExtensions]
   );
 
   // Effect for syncing SWR data
@@ -133,8 +162,8 @@ export const useEditor = (props: TEditorHookProps) => {
   // subscribe to assets list changes
   const assetsList = useEditorState({
     editor,
-    selector: ({ editor }) => ({
-      assets: editor?.storage.utility?.assetsList ?? [],
+    selector: ({ editor: currentEditor }) => ({
+      assets: currentEditor?.storage.utility?.assetsList ?? [],
     }),
   });
   // trigger callback when assets list changes

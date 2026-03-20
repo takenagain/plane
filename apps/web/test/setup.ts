@@ -4,5 +4,7 @@
  * See the LICENSE file for details.
  */
 
-export * from "./root";
-export * from "./global-time-tracking-fob-root";
+import * as matchers from "@testing-library/jest-dom/matchers";
+import { expect } from "vitest";
+
+expect.extend(matchers);

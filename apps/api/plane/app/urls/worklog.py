@@ -8,6 +8,11 @@ from plane.app.views import WorklogViewSet
 
 urlpatterns = [
     path(
+        "workspaces/<str:slug>/worklogs/active/",
+        WorklogViewSet.as_view({"get": "active"}),
+        name="workspace-active-worklog",
+    ),
+    path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/worklogs/",
         WorklogViewSet.as_view({"get": "list", "post": "create"}),
         name="issue-worklogs",
