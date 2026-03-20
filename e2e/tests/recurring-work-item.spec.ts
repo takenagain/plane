@@ -207,6 +207,25 @@ print(f"PATTERN:{issue.recurrence_pattern or 'null'}")
   return match[1].trim();
 }
 
+function getFirstDuplicateId(projectId: string, sourceIssueId: string): string | undefined {
+  const script = `
+from plane.db.models.issue import Issue
+dup = Issue.issue_objects.filter(
+    project_id="${projectId}",
+    recurrence_source_issue_id="${sourceIssueId}",
+).first()
+if dup:
+    print(f"DUP_ID:{dup.id}")
+else:
+    print("DUP_ID:none")
+`;
+  const output = runDjangoShell(script);
+  const match = output.match(/DUP_ID:([^\n\r]+)/);
+  if (!match?.[1]) throw new Error(`Unable to parse duplicate id: ${output}`);
+  const val = match[1].trim();
+  return val === "none" ? undefined : val;
+}
+
 // ---------------------------------------------------------------------------
 // Shared state for serial tests
 // ---------------------------------------------------------------------------
@@ -257,7 +276,12 @@ test.describe.serial("Recurring Work Item E2E", () => {
     );
     expect(patchResponse.ok()).toBe(true);
 
-    const issueData = (await patchResponse.json()) as Record<string, unknown>;
+    const getResponse = await page.request.get(
+      `${BASE_URL}/api/workspaces/${resolvedSlug}/projects/${projectId}/issues/${baseIssueId}/`,
+      { headers: { "Content-Type": "application/json" } }
+    );
+    expect(getResponse.ok()).toBe(true);
+    const issueData = (await getResponse.json()) as Record<string, unknown>;
     expect(issueData["recurrence_pattern"]).toBe("weekly");
     expect(issueData["recurrence_max_occurrences"]).toBe(3);
     expect(typeof issueData["recurrence_next_run_at"]).toBe("string");
@@ -292,7 +316,12 @@ test.describe.serial("Recurring Work Item E2E", () => {
     );
     expect(clearResponse.ok()).toBe(true);
 
-    const data = (await clearResponse.json()) as Record<string, unknown>;
+    const getAfterClearResponse = await page.request.get(
+      `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${baseIssueId}/`,
+      { headers: { "Content-Type": "application/json" } }
+    );
+    expect(getAfterClearResponse.ok()).toBe(true);
+    const data = (await getAfterClearResponse.json()) as Record<string, unknown>;
     expect(data["target_date"] ?? null).toBeNull();
     expect(data["recurrence_pattern"] ?? null).toBeNull();
     expect(data["recurrence_max_occurrences"] ?? null).toBeNull();
@@ -390,19 +419,15 @@ test.describe.serial("Recurring Work Item E2E", () => {
     overrideNextRunToNow(sourceIssue.id);
     triggerRecurrenceTask();
 
-    const listResponse = await page.request.get(
-      `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/?per_page=100`
-    );
-    expect(listResponse.ok()).toBe(true);
+    const duplicateId = getFirstDuplicateId(projectId, sourceIssue.id);
+    expect(duplicateId).toBeDefined();
 
-    const listData = (await listResponse.json()) as { results?: unknown[]; [k: string]: unknown };
-    const issues = (listData["results"] ?? listData) as Record<string, unknown>[];
-    const duplicate = issues.find(
-      (i) => i["recurrence_source_issue_id"] === sourceIssue.id && typeof i["id"] === "string"
-    );
-    expect(duplicate).toBeDefined();
-
-    if (duplicate) {
+    if (duplicateId) {
+      const dupResponse = await page.request.get(
+        `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${duplicateId}/`
+      );
+      expect(dupResponse.ok()).toBe(true);
+      const duplicate = (await dupResponse.json()) as Record<string, unknown>;
       expect(duplicate["recurrence_pattern"] ?? null).toBeNull();
       expect(duplicate["start_date"] ?? null).toBeNull();
       expect(duplicate["recurrence_source_issue_id"]).toBe(sourceIssue.id);

@@ -217,27 +217,29 @@ async function signIn(request: APIRequestContext): Promise<void> {
   let lastCsrfBody = "";
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // eslint-disable-next-line no-await-in-loop
     const csrfResponse = await request.get(`${BASE_URL}/auth/get-csrf-token/`);
     lastCsrfStatus = csrfResponse.status();
     if (csrfResponse.ok()) {
+      // eslint-disable-next-line no-await-in-loop
       const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
       csrfToken = csrfData.csrf_token ?? "";
       if (csrfToken) break;
     } else {
+      // eslint-disable-next-line no-await-in-loop
       lastCsrfBody = (await csrfResponse.text()).slice(0, 200);
     }
     if (attempt < maxAttempts) {
+      // eslint-disable-next-line no-await-in-loop
       await wait(500 * attempt);
     }
   }
 
-  expect(
-    csrfToken,
-    `Unable to fetch CSRF token. lastStatus=${lastCsrfStatus} lastBody=${lastCsrfBody}`
-  ).not.toBe("");
+  expect(csrfToken, `Unable to fetch CSRF token. lastStatus=${lastCsrfStatus} lastBody=${lastCsrfBody}`).not.toBe("");
 
   let lastSignInStatus = -1;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // eslint-disable-next-line no-await-in-loop
     const signInResponse = await request.post(`${BASE_URL}/auth/sign-in/`, {
       form: {
         email: ADMIN_EMAIL,
@@ -253,6 +255,7 @@ async function signIn(request: APIRequestContext): Promise<void> {
       return;
     }
     if (attempt < maxAttempts) {
+      // eslint-disable-next-line no-await-in-loop
       await wait(500 * attempt);
     }
   }
@@ -381,50 +384,54 @@ async function createWorklog(
 }
 
 test.describe("Worklog API Tests", () => {
-  test.beforeAll(() => {
+  let sharedRequest: APIRequestContext;
+
+  test.beforeAll(async ({ playwright }) => {
     const seeded = ensureE2ESeedData();
     workspaceSlug = seeded.workspaceSlug;
     projectId = seeded.projectId;
     issueId = seeded.issueId;
+    sharedRequest = await playwright.request.newContext();
+    await signIn(sharedRequest);
   });
 
-  test.beforeEach(async ({ request }) => {
-    await signIn(request);
+  test.afterAll(async () => {
+    await sharedRequest.dispose();
   });
 
-  test("should authenticate as admin user", async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/users/me/`);
+  test("should authenticate as admin user", async () => {
+    const response = await sharedRequest.get(`${BASE_URL}/api/users/me/`);
     expect(response.status()).toBe(200);
     const me = (await response.json()) as { email?: string };
     expect(me.email).toBe(ADMIN_EMAIL);
   });
 
-  test("FR-1: should create a worklog", async ({ request }) => {
-    const worklog = await createWorklog(request, 60, "E2E test worklog");
+  test("FR-1: should create a worklog", async () => {
+    const worklog = await createWorklog(sharedRequest, 60, "E2E test worklog");
     expect(worklog.duration).toBe(60);
     expect(worklog.description).toBe("E2E test worklog");
 
-    const deleteResponse = await request.delete(`${getWorklogBaseUrl()}${worklog.id}/`);
+    const deleteResponse = await sharedRequest.delete(`${getWorklogBaseUrl()}${worklog.id}/`);
     expect(deleteResponse.status()).toBe(204);
   });
 
-  test("FR-2: should list worklogs for an issue", async ({ request }) => {
-    const response = await request.get(getWorklogBaseUrl());
+  test("FR-2: should list worklogs for an issue", async () => {
+    const response = await sharedRequest.get(getWorklogBaseUrl());
     expect(response.status()).toBe(200);
     const worklogs = (await response.json()) as unknown;
     expect(Array.isArray(worklogs)).toBe(true);
   });
 
-  test("FR-3: should get total duration for an issue", async ({ request }) => {
-    const response = await request.get(`${getWorklogBaseUrl()}total/`);
+  test("FR-3: should get total duration for an issue", async () => {
+    const response = await sharedRequest.get(`${getWorklogBaseUrl()}total/`);
     expect(response.status()).toBe(200);
     const total = (await response.json()) as { total_duration?: unknown };
     expect(typeof total.total_duration).toBe("number");
   });
 
-  test("FR-4: should update a worklog", async ({ request }) => {
-    const worklog = await createWorklog(request, 30, "Original description");
-    const updateResponse = await request.patch(`${getWorklogBaseUrl()}${worklog.id}/`, {
+  test("FR-4: should update a worklog", async () => {
+    const worklog = await createWorklog(sharedRequest, 30, "Original description");
+    const updateResponse = await sharedRequest.patch(`${getWorklogBaseUrl()}${worklog.id}/`, {
       data: {
         duration: 45,
         description: "Updated description",
@@ -436,24 +443,24 @@ test.describe("Worklog API Tests", () => {
     expect(updated.duration).toBe(45);
     expect(updated.description).toBe("Updated description");
 
-    const deleteResponse = await request.delete(`${getWorklogBaseUrl()}${worklog.id}/`);
+    const deleteResponse = await sharedRequest.delete(`${getWorklogBaseUrl()}${worklog.id}/`);
     expect(deleteResponse.status()).toBe(204);
   });
 
-  test("FR-5: should delete a worklog", async ({ request }) => {
-    const worklog = await createWorklog(request, 60, "To be deleted");
-    const deleteResponse = await request.delete(`${getWorklogBaseUrl()}${worklog.id}/`);
+  test("FR-5: should delete a worklog", async () => {
+    const worklog = await createWorklog(sharedRequest, 60, "To be deleted");
+    const deleteResponse = await sharedRequest.delete(`${getWorklogBaseUrl()}${worklog.id}/`);
     expect(deleteResponse.status()).toBe(204);
 
-    const listResponse = await request.get(getWorklogBaseUrl());
+    const listResponse = await sharedRequest.get(getWorklogBaseUrl());
     expect(listResponse.status()).toBe(200);
     const worklogs = (await listResponse.json()) as Array<{ id?: string }>;
     expect(worklogs.some((item) => item.id === worklog.id)).toBe(false);
   });
 
-  test("Validation: should reject duration of 0", async ({ request }) => {
+  test("Validation: should reject duration of 0", async () => {
     const today = new Date().toISOString().split("T")[0];
-    const response = await request.post(getWorklogBaseUrl(), {
+    const response = await sharedRequest.post(getWorklogBaseUrl(), {
       data: {
         duration: 0,
         logged_at: today,
@@ -462,10 +469,10 @@ test.describe("Worklog API Tests", () => {
     expect(response.status()).toBe(400);
   });
 
-  test("Validation: should reject future date", async ({ request }) => {
+  test("Validation: should reject future date", async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 10);
-    const response = await request.post(getWorklogBaseUrl(), {
+    const response = await sharedRequest.post(getWorklogBaseUrl(), {
       data: {
         duration: 60,
         logged_at: futureDate.toISOString().split("T")[0],
@@ -474,13 +481,13 @@ test.describe("Worklog API Tests", () => {
     expect(response.status()).toBe(400);
   });
 
-  test("FR-6: start tracking auto-sets state/start date/assignee when missing", async ({ request }) => {
+  test("FR-6: start tracking auto-sets state/start date/assignee when missing", async () => {
     const { inProgressStateId, userId, today } = resetIssueTrackingDefaults();
 
-    const startResponse = await request.post(`${getWorklogBaseUrl()}start/`);
+    const startResponse = await sharedRequest.post(`${getWorklogBaseUrl()}start/`);
     expect(startResponse.status()).toBe(201);
 
-    const issueResponse = await request.get(getIssueUrl());
+    const issueResponse = await sharedRequest.get(getIssueUrl());
     expect(issueResponse.status()).toBe(200);
     const issue = (await issueResponse.json()) as IssueResponse;
 
@@ -488,7 +495,7 @@ test.describe("Worklog API Tests", () => {
     expect(issue.start_date).toBe(today);
     expect(issue.assignee_ids ?? []).toContain(userId);
 
-    const activeWorklogsResponse = await request.get(getWorklogBaseUrl());
+    const activeWorklogsResponse = await sharedRequest.get(getWorklogBaseUrl());
     expect(activeWorklogsResponse.status()).toBe(200);
     const activeWorklogs = (await activeWorklogsResponse.json()) as Array<{
       id: string;
@@ -497,14 +504,14 @@ test.describe("Worklog API Tests", () => {
     }>;
     const activeForActor = activeWorklogs.find((item) => item.actor === userId && item.duration === 0);
     if (activeForActor) {
-      const stopResponse = await request.post(`${getWorklogBaseUrl()}stop/`);
+      const stopResponse = await sharedRequest.post(`${getWorklogBaseUrl()}stop/`);
       expect(stopResponse.status()).toBe(200);
     }
   });
 
-  test("FR-7: logging time auto-sets state/start date/assignee when missing", async ({ request }) => {
+  test("FR-7: logging time auto-sets state/start date/assignee when missing", async () => {
     const { inProgressStateId, userId, today } = resetIssueTrackingDefaults();
-    const createResponse = await request.post(getWorklogBaseUrl(), {
+    const createResponse = await sharedRequest.post(getWorklogBaseUrl(), {
       data: {
         duration: 15,
         logged_at: today,
@@ -514,7 +521,7 @@ test.describe("Worklog API Tests", () => {
     expect(createResponse.status()).toBe(201);
     const createdWorklog = (await createResponse.json()) as WorklogResponse;
 
-    const issueResponse = await request.get(getIssueUrl());
+    const issueResponse = await sharedRequest.get(getIssueUrl());
     expect(issueResponse.status()).toBe(200);
     const issue = (await issueResponse.json()) as IssueResponse;
 
@@ -522,7 +529,7 @@ test.describe("Worklog API Tests", () => {
     expect(issue.start_date).toBe(today);
     expect(issue.assignee_ids ?? []).toContain(userId);
 
-    const deleteResponse = await request.delete(`${getWorklogBaseUrl()}${createdWorklog.id}/`);
+    const deleteResponse = await sharedRequest.delete(`${getWorklogBaseUrl()}${createdWorklog.id}/`);
     expect(deleteResponse.status()).toBe(204);
   });
 });
