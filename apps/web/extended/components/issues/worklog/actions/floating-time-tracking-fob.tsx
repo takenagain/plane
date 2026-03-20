@@ -27,6 +27,14 @@ export const FloatingTimeTrackingFOB = observer(function FloatingTimeTrackingFOB
   const [nowTick, setNowTick] = useState(() => Date.now());
 
   const isActive = !!activeWorklog;
+  const actionLabel = isActive ? "Stop" : "Start";
+  const actionButtonClassName = cn(
+    "focus-visible:ring-offset-surface-1 inline-flex h-10 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl border text-body-xs-medium text-on-color shadow-raised-200 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+    isExpanded ? "px-3" : "w-10 px-0",
+    isActive
+      ? "border-danger-strong bg-danger-primary hover:bg-danger-primary-hover focus-visible:ring-danger-strong/40"
+      : "border-success-strong bg-success-primary hover:bg-success-primary/90 focus-visible:ring-success-strong/40"
+  );
   const displayTitle = activeWorklog?.issue_name || currentWorklogTarget?.issueName || "Current work item";
   const compactTimeText = isActive ? formatActiveDurationCompact(activeWorklog, nowTick) : formatDuration(totalMinutes);
   const fullTimeText = isActive ? formatActiveDurationFull(activeWorklog, nowTick) : formatDuration(totalMinutes);
@@ -86,17 +94,15 @@ export const FloatingTimeTrackingFOB = observer(function FloatingTimeTrackingFOB
       >
         <button
           type="button"
-          className={cn(
-            "inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-body-xs-medium text-white transition-colors",
-            isActive ? "bg-red-500 hover:bg-red-600" : "bg-green-600 hover:bg-green-700"
-          )}
+          aria-label={`${actionLabel} time tracking`}
+          className={actionButtonClassName}
           data-testid="floating-time-tracking-fob-primary-button"
           onClick={() => {
             void handleAction();
           }}
         >
           {isActive ? <Square className="h-3.5 w-3.5 shrink-0" /> : <Play className="h-3.5 w-3.5 shrink-0" />}
-          <span>{isActive ? "Stop" : "Start"}</span>
+          {isExpanded && <span data-testid="floating-time-tracking-fob-primary-label">{actionLabel}</span>}
         </button>
 
         <div className="min-w-0 flex-1">

@@ -56,7 +56,16 @@ describe("FloatingTimeTrackingFOB", () => {
       />
     );
 
-    expect(screen.getByTestId("floating-time-tracking-fob-primary-button")).toHaveTextContent("Start");
+    expect(screen.getByTestId("floating-time-tracking-fob-primary-button")).toHaveAttribute(
+      "aria-label",
+      "Start time tracking"
+    );
+    expect(screen.getByTestId("floating-time-tracking-fob-primary-button")).toHaveClass(
+      "border-success-strong",
+      "bg-success-primary",
+      "text-on-color"
+    );
+    expect(screen.queryByTestId("floating-time-tracking-fob-primary-label")).not.toBeInTheDocument();
     expect(screen.getByTestId("floating-time-tracking-fob-compact-time")).toHaveTextContent("2h 5m");
   });
 
@@ -66,6 +75,12 @@ describe("FloatingTimeTrackingFOB", () => {
     fireEvent.mouseEnter(screen.getByTestId("floating-time-tracking-fob"));
 
     expect(screen.getByTestId("floating-time-tracking-fob-expanded")).toBeInTheDocument();
+    expect(screen.getByTestId("floating-time-tracking-fob-primary-button")).toHaveClass(
+      "border-danger-strong",
+      "bg-danger-primary",
+      "text-on-color"
+    );
+    expect(screen.getByTestId("floating-time-tracking-fob-primary-label")).toHaveTextContent("Stop");
     expect(screen.getByTestId("floating-time-tracking-fob-full-time")).toHaveTextContent("00:12:04");
   });
 

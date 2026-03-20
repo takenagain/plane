@@ -25,11 +25,23 @@ export const getFileURL = (path: string): string | undefined => {
  * @returns {string} assetId
  */
 export const getAssetIdFromUrl = (src: string): string => {
-  // remove the last char if it is a slash
-  if (src.charAt(src.length - 1) === "/") src = src.slice(0, -1);
-  const sourcePaths = src.split("/");
-  const assetUrl = sourcePaths[sourcePaths.length - 1];
-  return assetUrl;
+  if (!src) return "";
+
+  const normalizedSrc = src.charAt(src.length - 1) === "/" ? src.slice(0, -1) : src;
+
+  if (normalizedSrc.startsWith("http")) {
+    try {
+      const sourceUrl = new URL(normalizedSrc);
+      const sourcePaths = sourceUrl.pathname.split("/").filter(Boolean);
+      return sourcePaths[sourcePaths.length - 1] ?? "";
+    } catch {
+      // Fall back to the generic parser below for malformed URLs.
+    }
+  }
+
+  const sourcePath = normalizedSrc.split(/[?#]/, 1)[0] ?? "";
+  const sourcePaths = sourcePath.split("/").filter(Boolean);
+  return sourcePaths[sourcePaths.length - 1] ?? "";
 };
 
 /**
@@ -44,7 +56,8 @@ export const getBase64Image = async (url: string): Promise<string> => {
 
   // Try to create a URL object to validate the URL
   try {
-    new URL(url);
+    const parsedUrl = new URL(url);
+    void parsedUrl;
   } catch {
     throw new Error("Invalid URL format");
   }
@@ -59,17 +72,17 @@ export const getBase64Image = async (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onloadend = () => {
+    reader.addEventListener("loadend", () => {
       if (reader.result) {
         resolve(reader.result as string);
       } else {
         reject(new Error("Failed to convert image to base64."));
       }
-    };
+    });
 
-    reader.onerror = () => {
+    reader.addEventListener("error", () => {
       reject(new Error("Failed to read the image file."));
-    };
+    });
 
     reader.readAsDataURL(blob);
   });

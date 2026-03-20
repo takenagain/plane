@@ -7,7 +7,7 @@
 import { useCallback } from "react";
 // plane imports
 import type { TFileHandler } from "@plane/editor";
-import { getEditorAssetDownloadSrc, getEditorAssetSrc } from "@plane/utils";
+import { getAssetIdFromUrl, getEditorAssetDownloadSrc, getEditorAssetSrc } from "@plane/utils";
 // hooks
 import { useEditorAsset } from "@/hooks/store/use-editor-asset";
 // plane web hooks
@@ -16,6 +16,14 @@ import { useFileSize } from "@/plane-web/hooks/use-file-size";
 // services
 import { FileService } from "@/services/file.service";
 const fileService = new FileService();
+const LEGACY_EDITOR_ASSET_KEY_PATTERN = /^[0-9a-f]{32}-[^/]+$/i;
+
+export const isRestorableLegacyEditorAssetUrl = (src: string): boolean => {
+  if (!src?.startsWith("http")) return false;
+
+  const assetId = getAssetIdFromUrl(src);
+  return LEGACY_EDITOR_ASSET_KEY_PATTERN.test(assetId);
+};
 
 type TArgs = {
   projectId?: string;
@@ -86,6 +94,7 @@ export const useEditorConfig = () => {
         },
         restore: async (src: string) => {
           if (src?.startsWith("http")) {
+            if (!isRestorableLegacyEditorAssetUrl(src)) return;
             await fileService.restoreOldEditorAsset(workspaceId, src);
           } else {
             await fileService.restoreNewAsset(workspaceSlug, src);

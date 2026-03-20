@@ -573,11 +573,10 @@ test.describe.serial("Time Tracking E2E Flow", () => {
 
     await test.step("sub-test: normalizes state to Start before the focused FOB workflow begins", async () => {
       const localCurrentText = (await startStopButton.textContent())?.trim().toLowerCase() ?? "";
-      const floatingCurrentText = ((await floatingActionButton.textContent().catch(() => null)) ?? "")
-        .trim()
-        .toLowerCase();
+      const floatingActionLabel = (await floatingActionButton.getAttribute("aria-label").catch(() => null)) ?? "";
+      const floatingCurrentText = floatingActionLabel.trim().toLowerCase();
 
-      if (floatingCurrentText === "stop") {
+      if (floatingCurrentText === "stop time tracking") {
         await floatingActionButton.click();
         await expect(floatingFob).toHaveCount(0, { timeout: 15_000 });
       } else if (localCurrentText === "stop") {
@@ -590,7 +589,8 @@ test.describe.serial("Time Tracking E2E Flow", () => {
     await test.step("sub-test: clicking Start shows the active FOB immediately and syncs the local control", async () => {
       await startStopButton.click();
 
-      await expect(floatingActionButton).toHaveText(/stop/i, { timeout: 15_000 });
+      await expect(floatingActionButton).toHaveAttribute("aria-label", /stop time tracking/i, { timeout: 15_000 });
+      await expect(floatingActionButton).not.toContainText(/stop/i, { timeout: 15_000 });
       await expect(floatingActionButton.locator("svg.lucide-square")).toBeVisible({ timeout: 15_000 });
       await expect(floatingCompactTime).toHaveText(/\d+[hm] \d+[ms]/, { timeout: 15_000 });
       await expect(startStopButton).toHaveText(/stop/i, { timeout: 15_000 });
@@ -603,16 +603,19 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await waitForPageLoad(page);
 
       await expect(floatingFob).toBeVisible({ timeout: 15_000 });
-      await expect(floatingActionButton).toHaveText(/stop/i, { timeout: 15_000 });
+      await expect(floatingActionButton).toHaveAttribute("aria-label", /stop time tracking/i, { timeout: 15_000 });
+      await expect(floatingActionButton).not.toContainText(/stop/i, { timeout: 15_000 });
     });
 
     await test.step("sub-test: hovering the FOB expands it and exposes the tracked work item link", async () => {
       await floatingFob.hover();
       const expandedPanel = page.getByTestId("floating-time-tracking-fob-expanded");
+      const primaryLabel = page.getByTestId("floating-time-tracking-fob-primary-label");
       const titleLink = page.getByTestId("floating-time-tracking-fob-title-link");
       const fullTimeText = page.getByTestId("floating-time-tracking-fob-full-time");
 
       await expect(expandedPanel).toBeVisible({ timeout: 15_000 });
+      await expect(primaryLabel).toHaveText(/stop/i, { timeout: 15_000 });
       await expect(titleLink).toBeVisible({ timeout: 15_000 });
       await expect(fullTimeText).toBeVisible({ timeout: 15_000 });
     });
@@ -624,7 +627,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
 
       await page.waitForURL(trackedWorkItemUrl, { timeout: 15_000 });
       await expect(floatingFob).toBeVisible({ timeout: 15_000 });
-      await expect(floatingActionButton).toHaveText(/stop/i, { timeout: 15_000 });
+      await expect(floatingActionButton).toHaveAttribute("aria-label", /stop time tracking/i, { timeout: 15_000 });
     });
 
     await test.step("sub-test: clicking Stop from the FOB stops tracking and hides the FOB", async () => {
