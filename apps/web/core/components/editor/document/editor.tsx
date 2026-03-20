@@ -7,7 +7,13 @@
 import { forwardRef, useCallback, useMemo } from "react";
 // plane imports
 import { DocumentEditorWithRef } from "@plane/editor";
-import type { IEditorPropsExtended, EditorRefApi, IDocumentEditorProps, TFileHandler } from "@plane/editor";
+import type {
+  IEditorPropsExtended,
+  EditorRefApi,
+  IDocumentEditorProps,
+  TExtensions,
+  TFileHandler,
+} from "@plane/editor";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";
 // hooks
@@ -50,7 +56,7 @@ export const DocumentEditor = forwardRef(function DocumentEditor(
     workspaceSlug,
     workspaceId,
     projectId,
-    disabledExtensions: additionalDisabledExtensions = [],
+    disabledExtensions: additionalDisabledExtensions = EMPTY_DISABLED_EXTENSIONS,
     ...rest
   } = props;
   // store hooks
@@ -129,6 +135,7 @@ export const DocumentEditor = forwardRef(function DocumentEditor(
 DocumentEditor.displayName = "DocumentEditor";
 
 const EMPTY_EXTENDED_EDITOR_PROPS = {};
+const EMPTY_DISABLED_EXTENSIONS: TExtensions[] = [];
 const NOOP_FILE_UPLOAD: TFileHandler["upload"] = async () => "";
 const NOOP_FILE_DUPLICATE: TFileHandler["duplicate"] = async () => "";
 const NOOP_SEARCH_ENTITY = async () => ({});

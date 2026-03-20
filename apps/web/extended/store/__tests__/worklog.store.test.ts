@@ -99,4 +99,30 @@ describe("WorklogStore.fetchActiveWorklog", () => {
     expect(store.hasBootstrappedActiveWorklog).toBe(true);
     expect(store.isBootstrappingActiveWorklog).toBe(false);
   });
+
+  it("does not reject when a stale bootstrap failure loses the mutation race", async () => {
+    let rejectBootstrap: ((reason?: unknown) => void) | undefined;
+    serviceMocks.getActive.mockImplementationOnce(
+      () =>
+        new Promise<IActiveWorklog | null>((_, reject) => {
+          rejectBootstrap = reject;
+        })
+    );
+    serviceMocks.startTracking.mockResolvedValueOnce(activeWorklog);
+    serviceMocks.getTotal.mockResolvedValueOnce({ total_duration: 0 });
+
+    const store = new WorklogStore();
+    const bootstrapPromise = store.fetchActiveWorklog("demo-workspace");
+
+    await store.startTracking("demo-workspace", "project-2", "issue-2", { issueName: "Tracked work item" });
+
+    rejectBootstrap?.(new Error("stale bootstrap failed"));
+
+    await expect(bootstrapPromise).resolves.toMatchObject({
+      ...activeWorklog,
+      issue_name: "Tracked work item",
+      workspace_slug: "demo-workspace",
+    });
+    expect(store.activeWorklogError).toBeNull();
+  });
 });

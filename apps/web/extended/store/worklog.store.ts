@@ -155,6 +155,8 @@ export class WorklogStore implements IWorklogStore {
   fetchActiveWorklog = async (workspaceSlug: string): Promise<IActiveWorklog | null> => {
     const requestId = ++this.activeWorklogBootstrapRequestId;
     const mutationIdAtRequestStart = this.activeWorklogMutationId;
+    const isStaleRequest = () =>
+      requestId !== this.activeWorklogBootstrapRequestId || mutationIdAtRequestStart !== this.activeWorklogMutationId;
     this.isBootstrappingActiveWorklog = true;
     this.activeWorklogError = null;
 
@@ -163,10 +165,7 @@ export class WorklogStore implements IWorklogStore {
       runInAction(() => {
         this.hasBootstrappedActiveWorklog = true;
         this.isBootstrappingActiveWorklog = false;
-        if (
-          requestId !== this.activeWorklogBootstrapRequestId ||
-          mutationIdAtRequestStart !== this.activeWorklogMutationId
-        ) {
+        if (isStaleRequest()) {
           return;
         }
 
@@ -177,16 +176,16 @@ export class WorklogStore implements IWorklogStore {
       runInAction(() => {
         this.hasBootstrappedActiveWorklog = true;
         this.isBootstrappingActiveWorklog = false;
-        if (
-          requestId !== this.activeWorklogBootstrapRequestId ||
-          mutationIdAtRequestStart !== this.activeWorklogMutationId
-        ) {
+        if (isStaleRequest()) {
           return;
         }
 
         this.activeWorklog = null;
         this.activeWorklogError = "Failed to restore the active timer.";
       });
+      if (isStaleRequest()) {
+        return this.activeWorklog;
+      }
       throw error;
     }
   };

@@ -9,7 +9,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane imports
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, ILiteTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, ILiteTextEditorProps, TExtensions, TFileHandler } from "@plane/editor";
 import { useTranslation } from "@plane/i18n";
 import type { MakeOptional, TSearchEntityRequestPayload } from "@plane/types";
 import { cn, isCommentEmpty } from "@plane/utils";
@@ -81,7 +81,7 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
     variant = "full",
     parentClassName = "",
     placeholder = t("issue.comments.placeholder"),
-    disabledExtensions: additionalDisabledExtensions = [],
+    disabledExtensions: additionalDisabledExtensions = EMPTY_DISABLED_EXTENSIONS,
     editorClassName = "",
     showPlaceholderOnEmpty = true,
     submitButtonText = "common.comment",
@@ -247,5 +247,6 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
 LiteTextEditor.displayName = "LiteTextEditor";
 
 const EMPTY_EXTENDED_EDITOR_PROPS = {};
+const EMPTY_DISABLED_EXTENSIONS: TExtensions[] = [];
 const NOOP_FILE_UPLOAD: TFileHandler["upload"] = async () => "";
 const NOOP_FILE_DUPLICATE: TFileHandler["duplicate"] = async () => "";

@@ -41,19 +41,21 @@ describe("GlobalTimeTrackingFOBRoot", () => {
 
     window.addEventListener("unhandledrejection", onUnhandledRejection);
 
-    render(
-      <TestStoreProvider store={store}>
-        <GlobalTimeTrackingFOBRoot workspaceSlug="demo-workspace" />
-      </TestStoreProvider>
-    );
+    try {
+      render(
+        <TestStoreProvider store={store}>
+          <GlobalTimeTrackingFOBRoot workspaceSlug="demo-workspace" />
+        </TestStoreProvider>
+      );
 
-    await waitFor(() => {
-      expect(fetchActiveWorklog).toHaveBeenCalledWith("demo-workspace");
-    });
-    await Promise.resolve();
+      await waitFor(() => {
+        expect(fetchActiveWorklog).toHaveBeenCalledWith("demo-workspace");
+      });
+      await Promise.resolve();
 
-    expect(onUnhandledRejection).not.toHaveBeenCalled();
-
-    window.removeEventListener("unhandledrejection", onUnhandledRejection);
+      expect(onUnhandledRejection).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    }
   });
 });

@@ -4,9 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { Editor } from "@tiptap/core";
-import { useEditorState } from "@tiptap/react";
-import { useImperativeHandle, useEffect, useMemo, useRef, useState } from "react";
+import { useEditor as useTiptapEditor, useEditorState } from "@tiptap/react";
+import { useImperativeHandle, useEffect, useMemo, useRef } from "react";
 import type { MarkdownStorage } from "tiptap-markdown";
 // extensions
 import { CoreEditorExtensions } from "@/extensions";
@@ -24,6 +23,7 @@ declare module "@tiptap/core" {
 }
 
 const EMPTY_EDITOR_PROPS = {};
+const EMPTY_EXTENSIONS: NonNullable<TEditorHookProps["extensions"]> = [];
 
 export const useEditor = (props: TEditorHookProps) => {
   const {
@@ -34,7 +34,7 @@ export const useEditor = (props: TEditorHookProps) => {
     editorProps,
     enableHistory,
     extendedEditorProps,
-    extensions = [],
+    extensions = EMPTY_EXTENSIONS,
     fileHandler,
     flaggedExtensions,
     forwardedRef,
@@ -104,50 +104,29 @@ export const useEditor = (props: TEditorHookProps) => {
     ]
   );
 
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const callbacksRef = useRef({
-    handleEditorReady,
-    onChange,
-    onEditorFocus,
-    onTransaction,
-  });
-
-  callbacksRef.current = {
-    handleEditorReady,
-    onChange,
-    onEditorFocus,
-    onTransaction,
-  };
-
-  useEffect(() => {
-    const instance = new Editor({
+  const editor = useTiptapEditor(
+    {
       editable,
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
       autofocus,
       editorProps: resolvedEditorProps,
       extensions: resolvedExtensions,
       content: initialValueRef.current,
       parseOptions: { preserveWhitespace: true },
-      onCreate: () => callbacksRef.current.handleEditorReady?.(true),
+      onCreate: () => handleEditorReady?.(true),
       onTransaction: () => {
-        callbacksRef.current.onTransaction?.();
+        onTransaction?.();
       },
       onUpdate: ({ editor: currentEditor, transaction }) => {
         const isMigrationUpdate = transaction?.getMeta("uniqueIdOnlyChange") === true;
-        callbacksRef.current.onChange?.(currentEditor.getJSON(), currentEditor.getHTML(), { isMigrationUpdate });
+        onChange?.(currentEditor.getJSON(), currentEditor.getHTML(), { isMigrationUpdate });
       },
-      onDestroy: () => callbacksRef.current.handleEditorReady?.(false),
-      onFocus: () => callbacksRef.current.onEditorFocus?.(),
-    });
-
-    setEditor(instance);
-
-    return () => {
-      if (!instance.isDestroyed) {
-        instance.destroy();
-      }
-      setEditor((currentEditor) => (currentEditor === instance ? null : currentEditor));
-    };
-  }, [autofocus, editable, id, resolvedEditorProps, resolvedExtensions]);
+      onDestroy: () => handleEditorReady?.(false),
+      onFocus: () => onEditorFocus?.(),
+    },
+    [editable, id, resolvedExtensions]
+  );
 
   // Effect for syncing SWR data
   useEffect(() => {

@@ -456,6 +456,37 @@ class TestWorklogTracking(TestWorklogBase):
         assert str(response.data["id"]) != str(deleted_worklog.id)
 
     @pytest.mark.django_db
+    def test_start_tracking_rejects_active_timer_on_another_issue(
+        self, member_client, test_workspace, test_project, test_issue, member_user
+    ):
+        state = State.objects.filter(project=test_project).first()
+        other_issue = Issue.objects.create(
+            name="Other Issue",
+            project=test_project,
+            workspace=test_workspace,
+            state=state,
+            created_by=member_user,
+            updated_by=member_user,
+        )
+        Worklog.objects.create(
+            issue=other_issue,
+            project=test_project,
+            workspace=test_workspace,
+            actor=member_user,
+            created_by=member_user,
+            updated_by=member_user,
+            description="",
+            duration=0,
+            logged_at=date.today(),
+        )
+
+        url = self.get_worklogs_start_url(test_workspace.slug, test_project.id, test_issue.id)
+        response = member_client.post(url, format="json")
+
+        assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.data["error"] == "An active time tracker already exists for another work item."
+
+    @pytest.mark.django_db
     def test_start_tracking_rejects_issue_from_different_project(
         self, member_client, test_workspace, test_project, admin_user
     ):

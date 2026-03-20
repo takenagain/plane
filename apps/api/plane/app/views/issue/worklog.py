@@ -77,6 +77,25 @@ class WorklogViewSet(BaseViewSet):
     def _get_active_worklog_for_actor(self):
         return self.get_queryset().filter(actor=self.request.user, duration=0).order_by("-created_at").first()
 
+    def _get_workspace_active_worklog_for_actor(self, workspace_id):
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                workspace_id=workspace_id,
+                actor=self.request.user,
+                duration=0,
+                deleted_at__isnull=True,
+                project__project_projectmember__member=self.request.user,
+                project__project_projectmember__is_active=True,
+                project__archived_at__isnull=True,
+            )
+            .select_related("actor", "project", "workspace", "issue")
+            .distinct()
+            .order_by("-created_at")
+            .first()
+        )
+
     def _get_total_duration_with_active_tracking(self) -> int:
         elapsed_minutes = Greatest(
             Cast(Cast(Extract(Now() - F("created_at"), "epoch"), IntegerField()) / Value(60), IntegerField()),
@@ -249,6 +268,16 @@ class WorklogViewSet(BaseViewSet):
 
         try:
             with transaction.atomic():
+                existing_active_worklog = self._get_workspace_active_worklog_for_actor(issue.workspace_id)
+                if existing_active_worklog is not None:
+                    error_message = "An active time tracker already exists for this work item."
+                    if existing_active_worklog.issue_id != issue_id:
+                        error_message = "An active time tracker already exists for another work item."
+                    return Response(
+                        {"error": error_message},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
                 worklog, created = Worklog.objects.filter(deleted_at__isnull=True).get_or_create(
                     project_id=project_id,
                     issue_id=issue_id,

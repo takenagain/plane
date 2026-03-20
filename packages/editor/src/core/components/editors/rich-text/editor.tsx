@@ -15,12 +15,14 @@ import { RichTextEditorAdditionalExtensions } from "@/plane-editor/extensions/ri
 // types
 import type { EditorRefApi, IRichTextEditorProps } from "@/types";
 
+const EMPTY_EXTENSIONS: NonNullable<IRichTextEditorProps["extensions"]> = [];
+
 function RichTextEditor(props: IRichTextEditorProps) {
   const {
     bubbleMenuEnabled = true,
     disabledExtensions,
     dragDropEnabled,
-    extensions: externalExtensions = [],
+    extensions: externalExtensions = EMPTY_EXTENSIONS,
     fileHandler,
     flaggedExtensions,
     extendedEditorProps,

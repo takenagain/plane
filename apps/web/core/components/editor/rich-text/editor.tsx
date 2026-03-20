@@ -7,7 +7,7 @@
 import { forwardRef, useCallback, useMemo } from "react";
 // plane imports
 import { RichTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, IRichTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, IRichTextEditorProps, TExtensions, TFileHandler } from "@plane/editor";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";
 // components
@@ -49,7 +49,7 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
     workspaceSlug,
     workspaceId,
     projectId,
-    disabledExtensions: additionalDisabledExtensions = [],
+    disabledExtensions: additionalDisabledExtensions = EMPTY_DISABLED_EXTENSIONS,
     ...rest
   } = props;
   // store hooks
@@ -129,6 +129,7 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
 RichTextEditor.displayName = "RichTextEditor";
 
 const EMPTY_EXTENDED_EDITOR_PROPS = {};
+const EMPTY_DISABLED_EXTENSIONS: TExtensions[] = [];
 const NOOP_FILE_UPLOAD: TFileHandler["upload"] = async () => "";
 const NOOP_FILE_DUPLICATE: TFileHandler["duplicate"] = async () => "";
 const NOOP_SEARCH_ENTITY = async () => ({});

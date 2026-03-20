@@ -12,8 +12,10 @@ import { EnterKeyExtension } from "@/extensions";
 // types
 import type { EditorRefApi, ILiteTextEditorProps } from "@/types";
 
+const EMPTY_EXTENSIONS: NonNullable<ILiteTextEditorProps["extensions"]> = [];
+
 function LiteTextEditor(props: ILiteTextEditorProps) {
-  const { onEnterKeyPress, disabledExtensions, extensions: externalExtensions = [] } = props;
+  const { onEnterKeyPress, disabledExtensions, extensions: externalExtensions = EMPTY_EXTENSIONS } = props;
 
   const extensions = useMemo(() => {
     const resolvedExtensions = [...externalExtensions];
