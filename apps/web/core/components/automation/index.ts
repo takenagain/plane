@@ -6,4 +6,6 @@
 
 export * from "./auto-close-automation";
 export * from "./auto-archive-automation";
+export * from "./auto-create-cycles";
+export * from "./auto-transfer-cycle-issues";
 export * from "./select-month-modal";
