@@ -64,16 +64,17 @@ def create_upcoming_cycles(project, ended_cycle):
             continue
 
         name = next_sprint_name(project.id)
-        cycle = Cycle.objects.create(
+        cycle = Cycle(
             name=name,
             project=project,
             workspace=project.workspace,
             start_date=start_date,
             end_date=end_date,
-            owned_by=project.created_by,
-            created_by=project.created_by,
-            updated_by=project.created_by,
+            owned_by_id=project.created_by_id,
+            created_by_id=project.created_by_id,
+            updated_by_id=project.created_by_id,
         )
+        cycle.save(disable_auto_set_user=True)
         created_cycle_ids.append(cycle.id)
         logger.info(
             "Created cycle '%s' (%s) for project %s: %s - %s",
