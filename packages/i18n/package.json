@@ -17,7 +17,8 @@
   },
   "scripts": {
     "dev": "tsdown --watch",
-    "build": "tsdown",
+    "build": "tsdown && pnpm run postbuild",
+    "postbuild": "sed -i 's/, __exportAll as t,/,/g' dist/index.d.ts",
     "check:lint": "oxlint --max-warnings=2 .",
     "check:types": "tsc --noEmit",
     "check:format": "oxfmt --check .",
