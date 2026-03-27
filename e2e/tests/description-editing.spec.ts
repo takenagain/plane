@@ -29,6 +29,8 @@ let freshIssueId: string;
 
 /** Detect whether docker or podman is available. */
 function detectRuntime(): string {
+  const envRuntime = process.env.CONTAINER_RUNTIME;
+  if (envRuntime) return envRuntime;
   for (const runtime of ["podman", "docker"]) {
     try {
       execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });

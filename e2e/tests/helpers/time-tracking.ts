@@ -45,6 +45,8 @@ function extractWorkspaceSlugs(payload: unknown): string[] {
 }
 
 function detectContainerRuntime(): string {
+  const envRuntime = process.env.CONTAINER_RUNTIME;
+  if (envRuntime) return envRuntime;
   for (const runtime of ["podman", "docker"]) {
     try {
       execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
