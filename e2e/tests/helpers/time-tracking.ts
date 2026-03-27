@@ -44,13 +44,28 @@ function extractWorkspaceSlugs(payload: unknown): string[] {
     .filter((slug) => slug.length > 0);
 }
 
+function detectContainerRuntime(): string {
+  const envRuntime = process.env.CONTAINER_RUNTIME;
+  if (envRuntime) return envRuntime;
+  for (const runtime of ["podman", "docker"]) {
+    try {
+      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
+      return runtime;
+    } catch {
+      // not available, try next
+    }
+  }
+  throw new Error("Neither podman nor docker is available");
+}
+
 function resolveApiContainerName() {
-  const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
+  const runtime = detectContainerRuntime();
+  const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
   const names = output
     .split(/\r?\n/)
     .map((name) => name.trim())
     .filter(Boolean);
-  return names.find((name) => name === "api" || name.endsWith("_api_1")) || "api";
+  return { runtime, container: names.find((name) => name === "api" || name.endsWith("_api_1")) || "api" };
 }
 
 export function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
@@ -222,9 +237,10 @@ Worklog.objects.filter(
 print(f"SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 `;
 
+  const { runtime, container } = resolveApiContainerName();
   const output = execFileSync(
-    "podman",
-    ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", seedScript],
+    runtime,
+    ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", seedScript],
     {
       encoding: "utf-8",
       cwd: "/",

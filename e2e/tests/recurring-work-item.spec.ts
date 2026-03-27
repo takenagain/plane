@@ -43,9 +43,25 @@ function farFutureDateIso(): string {
   return d.toISOString().slice(0, 10);
 }
 
+function detectRuntime(): string {
+  const envRuntime = process.env.CONTAINER_RUNTIME;
+  if (envRuntime) return envRuntime;
+  for (const runtime of ["podman", "docker"]) {
+    try {
+      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
+      return runtime;
+    } catch {
+      // not available
+    }
+  }
+  throw new Error("Neither podman nor docker is available");
+}
+
+const CONTAINER_RUNTIME = detectRuntime();
+
 function resolveApiContainerName(): string {
   try {
-    const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
+    const output = execFileSync(CONTAINER_RUNTIME, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
     const names = output
       .split(/\r?\n/)
       .map((n: string) => n.trim())
@@ -58,7 +74,7 @@ function resolveApiContainerName(): string {
 
 function runDjangoShell(script: string): string {
   return execFileSync(
-    "podman",
+    CONTAINER_RUNTIME,
     ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", script],
     { encoding: "utf-8", cwd: "/" }
   );
