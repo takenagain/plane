@@ -23,14 +23,11 @@ import { ensureE2ESeedData, signInAndEnsureWorkspace, waitForPageLoad, BASE_URL 
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Locate the automation section that contains the given heading text. */
-function automationSection(page: Page, title: string): Locator {
-  return page.locator("div").filter({ has: page.locator(`h4:text-is("${title}")`) });
-}
-
-/** Get the toggle switch (role="switch") inside an automation section. */
+/** Get the toggle switch (role="switch") for a given automation heading. */
 function automationToggle(page: Page, title: string): Locator {
-  return automationSection(page, title).getByRole("switch").first();
+  // Navigate from the h4 up to the SettingsControlItem wrapper (grandparent div)
+  // which contains both the title and the toggle switch.
+  return page.locator(`h4:text-is("${title}")`).locator("xpath=../..").getByRole("switch");
 }
 
 // ---------------------------------------------------------------------------
@@ -57,9 +54,19 @@ async function navigateToAutomations(page: Page) {
 // Tests
 // ---------------------------------------------------------------------------
 
-test.describe("Cycle automation settings", () => {
+test.describe.serial("Cycle automation settings", () => {
   test.beforeEach(async ({ page }) => {
     await signInAndEnsureWorkspace(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    // Reset both toggles to off so subsequent tests start from a clean state
+    await navigateToAutomations(page);
+    const createToggle = automationToggle(page, "Auto-create cycles");
+    if ((await createToggle.getAttribute("aria-checked")) === "true") {
+      await createToggle.click();
+      await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
+    }
   });
 
   test("auto-create toggle exists and is off by default", async ({ page }) => {
@@ -142,12 +149,6 @@ test.describe("Cycle automation settings", () => {
       timeout: 10_000,
     });
     await expect(automationToggle(page, "Auto-transfer work items")).toHaveAttribute("aria-checked", "true", {
-      timeout: 10_000,
-    });
-
-    // Clean up — disable both for other tests
-    await automationToggle(page, "Auto-create cycles").click();
-    await expect(automationToggle(page, "Auto-create cycles")).toHaveAttribute("aria-checked", "false", {
       timeout: 10_000,
     });
   });

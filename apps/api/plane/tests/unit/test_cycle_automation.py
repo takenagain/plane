@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from plane.bgtasks.cycle_automation_task import (
     create_upcoming_cycles,
+    get_fallback_user_id,
     has_overlapping_cycle,
     next_sprint_name,
     process_cycle_automations,
@@ -379,3 +380,37 @@ class TestProcessCycleAutomations:
         # Issue should still be in the ended cycle
         ci = CycleIssue.objects.get(issue=issue)
         assert ci.cycle_id == ended_cycle.id
+
+
+@pytest.mark.django_db
+class TestGetFallbackUserId:
+    def test_returns_created_by_when_set(self, project, user):
+        assert get_fallback_user_id(project) == user.id
+
+    def test_falls_back_to_workspace_admin(self, project):
+        Project.objects.filter(id=project.id).update(created_by=None)
+        project.refresh_from_db()
+        # The workspace admin fixture user should be returned
+        result = get_fallback_user_id(project)
+        assert result is not None
+
+    def test_returns_none_when_no_admin(self, user):
+        ws = WorkspaceFactory(owner=user)
+        proj = ProjectFactory(workspace=ws, created_by=user, updated_by=user)
+        Project.objects.filter(id=proj.id).update(created_by=None)
+        proj.refresh_from_db()
+        # Remove all workspace members
+        from plane.db.models import WorkspaceMember
+
+        WorkspaceMember.objects.filter(workspace=ws).delete()
+        assert get_fallback_user_id(proj) is None
+
+    def test_create_cycles_skips_when_no_owner(self, ended_cycle, user):
+        project = ended_cycle.project
+        Project.objects.filter(id=project.id).update(created_by=None)
+        project.refresh_from_db()
+        from plane.db.models import WorkspaceMember
+
+        WorkspaceMember.objects.filter(workspace=project.workspace).delete()
+        created = create_upcoming_cycles(project, ended_cycle)
+        assert created == []

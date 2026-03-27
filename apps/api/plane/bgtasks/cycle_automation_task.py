@@ -4,19 +4,42 @@
 
 import logging
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytz
 from celery import shared_task
 from django.utils import timezone
 
-from plane.db.models import Cycle, CycleIssue, Project
+from plane.db.models import Cycle, CycleIssue, Project, WorkspaceMember
 from plane.utils.cycle_transfer_issues import transfer_cycle_issues
 from plane.utils.exception_logger import log_exception
 
 logger = logging.getLogger(__name__)
 
 CYCLE_DURATION_DAYS = 14
+
+
+def get_fallback_user_id(project):
+    """Return project.created_by_id or the first workspace admin as fallback."""
+    if project.created_by_id:
+        return project.created_by_id
+    admin_member = (
+        WorkspaceMember.objects.filter(
+            workspace=project.workspace,
+            role=20,
+            is_active=True,
+        )
+        .order_by("created_at")
+        .values_list("member_id", flat=True)
+        .first()
+    )
+    if admin_member:
+        return admin_member
+    logger.error(
+        "No created_by or workspace admin found for project %s; cannot determine owner.",
+        project.id,
+    )
+    return None
 
 
 def next_sprint_name(project_id):
@@ -46,12 +69,20 @@ def has_overlapping_cycle(project_id, start_date, end_date):
 
 def create_upcoming_cycles(project, ended_cycle):
     """Create up to two consecutive two-week cycles after the ended cycle."""
+    owner_id = get_fallback_user_id(project)
+    if owner_id is None:
+        return []
+
     created_cycle_ids = []
-    next_start = ended_cycle.end_date + timedelta(days=1)
+    # Normalize to project-local date to avoid timezone boundary issues
+    local_tz = pytz.timezone(project.timezone)
+    ended_local_date = ended_cycle.end_date.astimezone(local_tz).date()
+    next_start_date = ended_local_date + timedelta(days=1)
 
     for _ in range(2):
-        start_date = next_start
-        end_date = start_date + timedelta(days=CYCLE_DURATION_DAYS - 1)
+        start_date = local_tz.localize(datetime.combine(next_start_date, datetime.min.time()))
+        end_date_local = next_start_date + timedelta(days=CYCLE_DURATION_DAYS - 1)
+        end_date = local_tz.localize(datetime.combine(end_date_local, datetime.min.time()))
 
         if has_overlapping_cycle(project.id, start_date, end_date):
             logger.info(
@@ -60,7 +91,7 @@ def create_upcoming_cycles(project, ended_cycle):
                 start_date,
                 end_date,
             )
-            next_start = end_date + timedelta(days=1)
+            next_start_date = end_date_local + timedelta(days=1)
             continue
 
         name = next_sprint_name(project.id)
@@ -70,9 +101,9 @@ def create_upcoming_cycles(project, ended_cycle):
             workspace=project.workspace,
             start_date=start_date,
             end_date=end_date,
-            owned_by_id=project.created_by_id,
-            created_by_id=project.created_by_id,
-            updated_by_id=project.created_by_id,
+            owned_by_id=owner_id,
+            created_by_id=owner_id,
+            updated_by_id=owner_id,
         )
         cycle.save(disable_auto_set_user=True)
         created_cycle_ids.append(cycle.id)
@@ -84,13 +115,21 @@ def create_upcoming_cycles(project, ended_cycle):
             start_date,
             end_date,
         )
-        next_start = end_date + timedelta(days=1)
+        next_start_date = end_date_local + timedelta(days=1)
 
     return created_cycle_ids
 
 
 def transfer_incomplete_issues(project, ended_cycle):
     """Transfer incomplete issues from ended cycle to the next upcoming cycle."""
+    user_id = get_fallback_user_id(project)
+    if user_id is None:
+        logger.warning(
+            "No user available for transfer in project %s; skipping.",
+            project.id,
+        )
+        return False
+
     next_cycle = (
         Cycle.objects.filter(
             project=project,
@@ -135,7 +174,7 @@ def transfer_incomplete_issues(project, ended_cycle):
         cycle_id=str(ended_cycle.id),
         new_cycle_id=str(next_cycle.id),
         request=None,
-        user_id=str(project.created_by_id),
+        user_id=str(user_id),
     )
 
     if result.get("success"):
