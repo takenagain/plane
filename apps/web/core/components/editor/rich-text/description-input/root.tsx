@@ -242,30 +242,40 @@ export const DescriptionInput = observer(function DescriptionInput(props: Props)
   // destroy / recreate the ProseMirror instance (which would steal focus).
   const uploadFileCb = useCallback(
     async (blockId: string, file: File) => {
-      const { asset_id } = await uploadEditorAsset({
-        blockId,
-        data: {
-          entity_identifier: entityId,
-          entity_type: fileAssetType,
-        },
-        file,
-        projectId,
-        workspaceSlug,
-      });
-      return asset_id;
+      try {
+        const { asset_id } = await uploadEditorAsset({
+          blockId,
+          data: {
+            entity_identifier: entityId,
+            entity_type: fileAssetType,
+          },
+          file,
+          projectId,
+          workspaceSlug,
+        });
+        return asset_id;
+      } catch (error) {
+        console.error("Failed to upload editor asset", error);
+        throw new Error("Asset upload failed. Please try again later.", { cause: error });
+      }
     },
     [entityId, fileAssetType, projectId, uploadEditorAsset, workspaceSlug]
   );
 
   const duplicateFileCb = useCallback(
     async (assetId: string) => {
-      const { asset_id } = await duplicateEditorAsset({
-        assetId,
-        entityType: fileAssetType,
-        projectId,
-        workspaceSlug,
-      });
-      return asset_id;
+      try {
+        const { asset_id } = await duplicateEditorAsset({
+          assetId,
+          entityType: fileAssetType,
+          projectId,
+          workspaceSlug,
+        });
+        return asset_id;
+      } catch (error) {
+        console.error("Failed to duplicate editor asset", error);
+        throw new Error("Asset duplication failed. Please try again later.", { cause: error });
+      }
     },
     [duplicateEditorAsset, fileAssetType, projectId, workspaceSlug]
   );

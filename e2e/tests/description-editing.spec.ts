@@ -17,7 +17,13 @@
 
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { signInAndEnsureWorkspace, waitForPageLoad, BASE_URL, WORKSPACE_NAME } from "./helpers/time-tracking";
+import {
+  signInAndEnsureWorkspace,
+  waitForPageLoad,
+  BASE_URL,
+  WORKSPACE_NAME,
+  PROJECT_NAME,
+} from "./helpers/time-tracking";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -63,8 +69,10 @@ from plane.db.models.issue import Issue
 from plane.db.models.state import State
 
 user = User.objects.get(email="${process.env.E2E_ADMIN_EMAIL || "admin@example.com"}")
-workspace = Workspace.objects.get(slug="${WORKSPACE_NAME}")
-project = Project.objects.get(workspace=workspace, name="${process.env.E2E_PROJECT_NAME || "Time Tracking QA"}")
+import re as _re
+workspace_slug = _re.sub(r"[^a-z0-9-]+", "-", "${WORKSPACE_NAME}".lower()).strip("-") or "test-ws"
+workspace = Workspace.objects.get(slug=workspace_slug)
+project = Project.objects.get(workspace=workspace, name="${PROJECT_NAME}")
 default_state = State.all_state_objects.filter(project=project, deleted_at__isnull=True, is_triage=False).order_by("sequence").first()
 issue = Issue.objects.create(
     project=project,

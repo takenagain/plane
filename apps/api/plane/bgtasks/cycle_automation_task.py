@@ -11,6 +11,7 @@ from celery import shared_task
 from django.utils import timezone
 
 from plane.db.models import Cycle, CycleIssue, Project, WorkspaceMember
+from plane.db.models.project import ROLE
 from plane.utils.cycle_transfer_issues import transfer_cycle_issues
 from plane.utils.exception_logger import log_exception
 
@@ -26,7 +27,7 @@ def get_fallback_user_id(project):
     admin_member = (
         WorkspaceMember.objects.filter(
             workspace=project.workspace,
-            role=20,
+            role=ROLE.ADMIN.value,
             is_active=True,
         )
         .order_by("created_at")
@@ -80,9 +81,13 @@ def create_upcoming_cycles(project, ended_cycle):
     next_start_date = ended_local_date + timedelta(days=1)
 
     for _ in range(2):
-        start_date = local_tz.localize(datetime.combine(next_start_date, datetime.min.time()))
+        # Match the conventions used by convert_to_utc:
+        # start_date gets 00:00:01 local, end_date gets 23:59:00 local.
+        start_date = local_tz.localize(datetime.combine(next_start_date, datetime.min.time()) + timedelta(seconds=1))
         end_date_local = next_start_date + timedelta(days=CYCLE_DURATION_DAYS - 1)
-        end_date = local_tz.localize(datetime.combine(end_date_local, datetime.min.time()))
+        end_date = local_tz.localize(
+            datetime.combine(end_date_local, datetime.min.time()) + timedelta(hours=23, minutes=59)
+        )
 
         if has_overlapping_cycle(project.id, start_date, end_date):
             logger.info(
