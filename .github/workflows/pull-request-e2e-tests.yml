@@ -39,6 +39,7 @@ jobs:
           cp apps/api/.env.example apps/api/.env
           SECRET_KEY=$(tr -dc 'a-z0-9' < /dev/urandom | head -c50)
           echo "SECRET_KEY=\"$SECRET_KEY\"" >> apps/api/.env
+          echo 'DEBUG=1' >> apps/api/.env
           echo 'USE_MINIO=1' >> apps/api/.env
           echo 'WEB_URL=http://localhost:8081' >> apps/api/.env
           echo 'APP_BASE_URL=http://localhost:8081' >> apps/api/.env
