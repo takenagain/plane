@@ -46,8 +46,8 @@ test.beforeAll(() => {
 async function navigateToAutomations(page: Page) {
   await page.goto(`${BASE_URL}/${workspaceSlug}/settings/projects/${projectId}/automations/`);
   await waitForPageLoad(page);
-  // Wait for the automation page content to be visible
-  await expect(page.locator("h4:text-is('Auto-create cycles')")).toBeVisible({ timeout: 15_000 });
+  // Wait for the automation page content to be visible (allow extra time in CI)
+  await expect(page.locator("h4:text-is('Auto-create cycles')")).toBeVisible({ timeout: 30_000 });
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +57,14 @@ async function navigateToAutomations(page: Page) {
 test.describe.serial("Cycle automation settings", () => {
   test.beforeEach(async ({ page }) => {
     await signInAndEnsureWorkspace(page);
+    // Reset toggles to off to ensure clean state (handles leftover state from
+    // previous runs or failed tests)
+    await navigateToAutomations(page);
+    const createToggle = automationToggle(page, "Auto-create cycles");
+    if ((await createToggle.getAttribute("aria-checked")) === "true") {
+      await createToggle.click();
+      await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
+    }
   });
 
   test.afterEach(async ({ page }) => {
@@ -143,7 +151,7 @@ test.describe.serial("Cycle automation settings", () => {
     // Reload and verify both are still on
     await page.reload();
     await waitForPageLoad(page);
-    await expect(page.locator("h4:text-is('Auto-create cycles')")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("h4:text-is('Auto-create cycles')")).toBeVisible({ timeout: 30_000 });
 
     await expect(automationToggle(page, "Auto-create cycles")).toHaveAttribute("aria-checked", "true", {
       timeout: 10_000,

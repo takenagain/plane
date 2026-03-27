@@ -37,8 +37,22 @@ type IssueResponse = {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function detectRuntime(): string {
+  for (const runtime of ["podman", "docker"]) {
+    try {
+      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
+      return runtime;
+    } catch {
+      // not available
+    }
+  }
+  throw new Error("Neither podman nor docker is available");
+}
+
+const CONTAINER_RUNTIME = detectRuntime();
+
 function resolveApiContainerName() {
-  const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
+  const output = execFileSync(CONTAINER_RUNTIME, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
   const names = output
     .split(/\r?\n/)
     .map((name) => name.trim())
@@ -185,7 +199,7 @@ print(f"WORKLOG_SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
 `;
 
   const output = execFileSync(
-    "podman",
+    CONTAINER_RUNTIME,
     ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", seedScript],
     {
       encoding: "utf-8",
@@ -346,7 +360,7 @@ print(f"WORKLOG_RESET_RESULT:{todo_state.id if todo_state else ''}|{in_progress_
 `;
 
   const output = execFileSync(
-    "podman",
+    CONTAINER_RUNTIME,
     ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", resetScript],
     {
       encoding: "utf-8",

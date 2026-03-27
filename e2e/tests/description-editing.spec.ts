@@ -27,10 +27,24 @@ let workspaceSlug: string;
 let projectId: string;
 let freshIssueId: string;
 
+/** Detect whether docker or podman is available. */
+function detectRuntime(): string {
+  for (const runtime of ["podman", "docker"]) {
+    try {
+      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
+      return runtime;
+    } catch {
+      // not available
+    }
+  }
+  throw new Error("Neither podman nor docker is available");
+}
+
 /** Create a fresh issue via Django management shell. */
 function createFreshIssue(): { workspaceSlug: string; projectId: string; issueId: string } {
+  const runtime = detectRuntime();
   const containerName = (() => {
-    const output = execFileSync("podman", ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
+    const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
     const names = output
       .split(/\r?\n/)
       .map((n) => n.trim())
@@ -63,7 +77,7 @@ print(f"FRESH_ISSUE:{workspace.slug}|{project.id}|{issue.id}")
 `;
 
   const output = execFileSync(
-    "podman",
+    runtime,
     ["exec", "-w", "/", containerName, "python", "/code/manage.py", "shell", "-c", script],
     {
       encoding: "utf-8",
