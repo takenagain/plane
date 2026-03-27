@@ -215,7 +215,7 @@ const getTimeLoggedColumns = (): IGroupByColumn[] => {
     allIssues
       .map((issue) => issue.time_logged)
       .filter((timeLogged): timeLogged is number => typeof timeLogged === "number")
-      .sort((a, b) => a - b)
+      .toSorted((a, b) => a - b)
   );
 
   const columns = values.map((timeLogged) => ({

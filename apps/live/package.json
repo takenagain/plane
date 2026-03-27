@@ -6,8 +6,6 @@
   "license": "AGPL-3.0",
   "author": "Plane Software Inc.",
   "type": "module",
-  "main": "./dist/start.mjs",
-  "module": "./dist/start.mjs",
   "exports": {
     ".": "./dist/start.mjs",
     "./package.json": "./package.json"
