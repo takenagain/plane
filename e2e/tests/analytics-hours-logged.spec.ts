@@ -92,13 +92,12 @@ test.describe.serial("Analytics Hours Logged E2E", () => {
       await waitForPageLoad(page);
     }
 
-    const analyticsEntry = page
-      .getByRole("button", { name: /analytics/i })
-      .or(page.getByRole("link", { name: /analytics/i }))
-      .first();
+    // Target the header analytics *button* specifically (not the sidebar link)
+    // so it opens the project analytics modal rather than navigating away.
+    const analyticsEntry = page.locator('button:has-text("Analytics")').first();
     await expect(analyticsEntry).toBeVisible({ timeout: 20_000 });
     await analyticsEntry.click();
-    await expect(page.getByText("Customized insights")).toBeVisible();
+    await expect(page.getByText("Customized insights")).toBeVisible({ timeout: 15_000 });
 
     await expect.poll(() => analyticsResponses.length).toBeGreaterThan(0);
     page.off("response", collectAnalyticsResponses);

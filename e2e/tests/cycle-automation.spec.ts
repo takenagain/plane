@@ -30,6 +30,17 @@ function automationToggle(page: Page, title: string): Locator {
   return page.locator(`h4:text-is("${title}")`).locator("xpath=../..").getByRole("switch");
 }
 
+/** Click a toggle and wait for the project-settings PATCH to round-trip so the
+ *  server state is committed before the next action. */
+async function clickToggleAndWait(page: Page, toggle: Locator): Promise<void> {
+  await Promise.all([
+    page.waitForResponse(
+      (resp) => resp.request().method() === "PATCH" && resp.url().includes("/projects/") && resp.ok()
+    ),
+    toggle.click(),
+  ]);
+}
+
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
@@ -62,7 +73,7 @@ test.describe.serial("Cycle automation settings", () => {
     await navigateToAutomations(page);
     const createToggle = automationToggle(page, "Auto-create cycles");
     if ((await createToggle.getAttribute("aria-checked")) === "true") {
-      await createToggle.click();
+      await clickToggleAndWait(page, createToggle);
       await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
     }
   });
@@ -72,7 +83,7 @@ test.describe.serial("Cycle automation settings", () => {
     await navigateToAutomations(page);
     const createToggle = automationToggle(page, "Auto-create cycles");
     if ((await createToggle.getAttribute("aria-checked")) === "true") {
-      await createToggle.click();
+      await clickToggleAndWait(page, createToggle);
       await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
     }
   });
@@ -98,7 +109,7 @@ test.describe.serial("Cycle automation settings", () => {
 
     // Enable auto-create
     const createToggle = automationToggle(page, "Auto-create cycles");
-    await createToggle.click();
+    await clickToggleAndWait(page, createToggle);
     await expect(createToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
 
     // Auto-transfer should now be enabled (clickable)
@@ -113,18 +124,18 @@ test.describe.serial("Cycle automation settings", () => {
     // Enable auto-create first
     const createToggle = automationToggle(page, "Auto-create cycles");
     if ((await createToggle.getAttribute("aria-checked")) !== "true") {
-      await createToggle.click();
+      await clickToggleAndWait(page, createToggle);
       await expect(createToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
     }
 
     // Enable auto-transfer
     const transferToggle = automationToggle(page, "Auto-transfer work items");
     await expect(transferToggle).toBeEnabled({ timeout: 10_000 });
-    await transferToggle.click();
+    await clickToggleAndWait(page, transferToggle);
     await expect(transferToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
 
     // Now disable auto-create — auto-transfer should also turn off
-    await createToggle.click();
+    await clickToggleAndWait(page, createToggle);
     await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
     await expect(transferToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
     await expect(transferToggle).toBeDisabled({ timeout: 10_000 });
@@ -136,7 +147,7 @@ test.describe.serial("Cycle automation settings", () => {
     // Enable auto-create
     const createToggle = automationToggle(page, "Auto-create cycles");
     if ((await createToggle.getAttribute("aria-checked")) !== "true") {
-      await createToggle.click();
+      await clickToggleAndWait(page, createToggle);
       await expect(createToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
     }
 
@@ -144,7 +155,7 @@ test.describe.serial("Cycle automation settings", () => {
     const transferToggle = automationToggle(page, "Auto-transfer work items");
     await expect(transferToggle).toBeEnabled({ timeout: 10_000 });
     if ((await transferToggle.getAttribute("aria-checked")) !== "true") {
-      await transferToggle.click();
+      await clickToggleAndWait(page, transferToggle);
       await expect(transferToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
     }
 
