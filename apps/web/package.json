@@ -11,11 +11,11 @@
     "start": "serve -s build/client -l 3000",
     "test:unit": "vitest run --config vitest.config.ts",
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf .react-router && rm -rf node_modules && rm -rf dist && rm -rf build",
-    "check:lint": "oxlint --max-warnings=11957 .",
+    "check:lint": "oxlint -c ../../.oxlintrc.json --max-warnings=11957 .",
     "check:types": "react-router typegen && tsc --noEmit",
-    "check:format": "oxfmt --check .",
-    "fix:lint": "oxlint --fix .",
-    "fix:format": "oxfmt ."
+    "check:format": "oxfmt --check -c ../../.oxfmtrc.json .",
+    "fix:lint": "oxlint -c ../../.oxlintrc.json --fix .",
+    "fix:format": "oxfmt -c ../../.oxfmtrc.json ."
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "catalog:",
