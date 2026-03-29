@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown && pnpm run postbuild",
-    "postbuild": "sed -i 's/, __exportAll as t,/,/g' dist/index.d.ts",
+    "postbuild": "sed -i 's/, __exportAll as t,/,/g' dist/index.d.ts && sed -i '/import.*__exportAll.*index\\.d\\.ts/d' dist/*.js && sed -i '/__exportAll/d' dist/*.js && sed -i 's/[a-z_]*_exports as n, //g' dist/*.js",
     "check:lint": "oxlint --max-warnings=2 .",
     "check:types": "tsc --noEmit",
     "check:format": "oxfmt --check .",
