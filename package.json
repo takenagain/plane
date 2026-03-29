@@ -24,14 +24,14 @@
     "lint-staged": "16.2.7",
     "oxfmt": "0.35.0",
     "oxlint": "1.51.0",
-    "turbo": "2.8.12"
+    "turbo": "2.8.20"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cjs,mjs,cts,mts,json,css,md}": [
-      "pnpm exec oxfmt --no-error-on-unmatched-pattern"
+      "/usr/local/n/versions/node/20.20.1/lib/node_modules/corepack/shims/pnpm exec oxfmt --no-error-on-unmatched-pattern"
     ],
     "*.{js,jsx,ts,tsx,cjs,mjs,cts,mts}": [
-      "pnpm exec oxlint --fix --deny-warnings"
+      "/usr/local/n/versions/node/20.20.1/lib/node_modules/corepack/shims/pnpm exec oxlint --fix --deny-warnings"
     ]
   },
   "engines": {

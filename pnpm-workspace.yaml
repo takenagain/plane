@@ -1,8 +1,8 @@
 packages:
-- apps/*
-- packages/*
-- "!apps/api"
-- "!apps/proxy"
+  - apps/*
+  - packages/*
+  - "!apps/api"
+  - "!apps/proxy"
 
 catalog:
   "@atlaskit/pragmatic-drag-and-drop-auto-scroll": 1.4.0
@@ -37,4 +37,4 @@ catalog:
   vite: 7.3.1
 
 onlyBuiltDependencies:
-- turbo
+  - turbo
