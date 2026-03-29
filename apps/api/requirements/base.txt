@@ -25,21 +25,21 @@ whitenoise==6.12.0
 # fake data
 faker==36.0.0
 # filters
-django-filter==25.0
+django-filter==25.2
 # json model
 jsonmodels==2.7.0
 # storage
-django-storages==1.15.0
+django-storages==1.14.6
 # user management
 django-crum==0.7.9
 # web server
-uvicorn==0.35.4
+uvicorn==0.42.0
 # sockets
 channels==4.2.0
 # ai
 openai==1.63.2
 # slack
-slack-sdk==3.34.1
+slack-sdk==3.41.0
 # apm
 scout-apm==3.1.0
 # xlsx generation
