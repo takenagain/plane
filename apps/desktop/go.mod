@@ -1,4 +1,4 @@
-module plane-desktop
+module github.com/takenagain/plane/apps/desktop
 
 go 1.23.0
 
