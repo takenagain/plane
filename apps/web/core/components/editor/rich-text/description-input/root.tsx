@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { debounce } from "lodash-es";
 import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
@@ -139,6 +139,18 @@ export const DescriptionInput = observer(function DescriptionInput(props: Props)
   const workspaceDetails = getWorkspaceBySlug(workspaceSlug);
   // translation
   const { t } = useTranslation();
+  // Keep `t` in a ref so the memoized placeholder callback always uses the
+  // current translation function without its identity change forcing the
+  // useMemo to recalculate (which would cascade into TipTap recreating the
+  // ProseMirror instance and stealing focus).
+  const tRef = useRef(t);
+  tRef.current = t;
+  const resolvedPlaceholder = useMemo<string | ((isFocused: boolean, value: string) => string)>(
+    () =>
+      placeholder ??
+      ((isFocused: boolean, value: string) => tRef.current(getDescriptionPlaceholderI18n(isFocused, value))),
+    [placeholder]
+  );
   // form info
   const { handleSubmit, reset, control, setValue } = useForm<TFormData>({
     defaultValues: {
@@ -168,6 +180,11 @@ export const DescriptionInput = observer(function DescriptionInput(props: Props)
   useEffect(() => {
     if (!entityId) return;
     const normalizedValue = initialValue?.trim() === "" ? "<p></p>" : (initialValue ?? "<p></p>");
+    // Skip reset if the incoming value matches what we last saved —
+    // this prevents the form from re-initializing (and losing editor
+    // focus) when our own debounced save resolves and MobX pushes
+    // the updated value back through props.
+    if (normalizedValue === lastSavedContent.current) return;
     // Update last saved content when entity/initialValue changes
     lastSavedContent.current = normalizedValue;
     reset({
@@ -195,7 +212,7 @@ export const DescriptionInput = observer(function DescriptionInput(props: Props)
           setIsSubmitting("submitted");
           hasUnsavedChanges.current = false;
         });
-    }, 1500),
+    }, 5000),
     [entityId, handleSubmit]
   );
 
@@ -218,6 +235,58 @@ export const DescriptionInput = observer(function DescriptionInput(props: Props)
     // since we don't want to save on unmount if there are no unsaved changes, no deps are needed
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
+  );
+
+  // Memoize file & mention callbacks so that the editor's extension
+  // dependency array stays stable across re-renders and TipTap does not
+  // destroy / recreate the ProseMirror instance (which would steal focus).
+  const uploadFileCb = useCallback(
+    async (blockId: string, file: File) => {
+      try {
+        const { asset_id } = await uploadEditorAsset({
+          blockId,
+          data: {
+            entity_identifier: entityId,
+            entity_type: fileAssetType,
+          },
+          file,
+          projectId,
+          workspaceSlug,
+        });
+        return asset_id;
+      } catch (error) {
+        console.error("Failed to upload editor asset", error);
+        throw new Error("Asset upload failed. Please try again later.", { cause: error });
+      }
+    },
+    [entityId, fileAssetType, projectId, uploadEditorAsset, workspaceSlug]
+  );
+
+  const duplicateFileCb = useCallback(
+    async (assetId: string) => {
+      try {
+        const { asset_id } = await duplicateEditorAsset({
+          assetId,
+          entityType: fileAssetType,
+          projectId,
+          workspaceSlug,
+        });
+        return asset_id;
+      } catch (error) {
+        console.error("Failed to duplicate editor asset", error);
+        throw new Error("Asset duplication failed. Please try again later.", { cause: error });
+      }
+    },
+    [duplicateEditorAsset, fileAssetType, projectId, workspaceSlug]
+  );
+
+  const searchMentionCb = useCallback(
+    async (payload: Parameters<typeof workspaceService.searchEntity>[1]) =>
+      await workspaceService.searchEntity(workspaceSlug?.toString() ?? "", {
+        ...payload,
+        project_id: projectId,
+      }),
+    [workspaceSlug, projectId]
   );
 
   if (!workspaceDetails) return null;
@@ -251,45 +320,11 @@ export const DescriptionInput = observer(function DescriptionInput(props: Props)
             hasUnsavedChanges.current = true;
             debouncedFormSave();
           }}
-          placeholder={placeholder ?? ((isFocused, value) => t(getDescriptionPlaceholderI18n(isFocused, value)))}
-          searchMentionCallback={async (payload) =>
-            await workspaceService.searchEntity(workspaceSlug?.toString() ?? "", {
-              ...payload,
-              project_id: projectId,
-            })
-          }
+          placeholder={resolvedPlaceholder}
+          searchMentionCallback={searchMentionCb}
           containerClassName={containerClassName}
-          uploadFile={async (blockId, file) => {
-            try {
-              const { asset_id } = await uploadEditorAsset({
-                blockId,
-                data: {
-                  entity_identifier: entityId,
-                  entity_type: fileAssetType,
-                },
-                file,
-                projectId,
-                workspaceSlug,
-              });
-              return asset_id;
-            } catch (error) {
-              console.log("Error in uploading asset:", error);
-              throw new Error("Asset upload failed. Please try again later.", { cause: error });
-            }
-          }}
-          duplicateFile={async (assetId: string) => {
-            try {
-              const { asset_id } = await duplicateEditorAsset({
-                assetId,
-                entityType: fileAssetType,
-                projectId,
-                workspaceSlug,
-              });
-              return asset_id;
-            } catch {
-              throw new Error("Asset duplication failed. Please try again later.");
-            }
-          }}
+          uploadFile={uploadFileCb}
+          duplicateFile={duplicateFileCb}
         />
       )}
     />
