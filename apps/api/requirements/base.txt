@@ -12,7 +12,7 @@ dj-database-url==3.1.2
 # mongo
 pymongo==4.10.1
 # redis
-redis==5.3.0
+redis==5.3.1
 django-redis==5.4.0
 # cors
 django-cors-headers==4.8.0
