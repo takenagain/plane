@@ -97,7 +97,9 @@ test.describe.serial("Analytics Hours Logged E2E", () => {
     const analyticsEntry = page.locator('button:has-text("Analytics")').first();
     await expect(analyticsEntry).toBeVisible({ timeout: 20_000 });
     await analyticsEntry.click();
-    await expect(page.getByText("Customized insights")).toBeVisible({ timeout: 15_000 });
+    // Match either the translated "Customized Insights" or the raw i18n key
+    // "workspace_analytics.customized_insights" (translations may not load in CI).
+    await expect(page.getByText(/customized.?insights/i)).toBeVisible({ timeout: 15_000 });
 
     await expect.poll(() => analyticsResponses.length).toBeGreaterThan(0);
     page.off("response", collectAnalyticsResponses);
