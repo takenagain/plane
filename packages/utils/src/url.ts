@@ -8,7 +8,7 @@ import tlds from "./tlds";
 
 const PROTOCOL_REGEX = /^[a-zA-Z]+:\/\//;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOCALHOST_ADDRESSES = ["localhost", "127.0.0.1", "0.0.0.0"];
+const LOCALHOST_ADDRESSES = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
 const HTTP_PROTOCOL = "http://";
 const MAILTO_PROTOCOL = "mailto:";
 const DEFAULT_PROTOCOL = HTTP_PROTOCOL;
@@ -75,7 +75,7 @@ export function validateIPAddress(ip: string): {
  */
 export function isLocalhost(url: string): boolean {
   const hostname = extractHostname(url);
-  return LOCALHOST_ADDRESSES.includes(hostname);
+  return LOCALHOST_ADDRESSES.has(hostname);
 }
 
 /**
@@ -261,7 +261,7 @@ export function extractURLComponents(url: URL | string): IURLComponents | undefi
     }
 
     return undefined;
-  } catch (error) {
+  } catch (_error) {
     return undefined;
   }
 }
@@ -323,7 +323,7 @@ export function isValidNextPath(url: string): boolean {
     ];
 
     return !maliciousPatterns.some((pattern) => pattern.test(pathname));
-  } catch (error) {
+  } catch (_error) {
     // If URL constructor fails, it's an invalid path
     return false;
   }

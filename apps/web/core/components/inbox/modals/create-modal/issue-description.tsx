@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { FC, RefObject } from "react";
+import type { RefObject } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { ETabIndices } from "@plane/constants";
@@ -103,7 +103,7 @@ export const InboxIssueDescription = observer(function InboxIssueDescription(pro
           return asset_id;
         } catch (error) {
           console.log("Error in uploading work item asset:", error);
-          throw new Error("Asset upload failed. Please try again later.");
+          throw new Error("Asset upload failed. Please try again later.", { cause: error });
         }
       }}
       duplicateFile={async (assetId: string) => {

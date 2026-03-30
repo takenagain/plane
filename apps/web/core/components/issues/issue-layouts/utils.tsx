@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { CSSProperties, FC } from "react";
+import type { CSSProperties } from "react";
 import { extractInstruction } from "@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item";
 import { clone, isNil, pull, uniq, concat } from "lodash-es";
 import scrollIntoView from "smooth-scroll-into-view-if-needed";
@@ -215,7 +215,7 @@ const getTimeLoggedColumns = (): IGroupByColumn[] => {
     allIssues
       .map((issue) => issue.time_logged)
       .filter((timeLogged): timeLogged is number => typeof timeLogged === "number")
-      .sort((a, b) => a - b)
+      .toSorted((a, b) => a - b)
   );
 
   const columns = values.map((timeLogged) => ({
