@@ -10,11 +10,11 @@
     "preview": "react-router build && PORT=3002 react-router-serve ./build/server/index.js",
     "start": "PORT=3002 react-router-serve ./build/server/index.js",
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf .react-router && rm -rf node_modules && rm -rf dist && rm -rf build",
-    "check:lint": "oxlint --max-warnings=676 .",
+    "check:lint": "oxlint -c ../../.oxlintrc.json --max-warnings=676 .",
     "check:types": "react-router typegen && tsc --noEmit",
-    "check:format": "oxfmt --check .",
-    "fix:lint": "oxlint --fix .",
-    "fix:format": "oxfmt ."
+    "check:format": "oxfmt --check -c ../../.oxfmtrc.json .",
+    "fix:lint": "oxlint -c ../../.oxlintrc.json --fix .",
+    "fix:format": "oxfmt -c ../../.oxfmtrc.json ."
   },
   "dependencies": {
     "@bprogress/core": "catalog:",

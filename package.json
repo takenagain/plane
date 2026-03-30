@@ -21,10 +21,10 @@
   },
   "devDependencies": {
     "husky": "9.1.7",
-    "lint-staged": "16.2.7",
-    "oxfmt": "0.35.0",
-    "oxlint": "1.51.0",
-    "turbo": "2.8.12"
+    "lint-staged": "16.4.0",
+    "oxfmt": "0.42.0",
+    "oxlint": "1.57.0",
+    "turbo": "2.8.20"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cjs,mjs,cts,mts,json,css,md}": [
@@ -37,20 +37,20 @@
   "engines": {
     "node": ">=22.18.0"
   },
-  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "pnpm": {
     "overrides": {
       "express": "catalog:",
       "mdast-util-to-hast": "13.2.1",
-      "valibot": "1.2.0",
-      "glob": "11.1.0",
+      "valibot": "1.3.1",
+      "glob": "13.0.6",
       "js-yaml": "4.1.1",
       "brace-expansion": "2.0.2",
       "nanoid": "3.3.8",
-      "esbuild": "0.25.0",
-      "@babel/helpers": "7.26.10",
-      "@babel/runtime": "7.26.10",
-      "chokidar": "3.6.0",
+      "esbuild": "0.27.4",
+      "@babel/helpers": "7.29.2",
+      "@babel/runtime": "7.29.2",
+      "chokidar": "5.0.0",
       "happy-dom": "20.0.2",
       "tar-fs": "3.0.9",
       "prosemirror-changeset": "2.4.0",
@@ -62,24 +62,24 @@
       "prosemirror-state": "1.4.4",
       "prosemirror-tables": "1.8.5",
       "prosemirror-transform": "1.11.0",
-      "prosemirror-view": "1.40.0",
+      "prosemirror-view": "1.41.7",
       "@types/express": "4.17.23",
       "typescript": "catalog:",
       "vite": "catalog:",
-      "qs": "6.14.2",
-      "diff": "5.2.2",
-      "webpack": "5.104.1",
+      "qs": "6.15.0",
+      "diff": "8.0.4",
+      "webpack": "5.105.4",
       "lodash-es": "catalog:",
       "@isaacs/brace-expansion": "5.0.1",
       "lodash": "4.17.23",
       "markdown-it": "14.1.1",
-      "rollup": "4.59.0",
+      "rollup": "4.60.0",
       "minimatch@3": "3.1.4",
       "minimatch@10": "10.2.3",
       "serialize-javascript": "7.0.3",
       "ajv@6": "6.14.0",
       "ajv@8": "8.18.0",
-      "undici@7": "7.24.0",
+      "undici@7": "7.24.6",
       "flatted": "3.4.2"
     },
     "onlyBuiltDependencies": [

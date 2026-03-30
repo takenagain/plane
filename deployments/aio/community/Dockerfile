@@ -16,7 +16,7 @@ FROM artifacts.plane.so/makeplane/plane-proxy:${PLANE_VERSION} AS proxy-img
 # **************************************************
 #  STAGE 1: Runner
 # **************************************************
-FROM python:3.12.10-alpine AS runner
+FROM python:3.13.2-alpine AS runner
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ COPY --from=proxy-img /usr/bin/caddy /usr/bin/caddy
 COPY dist/Caddyfile /app/proxy/Caddyfile
 
 COPY --from=backend-img /code /app/backend
-COPY --from=backend-img /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=backend-img /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
 COPY --from=backend-img /usr/local/bin/ /usr/local/bin/
 
 RUN apk add --no-cache nss-tools bash curl uuidgen ncdu vim

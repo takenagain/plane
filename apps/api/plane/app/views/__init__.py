@@ -154,6 +154,8 @@ from .issue.subscriber import IssueSubscriberViewSet
 
 from .issue.version import IssueVersionEndpoint, WorkItemDescriptionVersionEndpoint
 
+from .issue.worklog import WorklogViewSet
+
 from .module.base import (
     ModuleViewSet,
     ModuleLinkViewSet,
@@ -209,6 +211,8 @@ from .analytic.advance import (
     AdvanceAnalyticsEndpoint,
     AdvanceAnalyticsStatsEndpoint,
     AdvanceAnalyticsChartEndpoint,
+    ProjectTimeLoggedExportEndpoint,
+    TimeLoggedExportEndpoint,
 )
 
 from .analytic.project_analytics import (
