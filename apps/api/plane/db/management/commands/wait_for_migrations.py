@@ -4,23 +4,52 @@
 
 # wait_for_migrations.py
 import time
+
 from django.core.management.base import BaseCommand
+from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
-from django.db import connections, DEFAULT_DB_ALIAS
 
 
 class Command(BaseCommand):
     help = "Wait for database migrations to complete before starting Celery worker/beat"
 
     def handle(self, *args, **kwargs):
-        while self._pending_migrations():
-            self.stdout.write("Waiting for database migrations to complete...")
-            time.sleep(10)  # wait for 10 seconds before checking again
-
-        self.stdout.write(self.style.SUCCESS("No migrations Pending. Starting processes ..."))
-
-    def _pending_migrations(self):
+        # Build the migration graph once — the on-disk migration files don't
+        # change while we're waiting, only the applied-set in the DB does.
         connection = connections[DEFAULT_DB_ALIAS]
         executor = MigrationExecutor(connection)
         targets = executor.loader.graph.leaf_nodes()
-        return bool(executor.migration_plan(targets))
+
+        while self._pending_migrations(connection, targets):
+            self.stdout.write("Waiting for database migrations to complete...")
+            time.sleep(10)
+
+        self.stdout.write(
+            self.style.SUCCESS("No migrations Pending. Starting processes ...")
+        )
+
+    @staticmethod
+    def _pending_migrations(connection, targets):
+        """Check whether every leaf migration has been applied.
+
+        Instead of re-building the full ``MigrationLoader`` on each poll (which
+        re-reads and parses every migration file on disk), we issue a single
+        lightweight SQL query against the ``django_migrations`` table.
+        """
+        if not targets:
+            return False
+
+        with connection.cursor() as cursor:
+            # Build a VALUES list of (app, name) tuples to check.
+            placeholders = ", ".join(["(%s, %s)"] * len(targets))
+            params = [v for pair in targets for v in pair]
+            cursor.execute(
+                f"SELECT COUNT(*) FROM (VALUES {placeholders}) AS t(app, name) "  # noqa: S608
+                "WHERE NOT EXISTS ("
+                "  SELECT 1 FROM django_migrations dm "
+                "  WHERE dm.app = t.app AND dm.name = t.name"
+                ")",
+                params,
+            )
+            (missing,) = cursor.fetchone()
+        return missing > 0
