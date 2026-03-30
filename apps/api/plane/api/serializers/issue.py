@@ -24,6 +24,7 @@ from plane.db.models import (
     IssueLabel,
     IssueLink,
     IssueRelation,
+    IssueType,
     Label,
     ProjectMember,
     State,
