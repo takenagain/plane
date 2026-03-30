@@ -21,10 +21,20 @@ def allow_permission(allowed_roles, level="PROJECT", creator=False, model=None):
         @wraps(view_func)
         def _wrapped_view(instance, request, *args, **kwargs):
             # Check for creator if required
-            if creator and model and "pk" in kwargs:
-                creator_queryset = getattr(model, "all_objects", model._base_manager)
-                obj = creator_queryset.filter(id=kwargs["pk"]).values("created_by_id").first()
-                if obj and obj["created_by_id"] == request.user.id:
+            if creator and model:
+                # check if the user is part of the workspace or not
+                if not WorkspaceMember.objects.filter(
+                    member=request.user,
+                    workspace__slug=kwargs["slug"],
+                    is_active=True,
+                ).exists():
+                    return Response(
+                        {"error": "You don't have the required permissions."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
+                obj = model.objects.filter(id=kwargs["pk"], created_by=request.user).exists()
+                if obj:
                     return view_func(instance, request, *args, **kwargs)
 
             # Convert allowed_roles to their values if they are enum members

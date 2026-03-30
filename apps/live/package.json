@@ -1,6 +1,6 @@
 {
   "name": "live",
-  "version": "1.2.0",
+  "version": "1.2.3",
   "private": true,
   "description": "A realtime collaborative server powers Plane's rich text editor",
   "license": "AGPL-3.0",
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit && tsdown",
-    "dev": "tsdown --watch --onSuccess \"node --env-file=.env .\"",
+    "dev": "tsdown --watch --no-clean --onSuccess \"node --env-file=.env .\"",
     "start": "node --env-file=.env .",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -45,7 +45,7 @@
     "axios": "catalog:",
     "compression": "1.8.1",
     "cors": "^2.8.5",
-    "effect": "^3.16.3",
+    "effect": "3.20.0",
     "express": "catalog:",
     "express-ws": "^5.0.2",
     "helmet": "^7.1.0",
