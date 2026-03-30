@@ -33,7 +33,7 @@ def allow_permission(allowed_roles, level="PROJECT", creator=False, model=None):
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                obj = model.objects.filter(id=kwargs["pk"], created_by=request.user).exists()
+                obj = "pk" in kwargs and model.objects.filter(id=kwargs["pk"], created_by=request.user).exists()
                 if obj:
                     return view_func(instance, request, *args, **kwargs)
 

@@ -17,11 +17,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check:lint": "oxlint --max-warnings=119 .",
+    "check:lint": "oxlint -c ../../.oxlintrc.json --max-warnings=119 .",
     "check:types": "tsc --noEmit",
-    "check:format": "oxfmt --check .",
-    "fix:lint": "oxlint --fix .",
-    "fix:format": "oxfmt .",
+    "check:format": "oxfmt --check -c ../../.oxfmtrc.json .",
+    "fix:lint": "oxlint -c ../../.oxlintrc.json --fix .",
+    "fix:format": "oxfmt -c ../../.oxfmtrc.json .",
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {

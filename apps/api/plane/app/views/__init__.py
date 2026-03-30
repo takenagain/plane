@@ -209,6 +209,8 @@ from .analytic.advance import (
     AdvanceAnalyticsEndpoint,
     AdvanceAnalyticsStatsEndpoint,
     AdvanceAnalyticsChartEndpoint,
+    ProjectTimeLoggedExportEndpoint,
+    TimeLoggedExportEndpoint,
 )
 
 from .analytic.project_analytics import (
