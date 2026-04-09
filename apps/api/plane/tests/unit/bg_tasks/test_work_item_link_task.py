@@ -35,7 +35,7 @@ class TestValidateUrlIp:
 
     def test_rejects_non_http_scheme(self):
         with pytest.raises(ValueError, match="Only HTTP and HTTPS"):
-            validate_url_ip("file:///etc/passwd")
+            validate_url_ip("ftp://example.com/file")
 
     def test_allows_public_ip(self):
         with patch("plane.bgtasks.work_item_link_task.socket.getaddrinfo") as mock_dns:
