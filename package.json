@@ -22,9 +22,9 @@
   "devDependencies": {
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
-    "oxfmt": "0.42.0",
-    "oxlint": "1.57.0",
-    "turbo": "2.9.4"
+    "oxfmt": "0.44.0",
+    "oxlint": "1.59.0",
+    "turbo": "2.8.12"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cjs,mjs,cts,mts,json,css,md}": [

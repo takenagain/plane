@@ -5,8 +5,6 @@
   "description": "Helper functions shared across multiple apps internally",
   "license": "AGPL-3.0",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
@@ -23,8 +21,8 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
-    "@plane/constants": "workspace:*",
-    "@plane/types": "workspace:*",
+    "@plane/constants": "workspace:^1.3.0",
+    "@plane/types": "workspace:^1.3.0",
     "chroma-js": "^3.2.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -38,13 +36,13 @@
     "rehype-remark": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-stringify": "^11.0.0",
-    "sanitize-html": "2.17.0",
-    "tailwind-merge": "3.4.0",
+    "sanitize-html": "2.17.1",
+    "tailwind-merge": "3.5.0",
     "unified": "^11.0.5",
     "uuid": "catalog:"
   },
   "devDependencies": {
-    "@plane/typescript-config": "workspace:*",
+    "@plane/typescript-config": "workspace:^1.3.0",
     "@types/chroma-js": "^3.1.2",
     "@types/hast": "^3.0.4",
     "@types/lodash-es": "catalog:",
