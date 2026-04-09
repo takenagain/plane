@@ -22,7 +22,7 @@
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
-    "@plane/utils": "workspace:^1.3.0",
+    "@plane/utils": "workspace:*",
     "intl-messageformat": "^11.1.2",
     "lodash-es": "catalog:",
     "mobx": "catalog:",
@@ -30,7 +30,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
-    "@plane/typescript-config": "workspace:^1.3.0",
+    "@plane/typescript-config": "workspace:*",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
