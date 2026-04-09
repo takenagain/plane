@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "private": true,
   "license": "AGPL-3.0",
   "type": "module",
@@ -74,7 +74,6 @@
     "uuid": "catalog:"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "catalog:",
     "@plane/tailwind-config": "workspace:*",
     "@plane/typescript-config": "workspace:*",
     "@react-router/dev": "catalog:",
@@ -88,6 +87,7 @@
     "@types/react": "catalog:",
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "catalog:",
+    "dotenv": "catalog:",
     "happy-dom": "20.0.2",
     "typescript": "catalog:",
     "vite": "catalog:",

@@ -1,12 +1,9 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import * as dotenv from "@dotenvx/dotenvx";
+import * as dotenv from "dotenv";
 import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { joinUrlPath } from "@plane/utils";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
