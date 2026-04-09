@@ -65,7 +65,7 @@ PyJWT==2.12.0
 # OpenTelemetry
 opentelemetry-api==1.40.0
 opentelemetry-sdk==1.40.0
-opentelemetry-instrumentation-django==0.52b0
+opentelemetry-instrumentation-django==0.61b0
 opentelemetry-exporter-otlp==1.40.0
 # OpenAPI Specification
 drf-spectacular==0.28.0
