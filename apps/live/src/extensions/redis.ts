@@ -33,17 +33,13 @@ export class Redis extends HocuspocusRedis {
     await super.onConfigure(payload);
 
     // Subscribe to admin channel
-    await new Promise<void>((resolve, reject) => {
-      this.sub.subscribe(this.ADMIN_CHANNEL, (error: Error) => {
-        if (error) {
-          logger.error(`[Redis] Failed to subscribe to admin channel:`, error);
-          reject(error);
-        } else {
-          logger.info(`[Redis] Subscribed to admin channel: ${this.ADMIN_CHANNEL}`);
-          resolve();
-        }
-      });
-    });
+    try {
+      await this.sub.subscribe(this.ADMIN_CHANNEL);
+      logger.info(`[Redis] Subscribed to admin channel: ${this.ADMIN_CHANNEL}`);
+    } catch (error) {
+      logger.error(`[Redis] Failed to subscribe to admin channel:`, error);
+      throw error;
+    }
 
     // Listen for admin messages
     this.sub.on("message", this.handleAdminMessage);
@@ -103,14 +99,11 @@ export class Redis extends HocuspocusRedis {
 
   async onDestroy() {
     // Unsubscribe from admin channel
-    await new Promise<void>((resolve) => {
-      this.sub.unsubscribe(this.ADMIN_CHANNEL, (error: Error) => {
-        if (error) {
-          logger.error(`[Redis] Error unsubscribing from admin channel:`, error);
-        }
-        resolve();
-      });
-    });
+    try {
+      await this.sub.unsubscribe(this.ADMIN_CHANNEL);
+    } catch (error) {
+      logger.error(`[Redis] Error unsubscribing from admin channel:`, error);
+    }
 
     // Remove the message listener to prevent memory leaks
     this.sub.removeListener("message", this.handleAdminMessage);
@@ -132,7 +125,7 @@ export class Redis extends HocuspocusRedis {
     const channel = this["pubKey"](documentName);
     const encodedMessage = Buffer.concat([emptyPrefix, Buffer.from(message.toUint8Array())]);
 
-    const result = await this.pub.publishBuffer(channel, encodedMessage);
+    const result = await this.pub.publish(channel, encodedMessage);
 
     logger.info(`REDIS_EXTENSION: Published to ${documentName}, ${result} subscribers`);
 

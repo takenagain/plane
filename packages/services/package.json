@@ -4,8 +4,6 @@
   "private": true,
   "license": "AGPL-3.0",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
@@ -25,7 +23,7 @@
     "@plane/constants": "workspace:*",
     "@plane/types": "workspace:*",
     "axios": "catalog:",
-    "file-type": "^21.3.2"
+    "file-type": "^22.0.0"
   },
   "devDependencies": {
     "@plane/typescript-config": "workspace:*",

@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "express-winston": "^4.2.0",
-    "winston": "^3.17.0"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@plane/typescript-config": "workspace:*",
@@ -33,6 +33,6 @@
   },
   "inlinedDependencies": {
     "@types/express": "4.17.23",
-    "@types/express-serve-static-core": "4.19.6"
+    "@types/express-serve-static-core": "4.19.8"
   }
 }

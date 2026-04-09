@@ -20,7 +20,7 @@
     "@bprogress/core": "catalog:",
     "@fontsource-variable/inter": "5.2.8",
     "@fontsource/ibm-plex-mono": "5.2.7",
-    "@fontsource/material-symbols-rounded": "5.2.30",
+    "@fontsource/material-symbols-rounded": "5.2.37",
     "@headlessui/react": "^1.7.19",
     "@plane/constants": "workspace:*",
     "@plane/editor": "workspace:*",
@@ -34,9 +34,9 @@
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",
     "axios": "catalog:",
-    "clsx": "^2.0.0",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "isbot": "^5.1.31",
+    "isbot": "^5.1.35",
     "lodash-es": "catalog:",
     "lucide-react": "catalog:",
     "mobx": "catalog:",
@@ -45,8 +45,8 @@
     "next-themes": "0.4.6",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-dropzone": "^14.2.3",
-    "react-hook-form": "7.51.5",
+    "react-dropzone": "^15.0.0",
+    "react-hook-form": "7.71.2",
     "react-popper": "^2.3.0",
     "react-router": "catalog:",
     "swr": "catalog:",
@@ -65,6 +65,6 @@
     "dotenv": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^6.1.1"
   }
 }
