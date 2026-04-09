@@ -86,13 +86,17 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
 
   const fetchIssueDetail = async (issueId: string | undefined) => {
     setDescription(undefined);
-    if (!workspaceSlug) return;
 
     if (!projectId || issueId === undefined || !fetchIssueDetails) {
-      // Set description to the issue description from the props if available
+      // Set description to the issue description from the props if available.
+      // This path handles new issue creation and does not require workspaceSlug.
       setDescription(data?.description_html || "<p></p>");
       return;
     }
+
+    // workspaceSlug is required only for fetching existing issue details.
+    if (!workspaceSlug) return;
+
     const response = await fetchIssue(workspaceSlug.toString(), projectId.toString(), issueId);
     if (response) setDescription(response?.description_html || "<p></p>");
   };

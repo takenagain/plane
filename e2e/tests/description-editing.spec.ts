@@ -141,6 +141,74 @@ async function navigateToIssueDetail(page: Page) {
 // Tests
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Helper: navigate to a project issues page and wait for it to load
+// ---------------------------------------------------------------------------
+async function navigateToProjectIssues(page: Page, ws: string, proj: string) {
+  await page.goto(`${BASE_URL}/${ws}/projects/${proj}/issues/`);
+  await waitForPageLoad(page);
+
+  // Dismiss welcome modal if present
+  const dismiss = page.getByRole("button", { name: /no thanks|explore it myself/i });
+  if (await dismiss.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await dismiss.click();
+    await page.waitForTimeout(500);
+  }
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+}
+
+// ---------------------------------------------------------------------------
+// Tests: Create New Issue description editability
+// ---------------------------------------------------------------------------
+
+test.describe.serial("Create New Issue – description editor", () => {
+  test.beforeEach(async ({ page }) => {
+    await signInAndEnsureWorkspace(page);
+  });
+
+  test("description field is editable in the Create New Issue modal", async ({ page }) => {
+    await navigateToProjectIssues(page, workspaceSlug, projectId);
+
+    // Open the create-issue modal via the "Create Issue" button or keyboard shortcut
+    const createBtn = page.getByRole("button", { name: /create (issue|work item)/i }).first();
+    if (await createBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await createBtn.click();
+    } else {
+      // Fallback: use keyboard shortcut "c"
+      await page.keyboard.press("c");
+    }
+
+    // The modal description editor: inside the modal, a ProseMirror editor with
+    // id="issue-modal-editor" is rendered with contenteditable="true".
+    const descEditor = page
+      .locator(`#issue-modal-editor .ProseMirror[contenteditable='true'], .ProseMirror[contenteditable='true']`)
+      .first();
+
+    await expect(descEditor).toBeVisible({ timeout: 15_000 });
+
+    // Verify it is truly editable (not just visible as a skeleton loader)
+    const isEditable = await descEditor.getAttribute("contenteditable");
+    expect(isEditable).toBe("true");
+
+    // Click and type into the description
+    await descEditor.click();
+    const testText = "Create modal description test";
+    await page.keyboard.type(testText, { delay: 60 });
+
+    // The typed text should appear in the editor
+    const content = await descEditor.textContent();
+    expect(content).toContain(testText);
+
+    // Close without submitting
+    await page.keyboard.press("Escape");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: Editing description of an existing work item
+// ---------------------------------------------------------------------------
+
 test.describe.serial("Work item description editing", () => {
   test.beforeEach(async ({ page }) => {
     await signInAndEnsureWorkspace(page);

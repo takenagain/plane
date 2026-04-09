@@ -4,12 +4,8 @@
  * See the LICENSE file for details.
  */
 
-// Export all locale files to make them accessible from the package root
+// Export core translations (synchronously loaded)
 export { default as enCore } from "./en/core";
-export { default as enTranslations } from "./en/translations";
-export { default as enAccessibility } from "./en/accessibility";
-export { default as enEditor } from "./en/editor";
-export { default as enEmptyState } from "./en/empty-state";
 
 // Export locale data for all supported languages
 export const locales = {
