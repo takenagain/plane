@@ -10,3 +10,4 @@ freezegun==1.4.0
 coverage==7.9.1
 httpx==0.28.1
 requests==2.33.0
+requests==2.33.0
