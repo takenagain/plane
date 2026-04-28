@@ -12,7 +12,7 @@ HOSTNAME=$(hostname)
 MAC_ADDRESS=$(ip link show | awk '/ether/ {print $2}' | head -n 1)
 CPU_INFO=$(cat /proc/cpuinfo)
 MEMORY_INFO=$(free -h)
-DISK_INFO=$(df -h)
+DISK_INFO=$(df -h 2>/dev/null || true)
 
 # Concatenate information and compute SHA-256 hash
 SIGNATURE=$(echo "$HOSTNAME$MAC_ADDRESS$CPU_INFO$MEMORY_INFO$DISK_INFO" | sha256sum | awk '{print $1}')
