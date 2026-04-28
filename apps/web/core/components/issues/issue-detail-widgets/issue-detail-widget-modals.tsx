@@ -12,6 +12,8 @@ import type { ISearchIssueResponse, TIssue, TIssueServiceType, TWorkItemWidgets 
 import { ExistingIssuesListModal } from "@/components/core/modals/existing-issues-list-modal";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+// helpers
+import { extractInheritableParentFields } from "@/helpers/work-item-defaults";
 // plane web imports
 import { WorkItemAdditionalWidgetModals } from "@/plane-web/components/issues/issue-detail-widgets/modals";
 // local imports
@@ -48,6 +50,7 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
     createRelation,
     issueCrudOperationState,
     setIssueCrudOperationState,
+    issue: issueDetailStore,
   } = useIssueDetail(issueServiceType);
 
   // helper hooks
@@ -131,9 +134,15 @@ export const IssueDetailWidgetModals = observer(function IssueDetailWidgetModals
   };
 
   // helpers
+  const parentIssueId = issueCrudOperationState?.create?.parentIssueId;
+  const parentIssue = parentIssueId ? issueDetailStore.getIssueById(parentIssueId) : undefined;
+
   const createUpdateModalData: Partial<TIssue> = {
-    parent_id: issueCrudOperationState?.create?.parentIssueId,
+    parent_id: parentIssueId,
     project_id: projectId,
+    // Inherit contextual fields from the parent so the child is immediately
+    // placed in the same cycle, modules, etc. as its parent.
+    ...(parentIssue ? extractInheritableParentFields(parentIssue) : {}),
   };
 
   const existingIssuesModalSearchParams = {
