@@ -503,3 +503,186 @@ These are not currently flagged as outdated but represent longer-term migration 
    pnpm check:lint
    pnpm build
 ```
+
+---
+
+## Section 5: Backend (Python / Django) Dependency Review
+
+> All Python dependencies live under `apps/api/`. The project runs **Python 3.13** inside a Docker container.
+
+### Requirements File Structure
+
+| File                                   | Extends          | Purpose                                                                                        |
+| -------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------- |
+| `apps/api/requirements/base.txt`       | —                | All core runtime packages shared by every environment                                          |
+| `apps/api/requirements/production.txt` | `base.txt`       | Adds `gunicorn` for the production WSGI/ASGI server                                            |
+| `apps/api/requirements/local.txt`      | `base.txt`       | Adds `django-debug-toolbar` and `ruff` for local development                                   |
+| `apps/api/requirements/test.txt`       | `base.txt`       | Adds pytest suite tools and `requests`; contains a duplicate `requests` line (bug — see below) |
+| `apps/api/requirements.txt`            | `production.txt` | Root entry point — delegates entirely to `production.txt`                                      |
+
+---
+
+### base.txt
+
+| Package                                | Current   | Latest    | Update Type | Notes                                                                                                 |
+| -------------------------------------- | --------- | --------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| `Django`                               | `5.2.13`  | `6.0.5`   | **major**   | Python 3.12+ required (✅ 3.13). Several API removals; see migration notes                            |
+| `djangorestframework`                  | `3.17.1`  | `3.17.1`  | current     | —                                                                                                     |
+| `psycopg`                              | `3.3.3`   | `3.3.4`   | patch       | PostgreSQL driver bug-fix                                                                             |
+| `psycopg-binary`                       | `3.3.3`   | `3.3.4`   | patch       | Same family as `psycopg`; update together                                                             |
+| `psycopg-c`                            | `3.3.3`   | `3.3.4`   | patch       | Same family as `psycopg`; update together                                                             |
+| `dj-database-url`                      | `3.1.2`   | `3.1.2`   | current     | —                                                                                                     |
+| `pymongo`                              | `4.14.0`  | `4.17.0`  | minor       | MongoDB driver; no breaking changes in range                                                          |
+| `redis`                                | `5.3.1`   | `7.4.0`   | **major**   | `ssl_check_hostname` default flipped in 6.0; requires Redis server 7.2+; see migration notes          |
+| `django-redis`                         | `5.4.0`   | `6.0.0`   | **major**   | Drops Django 3.2/4.1 (project on 5.x ✅); no breaking changes for standard cache usage                |
+| `django-cors-headers`                  | `4.8.0`   | `4.9.0`   | minor       | CORS middleware update                                                                                |
+| `celery`                               | `5.6.3`   | `5.6.3`   | current     | —                                                                                                     |
+| `django-celery-beat`                   | `2.8.1`   | `2.9.0`   | minor       | Periodic task scheduler                                                                               |
+| `django-celery-results`                | `2.5.1`   | `2.6.0`   | minor       | Task result backend                                                                                   |
+| `whitenoise`                           | `6.12.0`  | `6.12.0`  | current     | —                                                                                                     |
+| `Faker`                                | `37.4.0`  | `40.19.1` | **major**   | Calendar/rapid versioning — low risk; no API changes                                                  |
+| `django-filter`                        | `25.2`    | `25.2`    | current     | —                                                                                                     |
+| `jsonmodels`                           | `2.7.0`   | `2.8.0`   | minor       | Data modelling helpers                                                                                |
+| `django-storages`                      | `1.14.6`  | `1.14.6`  | current     | —                                                                                                     |
+| `django-crum`                          | `0.7.9`   | `0.7.9`   | current     | —                                                                                                     |
+| `uvicorn`                              | `0.42.0`  | `0.48.0`  | minor       | ASGI server; no breaking changes in range                                                             |
+| `channels`                             | `4.2.0`   | `4.3.2`   | minor       | Django Channels WebSocket layer                                                                       |
+| `openai`                               | `1.109.1` | `2.38.0`  | **major**   | `.output` return type changed on one type; project uses only `chat.completions.create` — not affected |
+| `slack-sdk`                            | `3.41.0`  | `3.42.0`  | minor       | Slack integration SDK                                                                                 |
+| `scout-apm`                            | `3.2.0`   | `3.5.3`   | minor       | APM agent                                                                                             |
+| `openpyxl`                             | `3.1.5`   | `3.1.5`   | current     | —                                                                                                     |
+| `python-json-logger`                   | `4.0.0`   | `4.1.0`   | minor       | JSON structured logging                                                                               |
+| `beautifulsoup4`                       | `4.13.4`  | `4.14.3`  | minor       | HTML parsing                                                                                          |
+| `posthog`                              | `3.25.0`  | `7.15.4`  | **major**   | Large version jump; thin SDK — only `.capture()` used, stable API throughout                          |
+| `cryptography`                         | `46.0.7`  | `48.0.0`  | **major**   | Incremental major bumps; high-level APIs unchanged. Low risk                                          |
+| `lxml`                                 | `6.1.0`   | `6.1.1`   | patch       | XML/HTML processing                                                                                   |
+| `boto3`                                | `1.42.86` | `1.43.14` | minor       | AWS SDK                                                                                               |
+| `zxcvbn`                               | `4.4.28`  | `4.5.0`   | minor       | Password strength estimator                                                                           |
+| `pytz`                                 | `2025.2`  | `2026.2`  | **major**   | YYYY.N calendar versioning — purely a timezone database update                                        |
+| `PyJWT`                                | `2.12.0`  | `2.13.0`  | minor       | JWT library                                                                                           |
+| `opentelemetry-api`                    | `1.40.0`  | `1.42.1`  | minor       | Update all four OTel packages together                                                                |
+| `opentelemetry-sdk`                    | `1.40.0`  | `1.42.1`  | minor       | Update all four OTel packages together                                                                |
+| `opentelemetry-instrumentation-django` | `0.61b0`  | `0.63b1`  | minor       | Update all four OTel packages together                                                                |
+| `opentelemetry-exporter-otlp`          | `1.40.0`  | `1.42.1`  | minor       | Update all four OTel packages together                                                                |
+| `drf-spectacular`                      | `0.28.0`  | `0.29.0`  | minor       | OpenAPI schema generation                                                                             |
+| `nh3`                                  | `0.2.22`  | `0.3.5`   | minor       | HTML sanitizer (Rust-backed)                                                                          |
+| `httpx`                                | `0.28.1`  | `0.28.1`  | current     | —                                                                                                     |
+
+---
+
+### production.txt
+
+> Extends `base.txt`. Adds the production WSGI/ASGI server.
+
+| Package    | Current  | Latest   | Update Type | Notes                                                                             |
+| ---------- | -------- | -------- | ----------- | --------------------------------------------------------------------------------- |
+| `gunicorn` | `25.3.0` | `26.0.0` | **major**   | Python 3.10+ required (✅ 3.13); minor behavior changes, no config format changes |
+
+> **Baseline correction:** `check_versions.py` used `23.0.0` as the gunicorn baseline (stale). The actual pin in `production.txt` is `25.3.0`. The real upgrade delta is `25.3.0 → 26.0.0`, not `23.0.0 → 26.0.0`.
+
+---
+
+### local.txt
+
+> Extends `base.txt`. Adds developer tooling used only in local environments.
+
+| Package                | Current  | Latest    | Update Type | Notes                   |
+| ---------------------- | -------- | --------- | ----------- | ----------------------- |
+| `django-debug-toolbar` | `6.3.0`  | `6.3.0`   | current     | —                       |
+| `ruff`                 | `0.15.9` | `0.15.14` | patch       | Python linter/formatter |
+
+---
+
+### test.txt
+
+> Extends `base.txt`. Adds the full pytest suite and HTTP testing helpers.
+>
+> ⚠️ **Bug:** `requests` appears twice in `test.txt`. Remove the duplicate line.
+
+| Package         | Current  | Latest   | Update Type | Notes                                                 |
+| --------------- | -------- | -------- | ----------- | ----------------------------------------------------- |
+| `pytest`        | `9.0.3`  | `9.0.3`  | current     | —                                                     |
+| `pytest-django` | `4.11.1` | `4.12.0` | minor       | Django integration for pytest                         |
+| `pytest-cov`    | `6.2.1`  | `7.1.0`  | **major**   | Supports coverage 7.x + pytest 9.x; low risk          |
+| `pytest-xdist`  | `3.6.1`  | `3.8.0`  | minor       | Parallel test execution                               |
+| `pytest-mock`   | `3.14.0` | `3.15.1` | minor       | `unittest.mock` integration for pytest                |
+| `factory-boy`   | `3.3.3`  | `3.3.3`  | current     | —                                                     |
+| `freezegun`     | `1.4.0`  | `1.5.5`  | minor       | Time mocking utility                                  |
+| `coverage`      | `7.9.1`  | `7.14.0` | minor       | Coverage measurement                                  |
+| `requests`      | `2.33.0` | `2.34.2` | minor       | HTTP client; **duplicate entry in file — remove one** |
+
+---
+
+### Backend Update Priority Summary
+
+#### Patch Updates (Low Risk — Apply Together)
+
+| Package          | Current  | Latest    | File      |
+| ---------------- | -------- | --------- | --------- |
+| `psycopg`        | `3.3.3`  | `3.3.4`   | base.txt  |
+| `psycopg-binary` | `3.3.3`  | `3.3.4`   | base.txt  |
+| `psycopg-c`      | `3.3.3`  | `3.3.4`   | base.txt  |
+| `lxml`           | `6.1.0`  | `6.1.1`   | base.txt  |
+| `ruff`           | `0.15.9` | `0.15.14` | local.txt |
+
+#### Minor Updates (Medium Risk — Test After Applying)
+
+| Package                                | Current   | Latest    | File     |
+| -------------------------------------- | --------- | --------- | -------- |
+| `pymongo`                              | `4.14.0`  | `4.17.0`  | base.txt |
+| `django-cors-headers`                  | `4.8.0`   | `4.9.0`   | base.txt |
+| `django-celery-beat`                   | `2.8.1`   | `2.9.0`   | base.txt |
+| `django-celery-results`                | `2.5.1`   | `2.6.0`   | base.txt |
+| `jsonmodels`                           | `2.7.0`   | `2.8.0`   | base.txt |
+| `uvicorn`                              | `0.42.0`  | `0.48.0`  | base.txt |
+| `channels`                             | `4.2.0`   | `4.3.2`   | base.txt |
+| `slack-sdk`                            | `3.41.0`  | `3.42.0`  | base.txt |
+| `scout-apm`                            | `3.2.0`   | `3.5.3`   | base.txt |
+| `python-json-logger`                   | `4.0.0`   | `4.1.0`   | base.txt |
+| `beautifulsoup4`                       | `4.13.4`  | `4.14.3`  | base.txt |
+| `boto3`                                | `1.42.86` | `1.43.14` | base.txt |
+| `zxcvbn`                               | `4.4.28`  | `4.5.0`   | base.txt |
+| `PyJWT`                                | `2.12.0`  | `2.13.0`  | base.txt |
+| `opentelemetry-api`                    | `1.40.0`  | `1.42.1`  | base.txt |
+| `opentelemetry-sdk`                    | `1.40.0`  | `1.42.1`  | base.txt |
+| `opentelemetry-instrumentation-django` | `0.61b0`  | `0.63b1`  | base.txt |
+| `opentelemetry-exporter-otlp`          | `1.40.0`  | `1.42.1`  | base.txt |
+| `drf-spectacular`                      | `0.28.0`  | `0.29.0`  | base.txt |
+| `nh3`                                  | `0.2.22`  | `0.3.5`   | base.txt |
+| `pytest-django`                        | `4.11.1`  | `4.12.0`  | test.txt |
+| `pytest-xdist`                         | `3.6.1`   | `3.8.0`   | test.txt |
+| `pytest-mock`                          | `3.14.0`  | `3.15.1`  | test.txt |
+| `freezegun`                            | `1.4.0`   | `1.5.5`   | test.txt |
+| `coverage`                             | `7.9.1`   | `7.14.0`  | test.txt |
+| `requests`                             | `2.33.0`  | `2.34.2`  | test.txt |
+
+#### Major Version Updates (High Risk — Dedicated PRs with Migration Work)
+
+| Package        | Current   | Latest    | File           | Risk   |
+| -------------- | --------- | --------- | -------------- | ------ |
+| `Django`       | `5.2.13`  | `6.0.5`   | base.txt       | High   |
+| `redis`        | `5.3.1`   | `7.4.0`   | base.txt       | Medium |
+| `django-redis` | `5.4.0`   | `6.0.0`   | base.txt       | Low    |
+| `openai`       | `1.109.1` | `2.38.0`  | base.txt       | Low    |
+| `Faker`        | `37.4.0`  | `40.19.1` | base.txt       | Low    |
+| `posthog`      | `3.25.0`  | `7.15.4`  | base.txt       | Low    |
+| `cryptography` | `46.0.7`  | `48.0.0`  | base.txt       | Low    |
+| `pytz`         | `2025.2`  | `2026.2`  | base.txt       | Low    |
+| `gunicorn`     | `25.3.0`  | `26.0.0`  | production.txt | Low    |
+| `pytest-cov`   | `6.2.1`   | `7.1.0`   | test.txt       | Low    |
+
+---
+
+### Major Version Migration Notes
+
+**Django 5.2.13 → 6.0.5:** Python 3.12+ is required — the project runs Python 3.13 in Docker, so the runtime requirement is already satisfied. Key removals to handle before upgrading: `get_prefetch_queryset()` must be replaced with `get_prefetch_querysets()`; `CheckConstraint(check=...)` must use the `condition=` keyword argument; `as_sql()` overrides must return a tuple, not a list; `SafeMIMEText` and `SafeMIMEMultipart` have been removed from the email layer. The JSON serializer now appends a trailing newline, which can affect fixtures and snapshot tests. Full migration guide: https://docs.djangoproject.com/en/6.0/releases/6.0/
+
+**redis 5.3.1 → 7.4.0:** The most impactful change is in 6.0, where `ssl_check_hostname` default changed from `False` to `True`. Any code that creates SSL connections without supplying a certificate must explicitly pass `ssl_check_hostname=False` or provide a valid cert. A default retry policy (3 retries with backoff) was also introduced in 6.0. Redis server 7.2+ is required by the client. A review of the codebase shows usage limited to `get/delete`, `from_url`, and the direct constructor — no deprecated patterns detected.
+
+**openai 1.109.1 → 2.38.0:** The single documented breaking change for the project's usage pattern is that `.output` on `ResponseFunctionToolCallOutputItem` now returns `string | Array` instead of `string`. The project's OpenAI integration only calls `client.chat.completions.create()` and reads `choices[0].message.content`, which is unaffected. Upgrade is low risk after a smoke test of AI-assisted features.
+
+**posthog 3.25.0 → 7.15.4:** The version jump looks alarming but the Python SDK is a thin analytics wrapper. The project calls only `Posthog(key, host=).capture(distinct_id, event, properties, groups)` — an API surface that has been stable across all versions in this range. Upgrade is low risk.
+
+**gunicorn 25.3.0 → 26.0.0:** Python 3.10+ is required (satisfied by 3.13). There are minor behavior changes to worker handling but no configuration format changes. The upgrade from the previously documented baseline of 23.0.0 was already captured in the `production.txt` pin at 25.3.0; the actual outstanding upgrade is the single step `25.3.0 → 26.0.0`.
+
+**check_versions.py gunicorn baseline correction:** The `check_versions.py` script used `23.0.0` as its reference version for gunicorn, producing a misleading "MAJOR" delta from 23 → 26. The actual installed version in `apps/api/requirements/production.txt` is `25.3.0`. The real remaining upgrade is `25.3.0 → 26.0.0` (one major step, low risk). The script's baseline should be updated to `25.3.0` to reflect the true current state.
