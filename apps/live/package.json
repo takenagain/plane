@@ -7,7 +7,7 @@
   "author": "Plane Software Inc.",
   "type": "module",
   "exports": {
-    ".": "./dist/start.mjs",
+    ".": "./dist/start.js",
     "./package.json": "./package.json"
   },
   "scripts": {
