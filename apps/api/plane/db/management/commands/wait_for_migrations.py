@@ -8,6 +8,7 @@ import time
 from django.core.management.base import BaseCommand
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
+from django.db.utils import DatabaseError
 
 
 class Command(BaseCommand):
@@ -20,9 +21,30 @@ class Command(BaseCommand):
         executor = MigrationExecutor(connection)
         targets = executor.loader.graph.leaf_nodes()
 
-        while self._pending_migrations(connection, targets):
-            self.stdout.write("Waiting for database migrations to complete...")
-            time.sleep(10)
+        while True:
+            try:
+                if not self._pending_migrations(connection, targets):
+                    break
+                self.stdout.write("Waiting for database migrations to complete...")
+                time.sleep(10)
+            except DatabaseError as exc:
+                # DB may be briefly unavailable while the migrator container is
+                # running. Sleep and retry rather than exiting and triggering a
+                # tight restart loop.
+                self.stdout.write(
+                    f"DB error while checking migrations "
+                    f"({type(exc).__name__}: {exc}), retrying in 10 seconds..."
+                )
+                time.sleep(10)
+            except Exception as exc:
+                # Catch-all backstop to avoid tight restart loops on unexpected errors.
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Unexpected error while waiting for migrations "
+                        f"({type(exc).__name__}: {exc}), retrying in 10 seconds..."
+                    )
+                )
+                time.sleep(10)
 
         self.stdout.write(
             self.style.SUCCESS("No migrations Pending. Starting processes ...")
