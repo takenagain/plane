@@ -23,7 +23,7 @@
     "@plane/constants": "workspace:*",
     "@plane/types": "workspace:*",
     "axios": "catalog:",
-    "file-type": "^22.0.0"
+    "file-type": "^22.0.1"
   },
   "devDependencies": {
     "@plane/typescript-config": "workspace:*",

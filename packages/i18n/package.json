@@ -12,7 +12,9 @@
   },
   "scripts": {
     "dev": "tsdown --watch --no-clean",
-    "build": "tsdown",
+    "build": "pnpm run generate:types && tsdown",
+    "generate:types": "tsx scripts/generate-types.ts",
+    "sync:check": "tsx scripts/sync-check.ts",
     "postbuild": "sed -i '/import.*__exportAll.*index\\.d\\.ts/d' dist/*.js && sed -i '/__exportAll/d' dist/*.js && sed -i 's/[a-z_]*_exports as n, //g' dist/*.js && sed -i 's/, __exportAll as t//g' dist/index.d.ts",
     "check:lint": "oxlint --max-warnings=2 .",
     "check:types": "tsc --noEmit",
