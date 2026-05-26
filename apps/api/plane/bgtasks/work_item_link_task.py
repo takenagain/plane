@@ -91,9 +91,7 @@ def safe_get(
     validate_url_ip(url)
 
     current_url = url
-    response = requests.get(
-        current_url, headers=headers, timeout=timeout, allow_redirects=False
-    )
+    response = requests.get(current_url, headers=headers, timeout=timeout, allow_redirects=False)
 
     redirect_count = 0
     while response.is_redirect:
@@ -105,9 +103,7 @@ def safe_get(
         current_url = urljoin(current_url, redirect_url)
         validate_url_ip(current_url)
         redirect_count += 1
-        response = requests.get(
-            current_url, headers=headers, timeout=timeout, allow_redirects=False
-        )
+        response = requests.get(current_url, headers=headers, timeout=timeout, allow_redirects=False)
 
     return response, current_url
 

@@ -32,8 +32,7 @@ class Command(BaseCommand):
                 # running. Sleep and retry rather than exiting and triggering a
                 # tight restart loop.
                 self.stdout.write(
-                    f"DB error while checking migrations "
-                    f"({type(exc).__name__}: {exc}), retrying in 10 seconds..."
+                    f"DB error while checking migrations ({type(exc).__name__}: {exc}), retrying in 10 seconds..."
                 )
                 time.sleep(10)
             except Exception as exc:
@@ -46,9 +45,7 @@ class Command(BaseCommand):
                 )
                 time.sleep(10)
 
-        self.stdout.write(
-            self.style.SUCCESS("No migrations Pending. Starting processes ...")
-        )
+        self.stdout.write(self.style.SUCCESS("No migrations Pending. Starting processes ..."))
 
     @staticmethod
     def _pending_migrations(connection, targets):

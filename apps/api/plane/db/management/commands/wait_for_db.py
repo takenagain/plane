@@ -26,18 +26,14 @@ class Command(BaseCommand):
                 # subclass of OperationalError, so the previous narrow catch
                 # would propagate it uncaught, causing an immediate container
                 # exit and a tight Docker restart loop at 100% CPU.
-                self.stdout.write(
-                    f"Database unavailable ({type(exc).__name__}: {exc}), "
-                    "retrying in 2 seconds..."
-                )
+                self.stdout.write(f"Database unavailable ({type(exc).__name__}: {exc}), retrying in 2 seconds...")
                 time.sleep(2)
             except Exception as exc:
                 # Catch-all backstop: any unforeseen exception still sleeps
                 # before retrying so the container never exits in a tight loop.
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Unexpected error while waiting for DB "
-                        f"({type(exc).__name__}: {exc}), retrying in 2 seconds..."
+                        f"Unexpected error while waiting for DB ({type(exc).__name__}: {exc}), retrying in 2 seconds..."
                     )
                 )
                 time.sleep(2)

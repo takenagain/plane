@@ -36,9 +36,7 @@ def validate_url(url, allowed_ips=None, allowed_hosts=None):
         raise ValueError("Invalid URL scheme. Only HTTP and HTTPS are allowed")
 
     normalized_host = hostname.rstrip(".").lower()
-    if allowed_hosts and normalized_host in {
-        (h or "").rstrip(".").lower() for h in allowed_hosts if h
-    }:
+    if allowed_hosts and normalized_host in {(h or "").rstrip(".").lower() for h in allowed_hosts if h}:
         return
 
     try:
@@ -52,11 +50,10 @@ def validate_url(url, allowed_ips=None, allowed_hosts=None):
     for addr in addr_info:
         ip = ipaddress.ip_address(addr[4][0])
         if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_link_local:
-            if allowed_ips and any(
-                network.version == ip.version and ip in network for network in allowed_ips
-            ):
+            if allowed_ips and any(network.version == ip.version and ip in network for network in allowed_ips):
                 continue
             raise ValueError("Access to private/internal networks is not allowed")
+
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
