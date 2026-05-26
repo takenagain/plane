@@ -16,7 +16,12 @@ import { ContextMenu, CustomMenu } from "@plane/ui";
 import { copyUrlToClipboard, cn } from "@plane/utils";
 // components
 import { useModuleMenuItems } from "@/components/common/quick-actions-helper";
-import { ArchiveModuleModal, CreateUpdateModuleModal, DeleteModuleModal } from "@/components/modules";
+import {
+  ArchiveModuleModal,
+  CreateUpdateModuleModal,
+  DeleteModuleModal,
+  TransferModuleModal,
+} from "@/components/modules";
 // hooks
 import { useModule } from "@/hooks/store/use-module";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -38,6 +43,7 @@ export const ModuleQuickActions = observer(function ModuleQuickActions(props: Pr
   const [editModal, setEditModal] = useState(false);
   const [archiveModuleModal, setArchiveModuleModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [transferModal, setTransferModal] = useState(false);
   // store hooks
   const { allowPermissions } = useUserPermissions();
 
@@ -95,6 +101,7 @@ export const ModuleQuickActions = observer(function ModuleQuickActions(props: Pr
     handleDelete: () => setDeleteModal(true),
     handleCopyLink: handleCopyText,
     handleOpenInNewTab,
+    handleTransfer: () => setTransferModal(true),
   });
 
   // Handle both CE (array) and EE (object) return types
@@ -130,6 +137,13 @@ export const ModuleQuickActions = observer(function ModuleQuickActions(props: Pr
             handleClose={() => setArchiveModuleModal(false)}
           />
           <DeleteModuleModal data={moduleDetails} isOpen={deleteModal} onClose={() => setDeleteModal(false)} />
+          <TransferModuleModal
+            isOpen={transferModal}
+            onClose={() => setTransferModal(false)}
+            moduleId={moduleId}
+            projectId={projectId}
+            workspaceSlug={workspaceSlug}
+          />
           {additionalModals}
         </div>
       )}

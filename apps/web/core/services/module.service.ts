@@ -221,4 +221,17 @@ export class ModuleService extends APIService {
         throw error?.response?.data;
       });
   }
+
+  async transferModule(
+    workspaceSlug: string,
+    projectId: string,
+    moduleId: string,
+    data: { target_project_id: string }
+  ): Promise<{ message: string; module_id: string }> {
+    return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/modules/${moduleId}/transfer/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
 }
