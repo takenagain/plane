@@ -215,15 +215,13 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
             return self.paginate(
                 request=request,
                 queryset=(queryset),
-                on_results=lambda cycles: (
-                    CycleSerializer(
-                        cycles,
-                        many=True,
-                        fields=self.fields,
-                        expand=self.expand,
-                        context={"project": project},
-                    ).data
-                ),
+                on_results=lambda cycles: CycleSerializer(
+                    cycles,
+                    many=True,
+                    fields=self.fields,
+                    expand=self.expand,
+                    context={"project": project},
+                ).data,
             )
 
         # Completed Cycles
@@ -232,15 +230,13 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
             return self.paginate(
                 request=request,
                 queryset=(queryset),
-                on_results=lambda cycles: (
-                    CycleSerializer(
-                        cycles,
-                        many=True,
-                        fields=self.fields,
-                        expand=self.expand,
-                        context={"project": project},
-                    ).data
-                ),
+                on_results=lambda cycles: CycleSerializer(
+                    cycles,
+                    many=True,
+                    fields=self.fields,
+                    expand=self.expand,
+                    context={"project": project},
+                ).data,
             )
 
         # Draft Cycles
@@ -249,15 +245,13 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
             return self.paginate(
                 request=request,
                 queryset=(queryset),
-                on_results=lambda cycles: (
-                    CycleSerializer(
-                        cycles,
-                        many=True,
-                        fields=self.fields,
-                        expand=self.expand,
-                        context={"project": project},
-                    ).data
-                ),
+                on_results=lambda cycles: CycleSerializer(
+                    cycles,
+                    many=True,
+                    fields=self.fields,
+                    expand=self.expand,
+                    context={"project": project},
+                ).data,
             )
 
         # Incomplete Cycles
@@ -266,28 +260,24 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
             return self.paginate(
                 request=request,
                 queryset=(queryset),
-                on_results=lambda cycles: (
-                    CycleSerializer(
-                        cycles,
-                        many=True,
-                        fields=self.fields,
-                        expand=self.expand,
-                        context={"project": project},
-                    ).data
-                ),
-            )
-        return self.paginate(
-            request=request,
-            queryset=(queryset),
-            on_results=lambda cycles: (
-                CycleSerializer(
+                on_results=lambda cycles: CycleSerializer(
                     cycles,
                     many=True,
                     fields=self.fields,
                     expand=self.expand,
                     context={"project": project},
-                ).data
-            ),
+                ).data,
+            )
+        return self.paginate(
+            request=request,
+            queryset=(queryset),
+            on_results=lambda cycles: CycleSerializer(
+                cycles,
+                many=True,
+                fields=self.fields,
+                expand=self.expand,
+                context={"project": project},
+            ).data,
         )
 
     @cycle_docs(
@@ -312,11 +302,12 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
         Create a new development cycle with specified name, description, and date range.
         Supports external ID tracking for integration purposes.
         """
-        project = Project.objects.get(workspace__slug=slug, pk=project_id)
         if (request.data.get("start_date", None) is None and request.data.get("end_date", None) is None) or (
             request.data.get("start_date", None) is not None and request.data.get("end_date", None) is not None
         ):
-            serializer = CycleCreateSerializer(data=request.data, context={"request": request, "project": project})
+            serializer = CycleCreateSerializer(
+                data=request.data, context={"request": request, "project_id": project_id}
+            )
             if serializer.is_valid():
                 if (
                     request.data.get("external_id")
@@ -354,7 +345,7 @@ class CycleListCreateAPIEndpoint(BaseAPIView):
                 )
 
                 cycle = Cycle.objects.get(pk=serializer.instance.id)
-                serializer = CycleSerializer(cycle, context={"project": project})
+                serializer = CycleSerializer(cycle)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -506,7 +497,6 @@ class CycleDetailAPIEndpoint(BaseAPIView):
         Completed cycles can only have their sort order changed.
         """
         cycle = Cycle.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
-        project = Project.objects.get(workspace__slug=slug, pk=project_id)
 
         current_instance = json.dumps(CycleSerializer(cycle).data, cls=DjangoJSONEncoder)
 
@@ -529,10 +519,7 @@ class CycleDetailAPIEndpoint(BaseAPIView):
                 )
 
         serializer = CycleUpdateSerializer(
-            cycle,
-            data=request.data,
-            partial=True,
-            context={"request": request, "project": project},
+            cycle, data=request.data, partial=True, context={"request": request, "project_id": project_id}
         )
         if serializer.is_valid():
             if (
@@ -565,7 +552,7 @@ class CycleDetailAPIEndpoint(BaseAPIView):
                 origin=base_host(request=request, is_app=True),
             )
             cycle = Cycle.objects.get(pk=serializer.instance.id)
-            serializer = CycleSerializer(cycle, context={"project": project})
+            serializer = CycleSerializer(cycle)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

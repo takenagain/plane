@@ -44,7 +44,7 @@ class ApiTokenEndpoint(BaseAPIView):
             serializer = APITokenReadSerializer(api_tokens, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            api_tokens = APIToken.objects.get(user=request.user, pk=pk)
+            api_tokens = APIToken.objects.get(user=request.user, pk=pk, is_service=False)
             serializer = APITokenReadSerializer(api_tokens)
             return Response(serializer.data, status=status.HTTP_200_OK)
 

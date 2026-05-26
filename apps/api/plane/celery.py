@@ -8,7 +8,7 @@ import logging
 
 # Third party imports
 from celery import Celery
-from pythonjsonlogger.jsonlogger import JsonFormatter
+from pythonjsonlogger.json import JsonFormatter
 from celery.signals import after_setup_logger, after_setup_task_logger
 from celery.schedules import crontab
 
@@ -28,10 +28,6 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 app.conf.beat_schedule = {
     # Intra day recurring jobs
-    "check-every-minute-for-recurring-issues": {
-        "task": "plane.bgtasks.issue_recurrence_task.process_recurring_issues",
-        "schedule": crontab(minute="*"),
-    },
     "check-every-five-minutes-to-send-email-notifications": {
         "task": "plane.bgtasks.email_notification_task.stack_email_notification",
         "schedule": crontab(minute="*/5"),  # Every 5 minutes
@@ -48,10 +44,6 @@ app.conf.beat_schedule = {
     "check-every-day-to-archive-and-close": {
         "task": "plane.bgtasks.issue_automation_task.archive_and_close_old_issues",
         "schedule": crontab(hour=1, minute=0),  # UTC 01:00
-    },
-    "check-every-day-for-cycle-automations": {
-        "task": "plane.bgtasks.cycle_automation_task.process_cycle_automations",
-        "schedule": crontab(hour=1, minute=15),  # UTC 01:15
     },
     "check-every-day-to-delete_exporter_history": {
         "task": "plane.bgtasks.exporter_expired_task.delete_old_s3_link",

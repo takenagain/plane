@@ -3,42 +3,33 @@
 # See the LICENSE file for details.
 
 # Django imports
-# Django imports
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
-from django.db import IntegrityError
 from django.utils import timezone
 from lxml import html
+from django.db import IntegrityError
 
 #  Third party imports
 from rest_framework import serializers
 
 # Module imports
 from plane.db.models import (
-    EstimatePoint,
-    FileAsset,
     Issue,
+    IssueType,
     IssueActivity,
     IssueAssignee,
+    FileAsset,
     IssueComment,
     IssueLabel,
     IssueLink,
     IssueRelation,
-    IssueType,
     Label,
     ProjectMember,
     State,
     User,
+    EstimatePoint,
 )
 from plane.utils.content_validator import (
-    validate_binary_data,
     validate_html_content,
-)
-from plane.utils.issue_recurrence import (
-    compute_issue_recurrence_next_run_at,
-    get_effective_issue_recurrence_values,
-    get_issue_recurrence_validation_error,
-    should_recompute_issue_recurrence,
+    validate_binary_data,
 )
 
 from .base import BaseSerializer
@@ -46,6 +37,10 @@ from .cycle import CycleLiteSerializer, CycleSerializer
 from .module import ModuleLiteSerializer, ModuleSerializer
 from .state import StateLiteSerializer
 from .user import UserLiteSerializer
+
+# Django imports
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 
 
 class IssueSerializer(BaseSerializer):
@@ -71,22 +66,11 @@ class IssueSerializer(BaseSerializer):
     type_id = serializers.PrimaryKeyRelatedField(
         source="type", queryset=IssueType.objects.all(), required=False, allow_null=True
     )
-    recurrence_source_issue_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Issue
-        read_only_fields = [
-            "id",
-            "workspace",
-            "project",
-            "updated_by",
-            "updated_at",
-            "recurrence_generated_count",
-            "recurrence_next_run_at",
-            "recurrence_last_run_at",
-            "recurrence_source_issue_id",
-        ]
-        exclude = ["description_json", "description_stripped", "recurrence_source_issue"]
+        read_only_fields = ["id", "workspace", "project", "updated_by", "updated_at", "completed_at"]
+        exclude = ["description_json", "description_stripped"]
 
     def validate(self, data):
         if (
@@ -161,24 +145,6 @@ class IssueSerializer(BaseSerializer):
             ).exists()
         ):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
-
-        # When due date is explicitly cleared, implicitly clear recurrence so
-        # callers that only send {target_date: null} don't get a validation
-        # error (e.g. inline date editors outside the recurrence sidebar).
-        if "target_date" in data and data["target_date"] is None and getattr(self.instance, "recurrence_pattern", None):
-            data.setdefault("recurrence_pattern", None)
-            data.setdefault("recurrence_max_occurrences", None)
-
-        recurrence_values = get_effective_issue_recurrence_values(data, self.instance)
-        recurrence_error = get_issue_recurrence_validation_error(**recurrence_values)
-        if recurrence_error:
-            raise serializers.ValidationError(recurrence_error)
-
-        if should_recompute_issue_recurrence(data, self.instance):
-            data["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
-                project_id=self.context.get("project_id") or getattr(self.instance, "project_id", None),
-                **recurrence_values,
-            )
 
         return data
 
@@ -884,6 +850,7 @@ class IssueExpandSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            "completed_at",
         ]
 
 
