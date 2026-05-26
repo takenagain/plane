@@ -1,0 +1,55 @@
+# docker-compose.override.yml
+# Overrides the community stack to build all images from local source
+# instead of pulling pre-built images from Docker Hub.
+#
+# Docker Compose automatically merges this file — no extra flags needed.
+# Run: docker compose up -d --build --force-recreate
+#
+# NOTE: Worker, beat-worker, and migrator share the same Dockerfile as api
+#       (they all use Dockerfile.api from apps/api/).
+
+services:
+    api:
+        build:
+            context: ../../../apps/api
+            dockerfile: Dockerfile.api
+
+    worker:
+        build:
+            context: ../../../apps/api
+            dockerfile: Dockerfile.api
+
+    beat-worker:
+        build:
+            context: ../../../apps/api
+            dockerfile: Dockerfile.api
+
+    migrator:
+        build:
+            context: ../../../apps/api
+            dockerfile: Dockerfile.api
+
+    web:
+        build:
+            context: ../../..
+            dockerfile: apps/web/Dockerfile.web
+
+    admin:
+        build:
+            context: ../../..
+            dockerfile: apps/admin/Dockerfile.admin
+
+    space:
+        build:
+            context: ../../..
+            dockerfile: apps/space/Dockerfile.space
+
+    live:
+        build:
+            context: ../../..
+            dockerfile: apps/live/Dockerfile.live
+
+    proxy:
+        build:
+            context: ../../../apps/proxy
+            dockerfile: Dockerfile.ce
