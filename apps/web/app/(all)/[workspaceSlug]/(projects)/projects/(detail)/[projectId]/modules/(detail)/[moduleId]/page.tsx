@@ -47,14 +47,22 @@ function ModuleIssuesPage({ params }: Route.ComponentProps) {
   };
 
   // const activeLayout = issuesFilter?.issueFilters?.displayFilters?.layout;
+  // Determine error type from the thrown error object (shape: { error: "..." })
+  const isPermissionError =
+    error && typeof error === "object" && "error" in error && String(error.error).toLowerCase().includes("permission");
+
   return (
     <>
       <PageHead title={pageTitle} />
       {error ? (
         <EmptyState
           image={emptyModule}
-          title="Module does not exist"
-          description="The module you are looking for does not exist or has been deleted."
+          title={isPermissionError ? "Access denied" : "Module does not exist"}
+          description={
+            isPermissionError
+              ? "You don't have permission to view this module."
+              : "The module you are looking for does not exist or has been deleted."
+          }
           primaryButton={{
             text: "View other modules",
             onClick: () => router.push(`/${workspaceSlug}/projects/${projectId}/modules`),

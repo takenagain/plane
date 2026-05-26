@@ -2,243 +2,203 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
-from .project.base import (
-    ProjectViewSet,
-    ProjectIdentifierEndpoint,
-    ProjectUserViewsEndpoint,
-    ProjectFavoritesViewSet,
-    DeployBoardViewSet,
-    ProjectArchiveUnarchiveEndpoint,
+from .analytic.advance import (
+    AdvanceAnalyticsChartEndpoint,
+    AdvanceAnalyticsEndpoint,
+    AdvanceAnalyticsStatsEndpoint,
+    ProjectTimeLoggedExportEndpoint,
+    TimeLoggedExportEndpoint,
 )
-
-from .project.invite import (
-    UserProjectInvitationsViewset,
-    ProjectInvitationsViewset,
-    ProjectJoinEndpoint,
+from .analytic.base import (
+    AnalyticsEndpoint,
+    AnalyticViewViewset,
+    DefaultAnalyticsEndpoint,
+    ExportAnalyticsEndpoint,
+    ProjectStatsEndpoint,
+    SavedAnalyticEndpoint,
 )
-
-from .project.member import (
-    ProjectMemberViewSet,
-    ProjectMemberUserEndpoint,
-    UserProjectRolesEndpoint,
-    ProjectMemberPreferenceEndpoint,
+from .analytic.project_analytics import (
+    ProjectAdvanceAnalyticsChartEndpoint,
+    ProjectAdvanceAnalyticsEndpoint,
+    ProjectAdvanceAnalyticsStatsEndpoint,
 )
-
-from .user.base import (
-    UserEndpoint,
-    UpdateUserOnBoardedEndpoint,
-    UpdateUserTourCompletedEndpoint,
-    UserActivityEndpoint,
-)
-
-
-from .base import BaseAPIView, BaseViewSet
-
-from .workspace.base import (
-    WorkSpaceViewSet,
-    UserWorkSpacesEndpoint,
-    WorkSpaceAvailabilityCheckEndpoint,
-    UserWorkspaceDashboardEndpoint,
-    WorkspaceThemeViewSet,
-    ExportWorkspaceUserActivityEndpoint,
-)
-
-from .workspace.draft import WorkspaceDraftIssueViewSet
-
-from .workspace.home import WorkspaceHomePreferenceViewSet
-
-from .workspace.favorite import (
-    WorkspaceFavoriteEndpoint,
-    WorkspaceFavoriteGroupEndpoint,
-)
-from .workspace.recent_visit import UserRecentVisitViewSet
-from .workspace.user_preference import WorkspaceUserPreferenceViewSet
-
-from .workspace.member import (
-    WorkSpaceMemberViewSet,
-    WorkspaceMemberUserEndpoint,
-    WorkspaceProjectMemberEndpoint,
-    WorkspaceMemberUserViewsEndpoint,
-)
-from .workspace.invite import (
-    WorkspaceInvitationsViewset,
-    WorkspaceJoinEndpoint,
-    UserWorkspaceInvitationsViewSet,
-)
-from .workspace.label import WorkspaceLabelsEndpoint
-from .workspace.state import WorkspaceStatesEndpoint
-from .workspace.user import (
-    UserLastProjectWithWorkspaceEndpoint,
-    WorkspaceUserProfileIssuesEndpoint,
-    WorkspaceUserPropertiesEndpoint,
-    WorkspaceUserProfileEndpoint,
-    WorkspaceUserActivityEndpoint,
-    WorkspaceUserProfileStatsEndpoint,
-    UserActivityGraphEndpoint,
-    UserIssueCompletedGraphEndpoint,
-)
-from .workspace.estimate import WorkspaceEstimatesEndpoint
-from .workspace.module import WorkspaceModulesEndpoint
-from .workspace.cycle import WorkspaceCyclesEndpoint
-from .workspace.quick_link import QuickLinkViewSet
-from .workspace.sticky import WorkspaceStickyViewSet
-
-from .state.base import StateViewSet, IntakeStateEndpoint
-from .view.base import (
-    WorkspaceViewViewSet,
-    WorkspaceViewIssuesViewSet,
-    IssueViewViewSet,
-    IssueViewFavoriteViewSet,
-)
-from .cycle.base import (
-    CycleViewSet,
-    CycleDateCheckEndpoint,
-    CycleFavoriteViewSet,
-    TransferCycleIssueEndpoint,
-    CycleUserPropertiesEndpoint,
-    CycleAnalyticsEndpoint,
-    CycleProgressEndpoint,
-)
-from .cycle.issue import CycleIssueViewSet
-from .cycle.archive import CycleArchiveUnarchiveEndpoint
-
-from .asset.base import FileAssetEndpoint, UserAssetsEndpoint, FileAssetViewSet
+from .api import ApiTokenEndpoint
+from .asset.base import FileAssetEndpoint, FileAssetViewSet, UserAssetsEndpoint
 from .asset.v2 import (
-    WorkspaceFileAssetEndpoint,
-    UserAssetsV2Endpoint,
-    StaticFileAssetEndpoint,
+    AssetCheckEndpoint,
     AssetRestoreEndpoint,
+    DuplicateAssetEndpoint,
+    ProjectAssetDownloadEndpoint,
     ProjectAssetEndpoint,
     ProjectBulkAssetEndpoint,
-    AssetCheckEndpoint,
-    DuplicateAssetEndpoint,
+    StaticFileAssetEndpoint,
+    UserAssetsV2Endpoint,
     WorkspaceAssetDownloadEndpoint,
-    ProjectAssetDownloadEndpoint,
+    WorkspaceFileAssetEndpoint,
 )
-from .issue.base import (
-    IssueListEndpoint,
-    IssueViewSet,
-    ProjectUserDisplayPropertyEndpoint,
-    BulkDeleteIssuesEndpoint,
-    DeletedIssuesListViewSet,
-    IssuePaginatedViewSet,
-    IssueDetailEndpoint,
-    IssueBulkUpdateDateEndpoint,
-    IssueMetaEndpoint,
-    IssueDetailIdentifierEndpoint,
+from .base import BaseAPIView, BaseViewSet
+from .cycle.archive import CycleArchiveUnarchiveEndpoint
+from .cycle.base import (
+    CycleAnalyticsEndpoint,
+    CycleDateCheckEndpoint,
+    CycleFavoriteViewSet,
+    CycleProgressEndpoint,
+    CycleUserPropertiesEndpoint,
+    CycleViewSet,
+    TransferCycleIssueEndpoint,
 )
-
-from .issue.activity import IssueActivityEndpoint
-
-from .issue.archive import IssueArchiveViewSet, BulkArchiveIssuesEndpoint
-
-from .issue.attachment import (
-    IssueAttachmentEndpoint,
-    # V2
-    IssueAttachmentV2Endpoint,
+from .cycle.issue import CycleIssueViewSet
+from .error_404 import custom_404_view
+from .estimate.base import (
+    BulkEstimatePointEndpoint,
+    EstimatePointEndpoint,
+    ProjectEstimatePointEndpoint,
 )
-
-from .issue.comment import IssueCommentViewSet, CommentReactionViewSet
-
-from .issue.label import LabelViewSet, BulkCreateIssueLabelsEndpoint
-
-from .issue.link import IssueLinkViewSet
-
-from .issue.relation import IssueRelationViewSet
-
-from .issue.reaction import IssueReactionViewSet
-
-from .issue.sub_issue import SubIssuesEndpoint
-
-from .issue.subscriber import IssueSubscriberViewSet
-
-from .issue.version import IssueVersionEndpoint, WorkItemDescriptionVersionEndpoint
-
-from .issue.worklog import WorklogViewSet
-
-from .module.base import (
-    ModuleViewSet,
-    ModuleLinkViewSet,
-    ModuleFavoriteViewSet,
-    ModuleUserPropertiesEndpoint,
-)
-
-from .module.issue import ModuleIssueViewSet
-
-from .module.archive import ModuleArchiveUnarchiveEndpoint
-
-from .api import ApiTokenEndpoint
-
-from .page.base import (
-    PageViewSet,
-    PageFavoriteViewSet,
-    PagesDescriptionViewSet,
-    PageDuplicateEndpoint,
-)
-from .page.version import PageVersionEndpoint
-
-from .search.base import GlobalSearchEndpoint, SearchEndpoint
-from .search.issue import IssueSearchEndpoint
-
-
+from .exporter.base import ExportIssuesEndpoint
 from .external.base import (
     GPTIntegrationEndpoint,
     UnsplashEndpoint,
     WorkspaceGPTIntegrationEndpoint,
 )
-from .estimate.base import (
-    ProjectEstimatePointEndpoint,
-    BulkEstimatePointEndpoint,
-    EstimatePointEndpoint,
-)
-
 from .intake.base import (
-    IntakeViewSet,
     IntakeIssueViewSet,
+    IntakeViewSet,
     IntakeWorkItemDescriptionVersionEndpoint,
 )
-
-from .analytic.base import (
-    AnalyticsEndpoint,
-    AnalyticViewViewset,
-    SavedAnalyticEndpoint,
-    ExportAnalyticsEndpoint,
-    DefaultAnalyticsEndpoint,
-    ProjectStatsEndpoint,
+from .issue.activity import IssueActivityEndpoint
+from .issue.archive import BulkArchiveIssuesEndpoint, IssueArchiveViewSet
+from .issue.attachment import (
+    IssueAttachmentEndpoint,
+    # V2
+    IssueAttachmentV2Endpoint,
 )
-
-from .analytic.advance import (
-    AdvanceAnalyticsEndpoint,
-    AdvanceAnalyticsStatsEndpoint,
-    AdvanceAnalyticsChartEndpoint,
-    ProjectTimeLoggedExportEndpoint,
-    TimeLoggedExportEndpoint,
+from .issue.base import (
+    BulkDeleteIssuesEndpoint,
+    DeletedIssuesListViewSet,
+    IssueBulkUpdateDateEndpoint,
+    IssueDetailEndpoint,
+    IssueDetailIdentifierEndpoint,
+    IssueListEndpoint,
+    IssueMetaEndpoint,
+    IssuePaginatedViewSet,
+    IssueViewSet,
+    ProjectUserDisplayPropertyEndpoint,
 )
-
-from .analytic.project_analytics import (
-    ProjectAdvanceAnalyticsEndpoint,
-    ProjectAdvanceAnalyticsStatsEndpoint,
-    ProjectAdvanceAnalyticsChartEndpoint,
+from .issue.comment import CommentReactionViewSet, IssueCommentViewSet
+from .issue.label import BulkCreateIssueLabelsEndpoint, LabelViewSet
+from .issue.link import IssueLinkViewSet
+from .issue.reaction import IssueReactionViewSet
+from .issue.relation import IssueRelationViewSet
+from .issue.sub_issue import SubIssuesEndpoint
+from .issue.subscriber import IssueSubscriberViewSet
+from .issue.version import IssueVersionEndpoint, WorkItemDescriptionVersionEndpoint
+from .issue.worklog import WorklogViewSet
+from .module.archive import ModuleArchiveUnarchiveEndpoint
+from .module.base import (
+    ModuleFavoriteViewSet,
+    ModuleLinkViewSet,
+    ModuleTransferEndpoint,
+    ModuleUserPropertiesEndpoint,
+    ModuleViewSet,
 )
-
+from .module.issue import ModuleIssueViewSet
 from .notification.base import (
+    MarkAllReadNotificationViewSet,
     NotificationViewSet,
     UnreadNotificationEndpoint,
     UserNotificationPreferenceEndpoint,
 )
-
-from .exporter.base import ExportIssuesEndpoint
-
-
+from .page.base import (
+    PageDuplicateEndpoint,
+    PageFavoriteViewSet,
+    PagesDescriptionViewSet,
+    PageViewSet,
+)
+from .page.version import PageVersionEndpoint
+from .project.base import (
+    DeployBoardViewSet,
+    ProjectArchiveUnarchiveEndpoint,
+    ProjectFavoritesViewSet,
+    ProjectIdentifierEndpoint,
+    ProjectUserViewsEndpoint,
+    ProjectViewSet,
+)
+from .project.invite import (
+    ProjectInvitationsViewset,
+    ProjectJoinEndpoint,
+    UserProjectInvitationsViewset,
+)
+from .project.member import (
+    ProjectMemberPreferenceEndpoint,
+    ProjectMemberUserEndpoint,
+    ProjectMemberViewSet,
+    UserProjectRolesEndpoint,
+)
+from .search.base import GlobalSearchEndpoint, SearchEndpoint
+from .search.issue import IssueSearchEndpoint
+from .state.base import IntakeStateEndpoint, StateViewSet
+from .timezone.base import TimezoneEndpoint
+from .user.base import (
+    AccountEndpoint,
+    ProfileEndpoint,
+    UpdateUserOnBoardedEndpoint,
+    UpdateUserTourCompletedEndpoint,
+    UserActivityEndpoint,
+    UserEndpoint,
+    UserSessionEndpoint,
+)
+from .view.base import (
+    IssueViewFavoriteViewSet,
+    IssueViewViewSet,
+    WorkspaceViewIssuesViewSet,
+    WorkspaceViewViewSet,
+)
 from .webhook.base import (
     WebhookEndpoint,
     WebhookLogsEndpoint,
     WebhookSecretRegenerateEndpoint,
 )
-
-from .error_404 import custom_404_view
-
-from .notification.base import MarkAllReadNotificationViewSet
-from .user.base import AccountEndpoint, ProfileEndpoint, UserSessionEndpoint
-
-from .timezone.base import TimezoneEndpoint
+from .workspace.base import (
+    ExportWorkspaceUserActivityEndpoint,
+    UserWorkspaceDashboardEndpoint,
+    UserWorkSpacesEndpoint,
+    WorkSpaceAvailabilityCheckEndpoint,
+    WorkspaceThemeViewSet,
+    WorkSpaceViewSet,
+)
+from .workspace.cycle import WorkspaceCyclesEndpoint
+from .workspace.draft import WorkspaceDraftIssueViewSet
+from .workspace.estimate import WorkspaceEstimatesEndpoint
+from .workspace.favorite import (
+    WorkspaceFavoriteEndpoint,
+    WorkspaceFavoriteGroupEndpoint,
+)
+from .workspace.home import WorkspaceHomePreferenceViewSet
+from .workspace.invite import (
+    UserWorkspaceInvitationsViewSet,
+    WorkspaceInvitationsViewset,
+    WorkspaceJoinEndpoint,
+)
+from .workspace.label import WorkspaceLabelsEndpoint
+from .workspace.member import (
+    WorkspaceMemberUserEndpoint,
+    WorkspaceMemberUserViewsEndpoint,
+    WorkSpaceMemberViewSet,
+    WorkspaceProjectMemberEndpoint,
+)
+from .workspace.module import WorkspaceModulesEndpoint
+from .workspace.quick_link import QuickLinkViewSet
+from .workspace.recent_visit import UserRecentVisitViewSet
+from .workspace.state import WorkspaceStatesEndpoint
+from .workspace.sticky import WorkspaceStickyViewSet
+from .workspace.user import (
+    UserActivityGraphEndpoint,
+    UserIssueCompletedGraphEndpoint,
+    UserLastProjectWithWorkspaceEndpoint,
+    WorkspaceUserActivityEndpoint,
+    WorkspaceUserProfileEndpoint,
+    WorkspaceUserProfileIssuesEndpoint,
+    WorkspaceUserProfileStatsEndpoint,
+    WorkspaceUserPropertiesEndpoint,
+)
+from .workspace.user_preference import WorkspaceUserPreferenceViewSet
