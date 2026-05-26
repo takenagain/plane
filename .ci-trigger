@@ -1,0 +1,3 @@
+# CI Trigger
+
+Triggered at 1779797692 to build GHCR image with django.contrib.postgres fix.
