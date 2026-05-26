@@ -6,9 +6,8 @@
   "license": "AGPL-3.0",
   "author": "Plane Software Inc.",
   "type": "module",
-  "main": "./dist/start.js",
   "exports": {
-    ".": "./dist/start.js",
+    ".": "./dist/start.mjs",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -40,8 +39,9 @@
     "@plane/types": "workspace:*",
     "@react-pdf/renderer": "^4.5.1",
     "@react-pdf/types": "^2.11.1",
-    "@tiptap/core": "catalog:",
-    "@tiptap/html": "catalog:",
+    "@tiptap/core": "^3.22.3",
+    "@tiptap/html": "^3.22.3",
+    "@tiptap/pm": "^3.22.3",
     "axios": "catalog:",
     "compression": "1.8.1",
     "cors": "^2.8.6",
