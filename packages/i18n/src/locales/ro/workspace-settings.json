@@ -484,6 +484,11 @@
         "heading": "Script-uri",
         "new_script": "Script nou",
         "description": "Automatizează fluxurile tale de lucru cu scripturi personalizate și reguli de automatizare."
+      },
+      "ai_agent": {
+        "title": "AI Agent",
+        "heading": "AI Agent",
+        "description": "Configure provider, model, behavior, and optional system prompt for workspace-level agent usage."
       }
     },
     "empty_state": {

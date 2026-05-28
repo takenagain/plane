@@ -484,6 +484,11 @@
         "heading": "Script",
         "new_script": "Script mới",
         "description": "Tự động hóa quy trình làm việc của bạn với các script và quy tắc tự động hóa tùy chỉnh."
+      },
+      "ai_agent": {
+        "title": "AI Agent",
+        "heading": "AI Agent",
+        "description": "Configure provider, model, behavior, and optional system prompt for workspace-level agent usage."
       }
     },
     "empty_state": {

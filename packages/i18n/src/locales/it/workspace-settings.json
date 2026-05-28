@@ -484,6 +484,11 @@
         "heading": "Script",
         "new_script": "Nuovo script",
         "description": "Automatizza i tuoi flussi di lavoro con script personalizzati e regole di automazione."
+      },
+      "ai_agent": {
+        "title": "AI Agent",
+        "heading": "AI Agent",
+        "description": "Configure provider, model, behavior, and optional system prompt for workspace-level agent usage."
       }
     },
     "empty_state": {

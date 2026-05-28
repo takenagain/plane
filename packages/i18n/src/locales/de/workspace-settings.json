@@ -484,6 +484,11 @@
         "heading": "Skripte",
         "new_script": "Neues Skript",
         "description": "Automatisieren Sie Ihre Workflows mit benutzerdefinierten Skripten und Automatisierungsregeln."
+      },
+      "ai_agent": {
+        "title": "AI Agent",
+        "heading": "AI Agent",
+        "description": "Configure provider, model, behavior, and optional system prompt for workspace-level agent usage."
       }
     },
     "empty_state": {

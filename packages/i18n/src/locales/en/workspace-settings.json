@@ -479,6 +479,11 @@
         "heading": "Plane AI",
         "description": "See your work get smarter and faster with AI that is natively connected to your work and knowledge base. "
       },
+      "ai_agent": {
+        "title": "AI Agent",
+        "heading": "AI Agent",
+        "description": "Configure provider, model, behavior, and optional system prompt for workspace-level agent usage."
+      },
       "runners": {
         "title": "Plane Runner",
         "heading": "Scripts",

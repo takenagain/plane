@@ -484,6 +484,11 @@
         "heading": "Скрипти",
         "new_script": "Новий скрипт",
         "description": "Автоматизуйте свої робочі процеси за допомогою користувацьких скриптів і правил автоматизації."
+      },
+      "ai_agent": {
+        "title": "AI Agent",
+        "heading": "AI Agent",
+        "description": "Configure provider, model, behavior, and optional system prompt for workspace-level agent usage."
       }
     },
     "empty_state": {
