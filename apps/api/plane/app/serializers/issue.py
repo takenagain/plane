@@ -47,6 +47,12 @@ from plane.utils.content_validator import (
     validate_html_content,
     validate_binary_data,
 )
+from plane.utils.issue_recurrence import (
+    compute_issue_recurrence_next_run_at,
+    get_effective_issue_recurrence_values,
+    get_issue_recurrence_validation_error,
+    should_recompute_issue_recurrence,
+)
 
 
 class IssueFlatSerializer(BaseSerializer):
@@ -193,6 +199,18 @@ class IssueCreateSerializer(BaseSerializer):
             ).exists()
         ):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
+
+        instance = getattr(self, "instance", None)
+        recurrence_values = get_effective_issue_recurrence_values(attrs, instance)
+        recurrence_validation_error = get_issue_recurrence_validation_error(**recurrence_values)
+        if recurrence_validation_error:
+            raise serializers.ValidationError(recurrence_validation_error)
+
+        if should_recompute_issue_recurrence(attrs, instance):
+            attrs["recurrence_next_run_at"] = compute_issue_recurrence_next_run_at(
+                project_id=self.context["project_id"],
+                **recurrence_values,
+            )
 
         return attrs
 
