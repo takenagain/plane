@@ -210,7 +210,7 @@ llm_config_variables = [
     },
     {
         "key": "LLM_MODEL",
-        "value": os.environ.get("LLM_MODEL", "gpt-4o-mini"),
+        "value": os.environ.get("LLM_MODEL", "gpt-5.5"),
         "category": "AI",
         "is_encrypted": False,
     },

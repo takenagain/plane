@@ -55,7 +55,7 @@ export function InstanceAIForm(props: IInstanceAIForm) {
           </a>
         </>
       ),
-      placeholder: "gpt-4o-mini",
+      placeholder: "gpt-5.5",
       error: Boolean(errors.LLM_MODEL),
       required: false,
     },

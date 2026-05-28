@@ -4,12 +4,12 @@
 
 # Python import
 import os
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
+
+import requests
 
 # Third party import
 from openai import OpenAI
-import requests
-
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -41,35 +41,37 @@ class LLMProvider:
 
 class OpenAIProvider(LLMProvider):
     name = "OpenAI"
-    models = ["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o", "o1-mini", "o1-preview"]
-    default_model = "gpt-4o-mini"
+    models = ["gpt-5.5", "gpt-5.5-mini", "gpt-5.5-nano", "gpt-5.5-pro"]
+    default_model = "gpt-5.5"
 
 
 class AnthropicProvider(LLMProvider):
     name = "Anthropic"
     models = [
-        "claude-3-5-sonnet-20240620",
-        "claude-3-haiku-20240307",
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-        "claude-2.1",
-        "claude-2",
-        "claude-instant-1.2",
-        "claude-instant-1",
+        "claude-opus-4-7",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5-20251001",
     ]
-    default_model = "claude-3-sonnet-20240229"
+    default_model = "claude-sonnet-4-6"
 
 
 class GeminiProvider(LLMProvider):
     name = "Gemini"
-    models = ["gemini-pro", "gemini-1.5-pro-latest", "gemini-pro-vision"]
-    default_model = "gemini-pro"
+    models = ["gemini-3.5-flash", "gemini-3.1-pro-preview"]
+    default_model = "gemini-3.5-flash"
+
+
+class MistralProvider(LLMProvider):
+    name = "Mistral"
+    models = ["mistral-medium-3.5", "mistral-small-4", "mistral-large-3-2512"]
+    default_model = "mistral-small-4"
 
 
 SUPPORTED_PROVIDERS = {
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,
     "gemini": GeminiProvider,
+    "mistral": MistralProvider,
 }
 
 

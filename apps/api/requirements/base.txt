@@ -38,6 +38,7 @@ uvicorn==0.48.0
 channels==4.3.2
 # ai
 openai==2.38.0
+any-llm-sdk[openai,anthropic,gemini,mistral]
 # slack
 slack-sdk==3.42.0
 # apm
