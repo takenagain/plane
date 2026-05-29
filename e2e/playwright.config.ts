@@ -1,17 +1,11 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Read environment variables from the system.
- * BASE_URL: The URL of the Plane instance to test against (default: http://localhost:8081)
+ * PLAYWRIGHT_BASE_URL or BASE_URL: Plane instance under test (default: http://localhost:8081)
  * E2E_WEB_SERVER_COMMAND: Optional command to start the app under test.
  */
-const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || "http://localhost:8081";
 const E2E_WEB_SERVER_COMMAND = process.env.E2E_WEB_SERVER_COMMAND;
 
 export default defineConfig({

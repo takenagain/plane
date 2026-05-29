@@ -1,7 +1,3 @@
-# Copyright (c) 2023-present Plane Software, Inc. and contributors
-# SPDX-License-Identifier: AGPL-3.0-only
-# See the LICENSE file for details.
-
 # Python imports
 import json
 
@@ -24,6 +20,7 @@ from plane.app.serializers import ActiveWorklogSerializer, WorklogSerializer
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.db.models import Issue, IssueActivity, IssueAssignee, State, Worklog, Workspace
 from plane.utils.host import base_host
+from plane.utils.worklog_realtime import broadcast_worklog_timer_event
 
 # Module imports
 from .. import BaseViewSet
@@ -319,6 +316,18 @@ class WorklogViewSet(BaseViewSet):
             origin=base_host(request=request, is_app=True),
         )
 
+        broadcast_worklog_timer_event(
+            issue.workspace_id,
+            request.user.id,
+            {
+                "type": "worklog_timer_started",
+                "worklog_id": str(worklog.id),
+                "issue_id": str(issue_id),
+                "actor_id": str(request.user.id),
+                "created_at": worklog.created_at.isoformat(),
+            },
+        )
+
         return Response(serialized_worklog, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["post"], url_path="stop")
@@ -349,6 +358,19 @@ class WorklogViewSet(BaseViewSet):
             notification=False,
             origin=base_host(request=request, is_app=True),
         )
+
+        broadcast_worklog_timer_event(
+            active_worklog.workspace_id,
+            request.user.id,
+            {
+                "type": "worklog_timer_stopped",
+                "worklog_id": str(active_worklog.id),
+                "issue_id": str(issue_id),
+                "actor_id": str(request.user.id),
+                "duration": active_worklog.duration,
+            },
+        )
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="active")

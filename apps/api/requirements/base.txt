@@ -36,6 +36,7 @@ django-crum==0.7.9
 uvicorn==0.48.0
 # sockets
 channels==4.3.2
+channels-redis==4.2.1
 # ai
 openai==2.38.0
 any-llm-sdk[openai,anthropic,gemini,mistral]

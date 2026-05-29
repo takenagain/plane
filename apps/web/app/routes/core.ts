@@ -98,6 +98,10 @@ export const coreRoutes: RouteConfigEntry[] = [
             ":workspaceSlug/profile/:userId/activity",
             "./(all)/[workspaceSlug]/(projects)/profile/[userId]/activity/page.tsx"
           ),
+          route(
+            ":workspaceSlug/profile/:userId/time",
+            "./(all)/[workspaceSlug]/(projects)/profile/[userId]/time/page.tsx"
+          ),
         ]),
 
         // Stickies
@@ -273,6 +277,10 @@ export const coreRoutes: RouteConfigEntry[] = [
           route(
             ":workspaceSlug/settings/exports",
             "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/exports/page.tsx"
+          ),
+          route(
+            ":workspaceSlug/settings/integrations",
+            "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/integrations/page.tsx"
           ),
           route(
             ":workspaceSlug/settings/webhooks",

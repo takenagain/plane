@@ -201,4 +201,12 @@ from .workspace.user import (
     WorkspaceUserProfileStatsEndpoint,
     WorkspaceUserPropertiesEndpoint,
 )
+from .workspace.user_time_analytics import (
+    UserTimeAnalyticsChartsEndpoint,
+    UserTimeAnalyticsCommentSignalsEndpoint,
+    UserTimeAnalyticsExportEndpoint,
+    UserTimeAnalyticsRankingsEndpoint,
+    UserTimeAnalyticsSummaryEndpoint,
+    UserTimeAnalyticsWorklogsEndpoint,
+)
 from .workspace.user_preference import WorkspaceUserPreferenceViewSet

@@ -1661,6 +1661,43 @@ export default {
       created: "Created",
       subscribed: "Subscribed",
       activity: "Activity",
+      time: "Hours logged",
+    },
+    time_analytics: {
+      title: "Hours logged",
+      filters: {
+        duration: "Duration",
+        all_projects: "All projects",
+        projects_count: "{{count}} projects",
+      },
+      kpis: {
+        total_hours: "Total hours",
+        avg_per_day: "Avg hours / day",
+        worklogs: "Worklogs",
+        active_timers: "Active timers",
+        vs_previous: "{{delta}} vs prior period",
+      },
+      rankings: {
+        projects: "Top projects",
+        modules: "Top modules",
+        cycles: "Top cycles",
+      },
+      top_work_items: "Top work items",
+      table: {
+        work_item: "Work item",
+        hours: "Hours",
+      },
+      trend_title: "Hours over time",
+      trend_x: "Period",
+      recent_worklogs: "Recent worklogs",
+      active: "Active",
+      comment_signals: "Discussion signals",
+      comment_signals_hint: "Recent comments on items you logged time on (heuristic keyword highlights).",
+      attention: "Possible attention",
+      empty: {
+        title: "No time logged yet",
+        description: "Log time on work items to see analytics here.",
+      },
     },
     empty_state: {
       activity: {

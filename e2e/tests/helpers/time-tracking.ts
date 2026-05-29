@@ -1,16 +1,10 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
 /* oxlint-disable no-await-in-loop */
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { execFileSync } from "node:child_process";
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
-export const BASE_URL = process.env.BASE_URL || "http://localhost:8081";
+export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || "http://localhost:8081";
 export const API_BASE_URL = process.env.E2E_API_BASE_URL || BASE_URL;
 
 export const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
@@ -262,6 +256,18 @@ print(f"SEED_RESULT:{workspace.slug}|{project.id}|{issue.id}")
     projectId,
     issueId,
   };
+}
+
+/** Skip docker seed when targeting a remote instance or when E2E_SKIP_SEED is set. */
+export function tryEnsureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } | null {
+  if (process.env.E2E_SKIP_SEED === "true" || process.env.E2E_SKIP_SEED === "1") {
+    return null;
+  }
+  try {
+    return ensureE2ESeedData();
+  } catch {
+    return null;
+  }
 }
 
 export async function waitForPageLoad(page: Page) {
