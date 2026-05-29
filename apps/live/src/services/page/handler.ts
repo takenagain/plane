@@ -8,12 +8,20 @@ import { AppError } from "@/lib/errors";
 import type { HocusPocusServerContext, TDocumentTypes } from "@/types";
 // services
 import { ProjectPageService } from "./project-page.service";
+import { WikiPageService } from "./wiki-page.service";
 
 export const getPageService = (documentType: TDocumentTypes, context: HocusPocusServerContext) => {
   if (documentType === "project_page") {
     return new ProjectPageService({
       workspaceSlug: context.workspaceSlug,
       projectId: context.projectId,
+      cookie: context.cookie,
+    });
+  }
+
+  if (documentType === "workspace_page") {
+    return new WikiPageService({
+      workspaceSlug: context.workspaceSlug,
       cookie: context.cookie,
     });
   }

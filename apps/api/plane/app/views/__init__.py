@@ -115,6 +115,7 @@ from .page.base import (
     PageViewSet,
 )
 from .page.version import PageVersionEndpoint
+from .page.wiki import WikiPageViewSet, WikiPagesDescriptionViewSet
 from .project.base import (
     DeployBoardViewSet,
     ProjectArchiveUnarchiveEndpoint,

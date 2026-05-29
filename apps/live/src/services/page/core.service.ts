@@ -18,14 +18,17 @@ export type TUserMention = {
 
 export abstract class PageCoreService extends APIService {
   protected abstract basePath: string;
+  /** API collection segment after basePath (e.g. `pages` or `wiki-pages`). */
+  protected pageCollection = "pages";
 
-  constructor() {
-    super();
+  protected pageResourcePath(pageId: string, suffix = ""): string {
+    const tail = suffix ? `${suffix.replace(/^\//, "")}/` : "";
+    return `${this.basePath}/${this.pageCollection}/${pageId}/${tail}`;
   }
 
   async fetchDetails(pageId: string): Promise<TPage> {
     try {
-      const response = await this.get(`${this.basePath}/pages/${pageId}/`, {
+      const response = await this.get(this.pageResourcePath(pageId), {
         headers: this.getHeader(),
       });
       return response?.data as TPage;
@@ -40,7 +43,7 @@ export abstract class PageCoreService extends APIService {
 
   async fetchDescriptionBinary(pageId: string): Promise<Buffer> {
     try {
-      const response = await this.get(`${this.basePath}/pages/${pageId}/description/`, {
+      const response = await this.get(this.pageResourcePath(pageId, "description"), {
         headers: {
           ...this.getHeader(),
           "Content-Type": "application/octet-stream",
@@ -88,7 +91,7 @@ export abstract class PageCoreService extends APIService {
 
     try {
       return await Promise.race([
-        this.patch(`${this.basePath}/pages/${pageId}/`, data, {
+        this.patch(this.pageResourcePath(pageId), data, {
           headers: this.getHeader(),
           signal: abortSignal,
         })
@@ -117,7 +120,7 @@ export abstract class PageCoreService extends APIService {
 
   async updateDescriptionBinary(pageId: string, data: TDocumentPayload): Promise<any> {
     try {
-      const response = await this.patch(`${this.basePath}/pages/${pageId}/description/`, data, {
+      const response = await this.patch(this.pageResourcePath(pageId, "description"), data, {
         headers: this.getHeader(),
       });
       return response?.data as unknown;
@@ -137,7 +140,7 @@ export abstract class PageCoreService extends APIService {
    */
   async fetchUserMentions(pageId: string): Promise<TUserMention[]> {
     try {
-      const response = await this.get(`${this.basePath}/pages/${pageId}/mentions/`, {
+      const response = await this.get(this.pageResourcePath(pageId, "mentions"), {
         headers: this.getHeader(),
         params: {
           mention_type: "user_mention",

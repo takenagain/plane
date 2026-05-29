@@ -24,7 +24,7 @@ export const usePage = (args: TArgs) => {
   const pageStore = usePageStore(storeType);
 
   if (context === undefined) throw new Error("usePage must be used within StoreProvider");
-  if (!pageId) throw new Error("pageId is required");
+  if (!pageId) return undefined;
 
   return pageStore.getPageById(pageId);
 };

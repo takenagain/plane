@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { LIVE_BASE_PATH, LIVE_BASE_URL } from "@plane/constants";
@@ -93,6 +93,11 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   } = props;
   // refs
   const titleEditorRef = useRef<EditorTitleRefApi>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   // store hooks
   const { data: currentUser } = useUser();
   const { getWorkspaceBySlug } = useWorkspace();
@@ -190,6 +195,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   const realtimeConfig: TRealtimeConfig | undefined = useMemo(() => {
     // Construct the WebSocket Collaboration URL
     try {
+      if (typeof window === "undefined") return undefined;
       const LIVE_SERVER_BASE_URL = LIVE_BASE_URL?.trim() || window.location.origin;
       const WS_LIVE_URL = new URL(LIVE_SERVER_BASE_URL);
       const isSecureEnvironment = window.location.protocol === "https:";
@@ -229,7 +235,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
     }
   );
 
-  const isPageLoading = pageId === undefined || !realtimeConfig;
+  const isPageLoading = pageId === undefined || !realtimeConfig || !hasMounted;
 
   if (isPageLoading) return <PageContentLoader className={blockWidthClassName} />;
 
