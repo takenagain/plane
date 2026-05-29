@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 /** Keep in sync with apps/api/plane/app/views/external/base.py provider model lists. */
 export const AGENT_PROVIDERS = ["openai", "anthropic", "gemini", "mistral"] as const;
 

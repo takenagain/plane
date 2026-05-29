@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { useContext, useEffect } from "react";
 import { observer } from "mobx-react";
 import { StoreContext } from "@/lib/store-context";

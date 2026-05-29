@@ -1,10 +1,4 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
-/**
  * Format a duration in minutes to "Xh Ym" display string.
  * Examples: 150 → "2h 30m", 45 → "0h 45m", 0 → "0h 0m"
  */

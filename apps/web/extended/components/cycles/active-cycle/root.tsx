@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { observer } from "mobx-react";
 import { useTheme } from "next-themes";
 import { Disclosure } from "@headlessui/react";
@@ -46,7 +40,7 @@ type ActiveCyclesComponentProps = {
 const ActiveCyclesComponent = observer(function ActiveCyclesComponent({
   cycleId,
   activeCycle,
-  activeCycleResolvedPath,
+  activeCycleResolvedPath: _activeCycleResolvedPath,
   workspaceSlug,
   projectId,
   handleFiltersUpdate,

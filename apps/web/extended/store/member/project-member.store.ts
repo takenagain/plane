@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { computedFn } from "mobx-utils";
 import type { EUserProjectRoles } from "@plane/types";
 // plane imports
@@ -17,6 +11,7 @@ import { BaseProjectMemberStore } from "@/store/member/project/base-project-memb
 export type IProjectMemberStore = IBaseProjectMemberStore;
 
 export class ProjectMemberStore extends BaseProjectMemberStore implements IProjectMemberStore {
+  // oxlint-disable-next-line no-useless-constructor -- pass-through to parent for typing
   constructor(_memberRoot: IMemberRootStore, rootStore: RootStore) {
     super(_memberRoot, rootStore);
   }

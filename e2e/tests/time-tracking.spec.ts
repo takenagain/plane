@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 /* oxlint-disable no-await-in-loop */
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- *
  * E2E Tests for Time Tracking (Worklog) Feature - Browser Tests
  *
  * Flow:

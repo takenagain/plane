@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { useState, useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 // hooks
@@ -79,6 +73,8 @@ export const ProductUpdatesChangelog = observer(function ProductUpdatesChangelog
         </Loader>
       )}
       <iframe
+        title="Product changelog"
+        sandbox="allow-popups"
         src={changeLogUrl}
         className={`h-full w-full ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-200`}
         onLoad={handleIframeLoad}
