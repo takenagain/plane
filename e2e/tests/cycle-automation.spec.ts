@@ -1,8 +1,4 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- *
  * E2E Tests for Cycle Automation Settings
  *
  * Coverage:
@@ -16,34 +12,14 @@
  * - Plane accessible at http://localhost:8081 (or BASE_URL env var).
  */
 
-import { test, expect, type Page, type Locator } from "@playwright/test";
-import { ensureE2ESeedData, signInAndEnsureWorkspace, waitForPageLoad, BASE_URL } from "./helpers/time-tracking";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Get the toggle switch (role="switch") for a given automation heading. */
-function automationToggle(page: Page, title: string): Locator {
-  // Navigate from the h4 up to the SettingsControlItem wrapper (grandparent div)
-  // which contains both the title and the toggle switch.
-  return page.locator(`h4:text-is("${title}")`).locator("xpath=../..").getByRole("switch");
-}
-
-/** Click a toggle and wait for the project-settings PATCH to round-trip so the
- *  server state is committed before the next action. */
-async function clickToggleAndWait(page: Page, toggle: Locator): Promise<void> {
-  await Promise.all([
-    page.waitForResponse(
-      (resp) => resp.request().method() === "PATCH" && resp.url().includes("/projects/") && resp.ok()
-    ),
-    toggle.click(),
-  ]);
-}
-
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
+import { test, expect, type Page } from "@playwright/test";
+import { ensureE2ESeedData, signInAndEnsureWorkspace, waitForPageLoad } from "./helpers/time-tracking";
+import {
+  automationToggle,
+  clickToggleAndWait,
+  navigateToAutomations,
+  resetAutomationTogglesToOff,
+} from "./helpers/cycle-automation";
 
 let workspaceSlug: string;
 let projectId: string;
@@ -54,87 +30,60 @@ test.beforeAll(() => {
   projectId = seed.projectId;
 });
 
-async function navigateToAutomations(page: Page) {
-  await page.goto(`${BASE_URL}/${workspaceSlug}/settings/projects/${projectId}/automations/`);
-  await waitForPageLoad(page);
-  // Wait for the automation page content to be visible (allow extra time in CI)
-  await expect(page.locator("h4:text-is('Auto-create cycles')")).toBeVisible({ timeout: 30_000 });
+async function signInAndOpenAutomations(page: Page): Promise<void> {
+  await test.step("Sign in and ensure workspace", async () => {
+    await signInAndEnsureWorkspace(page);
+  });
+  await test.step("Open project automations settings", async () => {
+    await navigateToAutomations(page, workspaceSlug, projectId);
+  });
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 test.describe.serial("Cycle automation settings", () => {
   test.beforeEach(async ({ page }) => {
-    await signInAndEnsureWorkspace(page);
-    // Reset toggles to off to ensure clean state (handles leftover state from
-    // previous runs or failed tests)
-    await navigateToAutomations(page);
-    const createToggle = automationToggle(page, "Auto-create cycles");
-    if ((await createToggle.getAttribute("aria-checked")) === "true") {
-      await clickToggleAndWait(page, createToggle);
-      await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
-    }
+    await signInAndOpenAutomations(page);
+    await resetAutomationTogglesToOff(page);
   });
 
   test.afterEach(async ({ page }) => {
-    // Reset both toggles to off so subsequent tests start from a clean state
-    await navigateToAutomations(page);
-    const createToggle = automationToggle(page, "Auto-create cycles");
-    if ((await createToggle.getAttribute("aria-checked")) === "true") {
-      await clickToggleAndWait(page, createToggle);
-      await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
-    }
+    await signInAndOpenAutomations(page);
+    await resetAutomationTogglesToOff(page);
   });
 
   test("auto-create toggle exists and is off by default", async ({ page }) => {
-    await navigateToAutomations(page);
-
     const toggle = automationToggle(page, "Auto-create cycles");
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute("aria-checked", "false");
   });
 
   test("auto-transfer toggle is disabled when auto-create is off", async ({ page }) => {
-    await navigateToAutomations(page);
-
     const transferToggle = automationToggle(page, "Auto-transfer work items");
     await expect(transferToggle).toBeVisible();
     await expect(transferToggle).toBeDisabled();
   });
 
   test("enabling auto-create makes auto-transfer toggle interactive", async ({ page }) => {
-    await navigateToAutomations(page);
-
-    // Enable auto-create
     const createToggle = automationToggle(page, "Auto-create cycles");
     await clickToggleAndWait(page, createToggle);
     await expect(createToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
 
-    // Auto-transfer should now be enabled (clickable)
     const transferToggle = automationToggle(page, "Auto-transfer work items");
     await expect(transferToggle).toBeEnabled({ timeout: 10_000 });
     await expect(transferToggle).toHaveAttribute("aria-checked", "false");
   });
 
   test("disabling auto-create also disables auto-transfer", async ({ page }) => {
-    await navigateToAutomations(page);
-
-    // Enable auto-create first
     const createToggle = automationToggle(page, "Auto-create cycles");
     if ((await createToggle.getAttribute("aria-checked")) !== "true") {
       await clickToggleAndWait(page, createToggle);
       await expect(createToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
     }
 
-    // Enable auto-transfer
     const transferToggle = automationToggle(page, "Auto-transfer work items");
     await expect(transferToggle).toBeEnabled({ timeout: 10_000 });
     await clickToggleAndWait(page, transferToggle);
     await expect(transferToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
 
-    // Now disable auto-create — auto-transfer should also turn off
     await clickToggleAndWait(page, createToggle);
     await expect(createToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
     await expect(transferToggle).toHaveAttribute("aria-checked", "false", { timeout: 10_000 });
@@ -142,16 +91,12 @@ test.describe.serial("Cycle automation settings", () => {
   });
 
   test("toggle states persist across page reload", async ({ page }) => {
-    await navigateToAutomations(page);
-
-    // Enable auto-create
     const createToggle = automationToggle(page, "Auto-create cycles");
     if ((await createToggle.getAttribute("aria-checked")) !== "true") {
       await clickToggleAndWait(page, createToggle);
       await expect(createToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
     }
 
-    // Enable auto-transfer
     const transferToggle = automationToggle(page, "Auto-transfer work items");
     await expect(transferToggle).toBeEnabled({ timeout: 10_000 });
     if ((await transferToggle.getAttribute("aria-checked")) !== "true") {
@@ -159,7 +104,6 @@ test.describe.serial("Cycle automation settings", () => {
       await expect(transferToggle).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
     }
 
-    // Reload and verify both are still on
     await page.reload();
     await waitForPageLoad(page);
     await expect(page.locator("h4:text-is('Auto-create cycles')")).toBeVisible({ timeout: 30_000 });
