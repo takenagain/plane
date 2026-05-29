@@ -12,15 +12,18 @@ const useIntegrationPopup = ({
   stateParams,
   github_app_name,
   slack_client_id,
+  workspaceSlug: workspaceSlugProp,
 }: {
   provider: string | undefined;
   stateParams?: string;
   github_app_name?: string;
   slack_client_id?: string;
+  workspaceSlug?: string;
 }) => {
   const [authLoader, setAuthLoader] = useState(false);
 
-  const { workspaceSlug, projectId } = useParams();
+  const { workspaceSlug: routeWorkspaceSlug, projectId } = useParams();
+  const workspaceSlug = workspaceSlugProp || routeWorkspaceSlug?.toString();
 
   const providerUrls: { [key: string]: string } = {
     github: `https://github.com/apps/${github_app_name}/installations/new?state=${workspaceSlug?.toString()}`,

@@ -15,6 +15,7 @@ from drf_spectacular.views import (
 handler404 = "plane.app.views.error_404.custom_404_view"
 
 urlpatterns = [
+    path("api/webhooks/", include("plane.integrations.urls")),
     path("api/", include("plane.app.urls")),
     path("api/", include("plane.agent.urls.agent")),
     path("api/public/", include("plane.space.urls")),

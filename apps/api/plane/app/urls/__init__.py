@@ -23,6 +23,7 @@ from .views import urlpatterns as view_urls
 from .webhook import urlpatterns as webhook_urls
 from .worklog import urlpatterns as worklog_urls
 from .workspace import urlpatterns as workspace_urls
+from .integrations import urlpatterns as integration_urls
 
 urlpatterns = [
     *analytic_urls,
@@ -46,4 +47,5 @@ urlpatterns = [
     *timezone_urls,
     *exporter_urls,
     *worklog_urls,
+    *integration_urls,
 ]
