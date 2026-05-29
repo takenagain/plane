@@ -56,6 +56,39 @@ google_config_variables = [
     },
 ]
 
+sentry_config_variables = [
+    {
+        "key": "SENTRY_CLIENT_ID",
+        "value": os.environ.get("SENTRY_CLIENT_ID"),
+        "category": "SENTRY",
+        "is_encrypted": False,
+    },
+    {
+        "key": "SENTRY_CLIENT_SECRET",
+        "value": os.environ.get("SENTRY_CLIENT_SECRET"),
+        "category": "SENTRY",
+        "is_encrypted": True,
+    },
+    {
+        "key": "ENABLE_SENTRY_SYNC",
+        "value": os.environ.get("ENABLE_SENTRY_SYNC", "0"),
+        "category": "SENTRY",
+        "is_encrypted": False,
+    },
+    {
+        "key": "SENTRY_WEBHOOK_SECRET",
+        "value": os.environ.get("SENTRY_WEBHOOK_SECRET"),
+        "category": "SENTRY",
+        "is_encrypted": True,
+    },
+    {
+        "key": "SENTRY_API_BASE_URL",
+        "value": os.environ.get("SENTRY_API_BASE_URL", "https://sentry.io"),
+        "category": "SENTRY",
+        "is_encrypted": False,
+    },
+]
+
 github_config_variables = [
     {
         "key": "GITHUB_CLIENT_ID",
@@ -254,6 +287,7 @@ core_config_variables = [
     *authentication_config_variables,
     *workspace_management_config_variables,
     *google_config_variables,
+    *sentry_config_variables,
     *github_config_variables,
     *gitlab_config_variables,
     *gitea_config_variables,

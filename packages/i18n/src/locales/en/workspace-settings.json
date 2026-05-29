@@ -81,6 +81,8 @@
         "previous_exports": "Previous exports",
         "export_separate_files": "Export the data into separate files",
         "exporting_projects": "Exporting project",
+        "all_projects": "All projects",
+        "export_all_projects": "Export all projects",
         "format": "Format",
         "filters_info": "Apply filters to export specific work items based on your criteria.",
         "modal": {

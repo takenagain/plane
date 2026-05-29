@@ -10,3 +10,4 @@ from .github import (
     GithubCommentSync,
 )
 from .slack import SlackProjectSync
+from .sentry import SentryWorkspaceConnection, SentryProjectMapping, SentryIssueLink

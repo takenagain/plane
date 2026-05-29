@@ -6,6 +6,9 @@
 
 import { useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { SentryIntegrationService } from "@/services/integrations";
+
+const sentryIntegrationService = new SentryIntegrationService();
 
 const useIntegrationPopup = ({
   provider,
@@ -56,7 +59,23 @@ const useIntegrationPopup = ({
     return window.open(url, "", `width=${width}, height=${height}, top=${top}, left=${left}`);
   };
 
-  const startAuth = () => {
+  const startAuth = async () => {
+    if (provider === "sentry" && workspaceSlug) {
+      setAuthLoader(true);
+      try {
+        const { auth_url } = await sentryIntegrationService.getInstallUrl(workspaceSlug);
+        const width = 600;
+        const height = 600;
+        const left = window.innerWidth / 2 - width / 2;
+        const top = window.innerHeight / 2 - height / 2;
+        popup.current = window.open(auth_url, "", `width=${width}, height=${height}, top=${top}, left=${left}`);
+        checkPopup();
+      } catch {
+        setAuthLoader(false);
+      }
+      return;
+    }
+
     popup.current = openPopup();
     checkPopup();
     setAuthLoader(true);

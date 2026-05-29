@@ -29,6 +29,9 @@ from .integration import (
     GithubRepository,
     GithubRepositorySync,
     Integration,
+    SentryIssueLink,
+    SentryProjectMapping,
+    SentryWorkspaceConnection,
     SlackProjectSync,
     WorkspaceIntegration,
 )

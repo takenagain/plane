@@ -23,6 +23,7 @@ from plane.db.models import (
     WorkspaceMember,
 )
 from plane.integrations.config import is_github_sync_enabled
+from plane.integrations.sentry.config import is_sentry_sync_enabled
 from plane.integrations.ensure import ensure_integration_catalog
 from plane.integrations.github.client import get_installation_access_token, list_installation_repositories
 from plane.integrations.serializers import (
@@ -67,6 +68,8 @@ class IntegrationListEndpoint(BaseAPIView):
         providers = []
         if is_github_sync_enabled():
             providers.extend(["github", "slack"])
+        if is_sentry_sync_enabled():
+            providers.append("sentry")
         if not providers:
             return Response([], status=status.HTTP_200_OK)
 

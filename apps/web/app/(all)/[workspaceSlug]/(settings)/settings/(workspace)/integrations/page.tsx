@@ -10,6 +10,7 @@ import useSWR from "swr";
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view";
 import { PageHead } from "@/components/core/page-title";
+import { SentryIntegrationCard } from "@/components/integration/sentry/sentry-integration-card";
 import { SingleIntegrationCard } from "@/components/integration/single-integration-card";
 import { IntegrationAndImportExportBanner } from "@/components/ui/integration-and-import-export-banner";
 import { IntegrationsSettingsLoader } from "@/components/ui/loader/settings/integration";
@@ -43,10 +44,11 @@ function WorkspaceIntegrationsPage() {
       <section className="w-full overflow-y-auto">
         <IntegrationAndImportExportBanner bannerName="Integrations" />
         <div>
+          <SentryIntegrationCard />
           {appIntegrations ? (
-            appIntegrations.map((integration) => (
-              <SingleIntegrationCard key={integration.id} integration={integration} />
-            ))
+            appIntegrations
+              .filter((integration) => integration.provider !== "sentry")
+              .map((integration) => <SingleIntegrationCard key={integration.id} integration={integration} />)
           ) : (
             <IntegrationsSettingsLoader />
           )}

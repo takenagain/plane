@@ -12,6 +12,14 @@ from plane.integrations.github.views import (
     WorkspaceIntegrationInstallEndpoint,
     WorkspaceIntegrationListEndpoint,
 )
+from plane.integrations.sentry.views import (
+    SentryConnectionEndpoint,
+    SentryInstallEndpoint,
+    SentryIssueLinkEndpoint,
+    SentryOAuthCallbackEndpoint,
+    SentryProjectMappingDetailEndpoint,
+    SentryProjectMappingEndpoint,
+)
 
 urlpatterns = [
     path("integrations/", IntegrationListEndpoint.as_view(), name="integrations"),
@@ -39,5 +47,35 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/workspace-integrations/<uuid:workspace_integration_id>/github-repository-sync/",
         GithubRepositorySyncEndpoint.as_view(),
         name="github-repository-sync",
+    ),
+    path(
+        "workspaces/<str:slug>/integrations/sentry/install/",
+        SentryInstallEndpoint.as_view(),
+        name="sentry-install",
+    ),
+    path(
+        "workspaces/<str:slug>/integrations/sentry/callback/",
+        SentryOAuthCallbackEndpoint.as_view(),
+        name="sentry-callback",
+    ),
+    path(
+        "workspaces/<str:slug>/integrations/sentry/",
+        SentryConnectionEndpoint.as_view(),
+        name="sentry-connection",
+    ),
+    path(
+        "workspaces/<str:slug>/integrations/sentry/mappings/",
+        SentryProjectMappingEndpoint.as_view(),
+        name="sentry-mappings",
+    ),
+    path(
+        "workspaces/<str:slug>/integrations/sentry/mappings/<uuid:mapping_id>/",
+        SentryProjectMappingDetailEndpoint.as_view(),
+        name="sentry-mapping-detail",
+    ),
+    path(
+        "integrations/sentry/issues/<str:sentry_issue_id>/link/",
+        SentryIssueLinkEndpoint.as_view(),
+        name="sentry-issue-link",
     ),
 ]
