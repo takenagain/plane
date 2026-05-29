@@ -1,7 +1,3 @@
-# Copyright (c) 2023-present Plane Software, Inc. and contributors
-# SPDX-License-Identifier: AGPL-3.0-only
-# See the LICENSE file for details.
-
 from datetime import timedelta
 
 import pytest
@@ -251,7 +247,7 @@ class TestTransferIncompleteIssues:
         )
 
         result = transfer_incomplete_issues(project, ended_cycle)
-        assert result is True
+        assert result == "transferred"
 
         # Incomplete issue should now be in next cycle
         ci = CycleIssue.objects.get(issue=incomplete_issue)
@@ -261,9 +257,9 @@ class TestTransferIncompleteIssues:
         ci_done = CycleIssue.objects.get(issue=completed_issue)
         assert ci_done.cycle_id == ended_cycle.id
 
-    def test_no_next_cycle_returns_false(self, project, ended_cycle):
+    def test_no_next_cycle_returns_skipped(self, project, ended_cycle):
         result = transfer_incomplete_issues(project, ended_cycle)
-        assert result is False
+        assert result == "skipped"
 
     def test_no_incomplete_issues(self, project, ended_cycle, states, user):
         next_start = ended_cycle.end_date + timedelta(days=1)
@@ -297,7 +293,41 @@ class TestTransferIncompleteIssues:
         )
 
         result = transfer_incomplete_issues(project, ended_cycle)
-        assert result is True
+        assert result == "no_issues"
+
+
+@pytest.mark.django_db
+class TestProjectCycleAutomationValidation:
+    def test_rejects_transfer_without_auto_create(self, project):
+        from plane.app.serializers.project import ProjectSerializer
+
+        serializer = ProjectSerializer(
+            instance=project,
+            data={"auto_transfer_cycle_issues": True, "auto_create_cycles": False},
+            partial=True,
+            context={"workspace_id": project.workspace_id},
+        )
+        assert not serializer.is_valid()
+        assert "auto_transfer_cycle_issues" in serializer.errors
+
+    def test_disabling_auto_create_clears_transfer(self, project, user):
+        from plane.app.serializers.project import ProjectSerializer
+
+        Project.objects.filter(id=project.id).update(
+            auto_create_cycles=True,
+            auto_transfer_cycle_issues=True,
+        )
+        project.refresh_from_db()
+
+        serializer = ProjectSerializer(
+            instance=project,
+            data={"auto_create_cycles": False},
+            partial=True,
+            context={"workspace_id": project.workspace_id},
+        )
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data["auto_create_cycles"] is False
+        assert serializer.validated_data["auto_transfer_cycle_issues"] is False
 
 
 @pytest.mark.django_db

@@ -1,7 +1,3 @@
-# Copyright (c) 2023-present Plane Software, Inc. and contributors
-# SPDX-License-Identifier: AGPL-3.0-only
-# See the LICENSE file for details.
-
 import logging
 import re
 from datetime import datetime, timedelta
@@ -15,7 +11,7 @@ from plane.db.models.project import ROLE
 from plane.utils.cycle_transfer_issues import transfer_cycle_issues
 from plane.utils.exception_logger import log_exception
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("plane.worker")
 
 CYCLE_DURATION_DAYS = 14
 
@@ -37,8 +33,8 @@ def get_fallback_user_id(project):
     if admin_member:
         return admin_member
     logger.error(
-        "No created_by or workspace admin found for project %s; cannot determine owner.",
-        project.id,
+        "No created_by or workspace admin found for project; cannot determine owner.",
+        extra={"project_id": str(project.id), "skip_reason": "no_owner"},
     )
     return None
 
@@ -91,10 +87,14 @@ def create_upcoming_cycles(project, ended_cycle):
 
         if has_overlapping_cycle(project.id, start_date, end_date):
             logger.info(
-                "Skipping cycle creation for project %s: overlapping cycle exists for %s - %s",
-                project.id,
-                start_date,
-                end_date,
+                "Skipping cycle creation: overlapping cycle exists",
+                extra={
+                    "project_id": str(project.id),
+                    "ended_cycle_id": str(ended_cycle.id),
+                    "proposed_start": start_date.isoformat(),
+                    "proposed_end": end_date.isoformat(),
+                    "skip_reason": "overlapping_cycle",
+                },
             )
             next_start_date = end_date_local + timedelta(days=1)
             continue
@@ -113,12 +113,14 @@ def create_upcoming_cycles(project, ended_cycle):
         cycle.save(disable_auto_set_user=True)
         created_cycle_ids.append(cycle.id)
         logger.info(
-            "Created cycle '%s' (%s) for project %s: %s - %s",
-            name,
-            cycle.id,
-            project.id,
-            start_date,
-            end_date,
+            "Created upcoming cycle",
+            extra={
+                "project_id": str(project.id),
+                "cycle_id": str(cycle.id),
+                "cycle_name": name,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+            },
         )
         next_start_date = end_date_local + timedelta(days=1)
 
@@ -130,10 +132,14 @@ def transfer_incomplete_issues(project, ended_cycle):
     user_id = get_fallback_user_id(project)
     if user_id is None:
         logger.warning(
-            "No user available for transfer in project %s; skipping.",
-            project.id,
+            "Cycle issue transfer skipped: no actor available",
+            extra={
+                "project_id": str(project.id),
+                "ended_cycle_id": str(ended_cycle.id),
+                "skip_reason": "no_owner",
+            },
         )
-        return False
+        return "skipped"
 
     next_cycle = (
         Cycle.objects.filter(
@@ -148,11 +154,14 @@ def transfer_incomplete_issues(project, ended_cycle):
 
     if next_cycle is None:
         logger.warning(
-            "No upcoming cycle found for project %s after cycle %s; skipping transfer.",
-            project.id,
-            ended_cycle.id,
+            "Cycle issue transfer skipped: no upcoming cycle",
+            extra={
+                "project_id": str(project.id),
+                "ended_cycle_id": str(ended_cycle.id),
+                "skip_reason": "no_upcoming_cycle",
+            },
         )
-        return False
+        return "skipped"
 
     # Check if there are any incomplete issues to transfer
     incomplete_count = CycleIssue.objects.filter(
@@ -167,11 +176,15 @@ def transfer_incomplete_issues(project, ended_cycle):
 
     if incomplete_count == 0:
         logger.info(
-            "No incomplete issues to transfer from cycle %s in project %s.",
-            ended_cycle.id,
-            project.id,
+            "Cycle issue transfer skipped: no incomplete issues",
+            extra={
+                "project_id": str(project.id),
+                "ended_cycle_id": str(ended_cycle.id),
+                "next_cycle_id": str(next_cycle.id),
+                "skip_reason": "no_incomplete_issues",
+            },
         )
-        return True
+        return "no_issues"
 
     result = transfer_cycle_issues(
         slug=project.workspace.slug,
@@ -184,21 +197,27 @@ def transfer_incomplete_issues(project, ended_cycle):
 
     if result.get("success"):
         logger.info(
-            "Transferred %d incomplete issues from cycle %s to cycle %s in project %s.",
-            incomplete_count,
-            ended_cycle.id,
-            next_cycle.id,
-            project.id,
+            "Transferred incomplete cycle issues",
+            extra={
+                "project_id": str(project.id),
+                "ended_cycle_id": str(ended_cycle.id),
+                "next_cycle_id": str(next_cycle.id),
+                "issue_count": incomplete_count,
+            },
         )
-        return True
+        return "transferred"
 
     logger.error(
-        "Failed to transfer issues from cycle %s to cycle %s: %s",
-        ended_cycle.id,
-        next_cycle.id,
-        result.get("error", "unknown error"),
+        "Cycle issue transfer failed",
+        extra={
+            "project_id": str(project.id),
+            "ended_cycle_id": str(ended_cycle.id),
+            "next_cycle_id": str(next_cycle.id),
+            "skip_reason": "transfer_failed",
+            "error": result.get("error", "unknown error"),
+        },
     )
-    return False
+    return "failed"
 
 
 @shared_task
@@ -211,6 +230,17 @@ def process_cycle_automations():
     2. For projects with auto_transfer_cycle_issues=True: transfer incomplete issues
        from ended cycles to the next upcoming cycle.
     """
+    summary = {
+        "projects_processed": 0,
+        "ended_cycles_processed": 0,
+        "cycles_created": 0,
+        "transfers_succeeded": 0,
+        "transfers_skipped": 0,
+        "transfers_no_issues": 0,
+        "transfers_failed": 0,
+        "project_errors": 0,
+    }
+
     try:
         projects = Project.objects.filter(
             auto_create_cycles=True,
@@ -219,6 +249,7 @@ def process_cycle_automations():
 
         for project in projects:
             try:
+                summary["projects_processed"] += 1
                 local_tz = pytz.timezone(project.timezone)
                 now_local = timezone.now().astimezone(local_tz)
                 yesterday_local = now_local - timedelta(hours=24)
@@ -235,21 +266,36 @@ def process_cycle_automations():
                 ).order_by("end_date")
 
                 for ended_cycle in recently_ended_cycles:
+                    summary["ended_cycles_processed"] += 1
+
                     # Step 1: Create upcoming cycles
-                    create_upcoming_cycles(project, ended_cycle)
+                    created_ids = create_upcoming_cycles(project, ended_cycle)
+                    summary["cycles_created"] += len(created_ids)
 
                     # Step 2: Transfer incomplete issues (only if enabled)
                     if project.auto_transfer_cycle_issues:
-                        transfer_incomplete_issues(project, ended_cycle)
+                        transfer_result = transfer_incomplete_issues(project, ended_cycle)
+                        if transfer_result == "transferred":
+                            summary["transfers_succeeded"] += 1
+                        elif transfer_result == "no_issues":
+                            summary["transfers_no_issues"] += 1
+                        elif transfer_result == "failed":
+                            summary["transfers_failed"] += 1
+                        else:
+                            summary["transfers_skipped"] += 1
 
             except Exception as e:
+                summary["project_errors"] += 1
                 logger.error(
-                    "Error processing cycle automation for project %s: %s",
-                    project.id,
-                    str(e),
+                    "Error processing cycle automation for project",
+                    extra={"project_id": str(project.id), "error": str(e)},
                 )
                 log_exception(e)
                 continue
 
     except Exception as e:
         log_exception(e)
+    finally:
+        logger.info("Cycle automation processing completed", extra={"cycle_automation_summary": summary})
+
+    return summary

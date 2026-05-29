@@ -278,13 +278,18 @@ class ProjectSerializer(BaseSerializer):
             if not is_valid:
                 raise serializers.ValidationError({"error": "html content is not valid"})
 
-        # auto_transfer_cycle_issues requires auto_create_cycles
+        if "auto_create_cycles" in data and not data["auto_create_cycles"]:
+            if not ("auto_transfer_cycle_issues" in data and data["auto_transfer_cycle_issues"]):
+                data["auto_transfer_cycle_issues"] = False
+
         auto_create = data.get("auto_create_cycles", getattr(self.instance, "auto_create_cycles", False))
         auto_transfer = data.get(
             "auto_transfer_cycle_issues", getattr(self.instance, "auto_transfer_cycle_issues", False)
         )
         if auto_transfer and not auto_create:
-            raise serializers.ValidationError("Auto-transfer cycle issues requires auto-create cycles to be enabled.")
+            raise serializers.ValidationError(
+                {"auto_transfer_cycle_issues": "Auto-transfer requires auto-create cycles to be enabled."}
+            )
 
         return data
 
