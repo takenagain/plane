@@ -7,6 +7,8 @@ export const isEstimateSystemEnabled = (key: TEstimateSystemKeys) => {
       return true;
     case EEstimateSystem.CATEGORIES:
       return true;
+    case EEstimateSystem.TIME:
+      return true;
     default:
       return false;
   }

@@ -4,4 +4,4 @@
  * See the LICENSE file for details.
  */
 
-export * from "./issue-embed-upgrade-card";
+// Issue embed UI is provided by the editor when configured via useIssueEmbed.
