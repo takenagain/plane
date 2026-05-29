@@ -4,8 +4,10 @@
 
 # Python imports
 import io
+import json
+import os
 import zipfile
-from typing import List
+from typing import Any, List
 import boto3
 from botocore.client import Config
 from uuid import UUID
@@ -16,13 +18,39 @@ from celery import shared_task
 # Django imports
 from django.conf import settings
 from django.utils import timezone
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch
 
 # Module imports
-from plane.db.models import ExporterHistory, Issue, IssueComment, IssueRelation, IssueSubscriber
+from plane.db.models import ExporterHistory, Issue, IssueComment, IssueRelation, IssueSubscriber, Project
 from plane.utils.exception_logger import log_exception
 from plane.utils.porters.exporter import DataExporter
 from plane.utils.porters.serializers.issue import IssueExportSerializer
+from plane.utils.porters.serializers.project import ProjectExportSerializer
+
+
+def get_plane_version() -> str:
+    return os.environ.get("APP_RELEASE_VERSION") or os.environ.get("APP_VERSION") or "unknown"
+
+
+def build_export_manifest(
+    slug: str,
+    provider: str,
+    project_ids: List[str],
+    files_metadata: List[dict[str, Any]],
+) -> dict[str, Any]:
+    projects = (
+        Project.objects.filter(id__in=project_ids, archived_at__isnull=True)
+        .annotate(state_count=Count("project_state", distinct=True))
+        .order_by("identifier")
+    )
+    return {
+        "workspace_slug": slug,
+        "exported_at": timezone.now().isoformat(),
+        "plane_version": get_plane_version(),
+        "format": provider,
+        "projects": ProjectExportSerializer(projects, many=True).data,
+        "files": files_metadata,
+    }
 
 
 def create_zip_file(files: List[tuple[str, str | bytes]]) -> io.BytesIO:
@@ -200,19 +228,39 @@ def issue_export_task(
             exporter_instance.save(update_fields=["status", "reason"])
             return
 
-        files = []
+        files: List[tuple[str, str | bytes]] = []
+        files_metadata: List[dict[str, Any]] = []
         if multiple:
             # Export each project separately with its own queryset
             for project_id in project_ids:
                 project_issues = workspace_issues.filter(project_id=project_id)
+                issue_count = project_issues.count()
                 export_filename = f"{slug}-{project_id}"
                 filename, content = exporter.export(export_filename, project_issues)
                 files.append((filename, content))
+                files_metadata.append(
+                    {
+                        "project_id": str(project_id),
+                        "path": filename,
+                        "issue_count": issue_count,
+                    }
+                )
         else:
             # Export all issues in a single file
+            issue_count = workspace_issues.count()
             export_filename = f"{slug}-{workspace_id}"
             filename, content = exporter.export(export_filename, workspace_issues)
             files.append((filename, content))
+            files_metadata.append(
+                {
+                    "project_id": None,
+                    "path": filename,
+                    "issue_count": issue_count,
+                }
+            )
+
+        manifest = build_export_manifest(slug, provider, project_ids, files_metadata)
+        files.insert(0, ("manifest.json", json.dumps(manifest, indent=2, default=str)))
 
         zip_buffer = create_zip_file(files)
         upload_to_s3(zip_buffer, workspace_id, token_id, slug)
