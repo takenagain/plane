@@ -60,8 +60,6 @@ services:
       - .env
     environment:
       PGDATA: /var/lib/postgresql/data
-    ports:
-      - "5432:5432"
 
   api:
     build:
@@ -81,8 +79,9 @@ services:
       - plane-db
       - plane-redis
       - plane-mq
+      - plane-minio
     ports:
-      - "8000:8000"
+      - "8010:8000"
 
   worker:
     build:
@@ -102,6 +101,8 @@ services:
       - api
       - plane-db
       - plane-redis
+      - plane-mq
+      - plane-minio
 
   beat-worker:
     build:
