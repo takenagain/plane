@@ -92,7 +92,7 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
     if (!workspaceSlug || !project) return;
     return updateProject(workspaceSlug.toString(), project.id, payload)
       .then(() => {
-        setToast({
+        return setToast({
           type: TOAST_TYPE.SUCCESS,
           title: t("toast.success"),
           message: t("project_settings.general.toast.success"),
@@ -105,8 +105,9 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
 
           const nameError = errorData.name?.includes("PROJECT_NAME_ALREADY_EXIST");
           const identifierError = errorData?.identifier?.includes("PROJECT_IDENTIFIER_ALREADY_EXIST");
+          const nameSpecialCharError = errorData?.name?.includes("PROJECT_NAME_CANNOT_CONTAIN_SPECIAL_CHARACTERS");
 
-          if (nameError || identifierError) {
+          if (nameError || identifierError || nameSpecialCharError) {
             if (nameError) {
               setToast({
                 type: TOAST_TYPE.ERROR,
@@ -120,6 +121,14 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
                 type: TOAST_TYPE.ERROR,
                 title: t("toast.error"),
                 message: t("project_identifier_already_taken"),
+              });
+            }
+
+            if (nameSpecialCharError) {
+              setToast({
+                type: TOAST_TYPE.ERROR,
+                title: t("toast.error"),
+                message: t("project_name_cannot_contain_special_characters"),
               });
             }
           } else {
@@ -181,8 +190,11 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
       await projectService
         .checkProjectIdentifierAvailability(workspaceSlug, payload.identifier ?? "")
         .then(async (res) => {
-          if (res.exists) setError("identifier", { message: t("common.identifier_already_exists") });
-          else await handleUpdateChange(payload);
+          if (res.exists) {
+            setError("identifier", { message: t("common.identifier_already_exists") });
+            return;
+          }
+          return handleUpdateChange(payload);
         });
     else await handleUpdateChange(payload);
     setTimeout(() => {
@@ -414,8 +426,8 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
                 <>
                   <TimezoneSelect
                     value={value}
-                    onChange={(value: string) => {
-                      onChange(value);
+                    onChange={(timezone: string) => {
+                      onChange(timezone);
                     }}
                     error={Boolean(errors.timezone)}
                     buttonClassName="!border-subtle !shadow-none font-medium rounded-md"
