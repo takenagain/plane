@@ -34,7 +34,7 @@ export const SessionList = observer(function SessionList({ workspaceSlug }: Prop
             <span>{new Date(session.created_at).toLocaleString()}</span>
             <button
               type="button"
-              className="text-red-500"
+              className="text-danger-primary"
               onClick={async () => {
                 await agentService.deleteSession(workspaceSlug, session.id);
                 await agent.fetchSessions(workspaceSlug);

@@ -9,7 +9,7 @@ export function AssistantMessage({ message }: Props) {
     <div className="flex justify-start">
       <div
         className={`text-sm max-w-[85%] rounded-xl px-3 py-2 ${
-          message.is_error ? "bg-red-50 text-red-700" : "bg-surface-2 text-primary"
+          message.is_error ? "bg-danger-subtle text-danger-primary" : "bg-surface-2 text-primary"
         }`}
       >
         {message.content}

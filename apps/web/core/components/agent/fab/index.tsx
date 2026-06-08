@@ -14,12 +14,12 @@ export const FloatingAgentButton = observer(function FloatingAgentButton() {
     <button
       type="button"
       onClick={agent.toggleChatWindow}
-      className="bg-custom-primary-100 shadow-lg hover:bg-custom-primary-90 fixed right-6 bottom-6 z-50 flex h-12 w-12 items-center justify-center rounded-full text-white transition-colors"
+      className="fixed right-6 bottom-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-accent-primary text-on-color shadow-raised-200 transition-colors hover:bg-accent-primary-hover"
       aria-label="Open AI Agent"
     >
       <Bot size={20} />
       {agent.unreadCount > 0 && (
-        <span className="bg-red-500 text-xs absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full font-bold text-white">
+        <span className="text-xs absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger-primary font-bold text-on-color">
           {agent.unreadCount}
         </span>
       )}

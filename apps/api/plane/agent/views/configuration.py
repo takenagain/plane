@@ -38,6 +38,16 @@ class WorkspaceAgentConfigView(AgentBaseView):
         return Response(AgentConfigSerializer(saved).data, status=status.HTTP_200_OK)
 
 
+class EffectiveAgentConfigView(AgentBaseView):
+    def get(self, request, slug):
+        self.check_workspace_member(slug, request.user)
+        project_id = request.query_params.get("project_id")
+        config = self.get_agent_config(slug, project_id)
+        if not config:
+            return Response({"error": "Configuration not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(AgentConfigSerializer(config).data, status=status.HTTP_200_OK)
+
+
 class ProjectAgentConfigView(AgentBaseView):
     def get(self, request, slug, project_id):
         self.check_workspace_member(slug, request.user)
@@ -66,3 +76,23 @@ class ProjectAgentConfigView(AgentBaseView):
         serializer.is_valid(raise_exception=True)
         saved = serializer.save(workspace_id=project.workspace_id, project_id=project_id)
         return Response(AgentConfigSerializer(saved).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, slug, project_id):
+        self.check_workspace_member(slug, request.user)
+        project = Project.objects.filter(id=project_id, workspace__slug=slug).first()
+        if not project:
+            return Response({"error": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        is_admin = ProjectMember.objects.filter(
+            project_id=project_id,
+            member=request.user,
+            role=ROLE.ADMIN.value,
+            is_active=True,
+        ).exists()
+        if not is_admin:
+            return Response({"error": "Only project admins can update configuration."}, status=status.HTTP_403_FORBIDDEN)
+
+        config = AgentConfiguration.objects.filter(workspace_id=project.workspace_id, project_id=project_id).first()
+        if config:
+            config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

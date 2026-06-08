@@ -1,3 +1,4 @@
+import { observer } from "mobx-react";
 import { History, Plus, X } from "lucide-react";
 import { useRouterParams } from "@/hooks/store/use-router-params";
 import { useAgent } from "@/hooks/store/use-agent";
@@ -6,7 +7,7 @@ type Props = {
   workspaceSlug: string;
 };
 
-export function ChatWindowHeader({ workspaceSlug }: Props) {
+export const ChatWindowHeader = observer(function ChatWindowHeader({ workspaceSlug }: Props) {
   const agent = useAgent();
   const router = useRouterParams();
 
@@ -41,4 +42,4 @@ export function ChatWindowHeader({ workspaceSlug }: Props) {
       </div>
     </div>
   );
-}
+});

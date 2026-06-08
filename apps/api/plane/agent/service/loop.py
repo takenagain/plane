@@ -26,6 +26,9 @@ class AgentService:
             raise AgentDisabledError("Agent is not enabled.")
 
         api_key = decrypt_data(config.api_key_encrypted) if config.api_key_encrypted else ""
+        if not api_key:
+            raise AgentDisabledError("Agent API key is not configured.")
+
         model = model_override or config.model
         max_steps = config.max_steps or 25
 
@@ -59,16 +62,27 @@ class AgentService:
         step = 0
 
         while step < max_steps:
-            response = call_llm(
-                messages=messages,
-                tools=tools,
-                provider=config.provider,
-                model=model,
-                api_key=api_key,
-                reasoning_level=config.reasoning_level,
-            )
+            try:
+                response = call_llm(
+                    messages=messages,
+                    tools=tools,
+                    provider=config.provider,
+                    model=model,
+                    api_key=api_key,
+                    reasoning_level=config.reasoning_level,
+                )
+            except ValueError as exc:
+                error_msg = AgentChatMessage.objects.create(
+                    session=session,
+                    role="assistant",
+                    content=str(exc),
+                    is_error=True,
+                    step_index=step,
+                )
+                created_messages.append(error_msg)
+                return created_messages
 
-            if response.finish_reason == "tool_calls" and response.tool_calls:
+            if response.tool_calls:
                 assistant_msg = AgentChatMessage.objects.create(
                     session=session,
                     role="assistant",
@@ -86,13 +100,19 @@ class AgentService:
 
                 for tool_call in response.tool_calls:
                     tool_name = tool_call["function"]["name"]
-                    tool_input = json.loads(tool_call["function"]["arguments"] or "{}")
-                    is_error = False
                     try:
-                        tool_output = tool_executor.execute(tool_name, tool_input)
-                    except Exception as exc:
-                        tool_output = {"error": str(exc)}
+                        tool_input = json.loads(tool_call["function"]["arguments"] or "{}")
+                    except (json.JSONDecodeError, TypeError) as exc:
+                        tool_input = {}
+                        tool_output = {"error": f"Invalid tool arguments: {exc}"}
                         is_error = True
+                    else:
+                        is_error = False
+                        try:
+                            tool_output = tool_executor.execute(tool_name, tool_input)
+                        except Exception as exc:
+                            tool_output = {"error": str(exc)}
+                            is_error = True
 
                     tool_msg = AgentChatMessage.objects.create(
                         session=session,

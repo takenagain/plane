@@ -4,7 +4,7 @@ import { useAgent } from "@/hooks/store/use-agent";
 export const ModelSelector = observer(function ModelSelector() {
   const agent = useAgent();
   const models = agent.config?.available_models ?? [];
-  if (models.length <= 1) return null;
+  if (models.length < 1) return null;
 
   const selectedValue = agent.selectedModel || agent.config?.model || models[0] || "";
 

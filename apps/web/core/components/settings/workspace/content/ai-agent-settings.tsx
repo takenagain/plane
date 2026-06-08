@@ -10,7 +10,7 @@ import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { IAgentConfig } from "@plane/types";
 import { useAgent } from "@/hooks/store/use-agent";
-import { AgentService } from "@/services/agent.service";
+import { AgentService, getAgentErrorMessage } from "@/services/agent.service";
 import { SettingsHeading } from "@/components/settings/heading";
 
 type TProvider = (typeof AGENT_PROVIDERS)[number];
@@ -45,10 +45,13 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [savedProvider, setSavedProvider] = useState<TProvider>("openai");
   const [apiKeySet, setApiKeySet] = useState(false);
   const [apiKey, setApiKey] = useState("");
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
 
   const providerModels = useMemo(() => getAgentModelsForProvider(config.provider), [config.provider]);
+  const providerChanged = config.provider !== savedProvider;
 
   const selectedModel = useMemo(() => {
     if (config.model && providerModels.includes(config.model)) return config.model;
@@ -72,9 +75,13 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
         is_enabled: data.is_enabled ?? true,
         system_prompt: data.system_prompt ?? "",
       });
+      setSavedProvider(provider);
       setApiKeySet(data.api_key_set);
+      setApiKey("");
+      setApiKeyError(null);
     } catch {
       setConfig(DEFAULT_CONFIG);
+      setSavedProvider("openai");
       setApiKeySet(false);
     } finally {
       setLoading(false);
@@ -92,9 +99,17 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
       provider,
       model: models[0] || "",
     }));
+    setApiKey("");
+    setApiKeyError(null);
   };
 
   const onSave = async () => {
+    if (providerChanged && !apiKey.trim()) {
+      setApiKeyError("A new API key is required when changing provider.");
+      return;
+    }
+
+    setApiKeyError(null);
     setSaving(true);
     try {
       const payload: Partial<IAgentConfig> & { api_key?: string } = {
@@ -110,17 +125,18 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
       const response = await agentService.saveWorkspaceConfig(workspaceSlug, payload);
       setApiKey("");
       setApiKeySet(response.api_key_set);
+      setSavedProvider(config.provider);
       await agent.fetchConfig(workspaceSlug);
       setToast({
         type: TOAST_TYPE.SUCCESS,
         title: "Saved",
         message: "AI Agent workspace settings updated.",
       });
-    } catch {
+    } catch (error) {
       setToast({
         type: TOAST_TYPE.ERROR,
         title: "Error",
-        message: "Unable to save AI Agent settings.",
+        message: getAgentErrorMessage(error, "Unable to save AI Agent settings."),
       });
     } finally {
       setSaving(false);
@@ -160,11 +176,26 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
           <input
             type="password"
             value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            placeholder={apiKeySet ? "•••••••• (leave blank to keep existing)" : "sk-..."}
+            onChange={(event) => {
+              setApiKey(event.target.value);
+              if (apiKeyError) setApiKeyError(null);
+            }}
+            placeholder={
+              providerChanged
+                ? "Enter a new API key for this provider"
+                : apiKeySet
+                  ? "•••••••• (leave blank to keep existing)"
+                  : "sk-..."
+            }
             className="text-sm w-full rounded-md border border-subtle bg-surface-2 px-2 py-1.5"
           />
-          {!apiKeySet && (
+          {providerChanged && (
+            <p className="text-xs text-amber-600">
+              Provider changed — enter a new API key for {config.provider} before saving.
+            </p>
+          )}
+          {apiKeyError && <p className="text-xs text-red-500">{apiKeyError}</p>}
+          {!apiKeySet && !providerChanged && (
             <p className="text-xs text-tertiary">
               An API key is required to send chat messages. The agent button still appears when the agent is enabled.
             </p>

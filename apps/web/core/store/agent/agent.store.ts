@@ -1,9 +1,21 @@
 import { AGENT_DEFAULT_MAX_STEPS, getAgentModelsForProvider, getDefaultAgentModelForProvider } from "@plane/constants";
 import { action, makeObservable, observable, runInAction } from "mobx";
 import type { IAgentChatMessage, IAgentChatSession, IAgentConfig } from "@plane/types";
-import { AgentService } from "@/services/agent.service";
+import { AgentService, type TAgentHttpError } from "@/services/agent.service";
 
 const agentService = new AgentService();
+
+const getDisabledAgentConfig = (): IAgentConfig => ({
+  id: "",
+  provider: "openai",
+  api_key_set: false,
+  model: getDefaultAgentModelForProvider("openai"),
+  max_steps: AGENT_DEFAULT_MAX_STEPS,
+  reasoning_level: "medium",
+  is_enabled: false,
+  system_prompt: "",
+  available_models: getAgentModelsForProvider("openai"),
+});
 
 export interface IAgentStore {
   isOpen: boolean;
@@ -20,7 +32,8 @@ export interface IAgentStore {
   openChatWindow: () => void;
   closeChatWindow: () => void;
   toggleSessionList: () => void;
-  fetchConfig: (workspaceSlug: string) => Promise<void>;
+  fetchConfig: (workspaceSlug: string, projectId?: string) => Promise<void>;
+  fetchEffectiveConfig: (workspaceSlug: string, projectId?: string) => Promise<void>;
   fetchSessions: (workspaceSlug: string) => Promise<void>;
   loadSession: (workspaceSlug: string, sessionId: string) => Promise<void>;
   createSession: (workspaceSlug: string, projectId?: string) => Promise<IAgentChatSession>;
@@ -60,6 +73,7 @@ export class AgentStore implements IAgentStore {
       closeChatWindow: action,
       toggleSessionList: action,
       fetchConfig: action,
+      fetchEffectiveConfig: action,
       fetchSessions: action,
       loadSession: action,
       createSession: action,
@@ -93,40 +107,70 @@ export class AgentStore implements IAgentStore {
     this.showSessionList = !this.showSessionList;
   };
 
-  fetchConfig = async (workspaceSlug: string) => {
-    try {
-      const config = await agentService.getWorkspaceConfig(workspaceSlug);
+  private applyConfig = (config: IAgentConfig) => {
+    runInAction(() => {
+      this.config = config;
+      if (config.model) {
+        this.selectedModel = config.model;
+      } else if (!this.selectedModel) {
+        this.selectedModel = getDefaultAgentModelForProvider(config.provider);
+      }
+      this.error = null;
+    });
+  };
+
+  private handleConfigFetchError = (error: unknown) => {
+    const status = (error as TAgentHttpError).status;
+    const message = error instanceof Error ? error.message : "Unable to load agent configuration.";
+
+    if (status === 404) {
       runInAction(() => {
-        this.config = config;
-        if (config.model) {
-          this.selectedModel = config.model;
-        } else if (!this.selectedModel) {
-          this.selectedModel = getDefaultAgentModelForProvider(config.provider);
-        }
+        this.config = getDisabledAgentConfig();
         this.error = null;
       });
-    } catch {
-      runInAction(() => {
-        this.config = {
-          id: "",
-          provider: "openai",
-          api_key_set: false,
-          model: getDefaultAgentModelForProvider("openai"),
-          max_steps: AGENT_DEFAULT_MAX_STEPS,
-          reasoning_level: "medium",
-          is_enabled: false,
-          system_prompt: "",
-          available_models: getAgentModelsForProvider("openai"),
-        };
-      });
+      return;
+    }
+
+    runInAction(() => {
+      this.error = message;
+      if (!status || status < 500) {
+        if (!this.config) {
+          this.config = getDisabledAgentConfig();
+        }
+      }
+    });
+  };
+
+  fetchConfig = async (workspaceSlug: string, projectId?: string) => {
+    try {
+      const config = await agentService.getEffectiveConfig(workspaceSlug, projectId);
+      this.applyConfig(config);
+    } catch (error) {
+      this.handleConfigFetchError(error);
+    }
+  };
+
+  fetchEffectiveConfig = async (workspaceSlug: string, projectId?: string) => {
+    try {
+      const config = await agentService.getEffectiveConfig(workspaceSlug, projectId);
+      this.applyConfig(config);
+    } catch (error) {
+      this.handleConfigFetchError(error);
     }
   };
 
   fetchSessions = async (workspaceSlug: string) => {
-    const sessions = await agentService.listSessions(workspaceSlug);
-    runInAction(() => {
-      this.sessions = sessions;
-    });
+    try {
+      const sessions = await agentService.listSessions(workspaceSlug);
+      runInAction(() => {
+        this.sessions = sessions;
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load sessions.";
+      runInAction(() => {
+        this.error = message;
+      });
+    }
   };
 
   loadSession = async (workspaceSlug: string, sessionId: string) => {

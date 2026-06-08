@@ -38,7 +38,7 @@ export const ChatInputArea = observer(function ChatInputArea({ workspaceSlug }: 
         <ModelSelector />
         <SendButton onClick={() => void submit()} disabled={!content.trim()} isLoading={agent.isLoading} />
       </div>
-      {agent.error && <p className="text-xs text-red-500 mt-2">{agent.error}</p>}
+      {agent.error && <p className="text-xs mt-2 text-danger-primary">{agent.error}</p>}
     </div>
   );
 });

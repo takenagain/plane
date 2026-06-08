@@ -4,15 +4,35 @@ import type { IAgentConfig, IAgentChatSession, IAgentChatResponse } from "@plane
 // services
 import { APIService } from "@/services/api.service";
 
-const toAgentServiceError = (error: unknown): Error => {
-  const data = (error as { response?: { data?: unknown } })?.response?.data ?? error;
-  if (typeof data === "string" && data) return new Error(data);
-  if (data && typeof data === "object") {
-    const payload = data as { error?: string; detail?: string };
-    if (payload.error) return new Error(payload.error);
-    if (payload.detail) return new Error(payload.detail);
+export type TAgentHttpError = Error & { status?: number };
+
+export const getAgentErrorMessage = (error: unknown, fallback = "Request failed."): string => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error) return error;
+  if (error && typeof error === "object") {
+    const payload = error as Record<string, unknown>;
+    if (typeof payload.error === "string" && payload.error) return payload.error;
+    if (typeof payload.detail === "string" && payload.detail) return payload.detail;
+    const fieldMessages = Object.entries(payload)
+      .filter(([key]) => key !== "error" && key !== "detail")
+      .flatMap(([field, value]) => {
+        if (Array.isArray(value)) return value.map((message) => `${field}: ${String(message)}`);
+        if (typeof value === "string") return [`${field}: ${value}`];
+        return [];
+      });
+    if (fieldMessages.length > 0) return fieldMessages.join(" ");
   }
-  return new Error("Unable to send message.");
+  return fallback;
+};
+
+const toAgentHttpError = (error: unknown, fallbackMessage: string): TAgentHttpError => {
+  const response = (error as { response?: { status?: number; data?: unknown } })?.response;
+  const status = response?.status;
+  const data = response?.data ?? error;
+  const message = getAgentErrorMessage(data, fallbackMessage);
+  const err = new Error(message) as TAgentHttpError;
+  err.status = status;
+  return err;
 };
 
 export class AgentService extends APIService {
@@ -24,7 +44,16 @@ export class AgentService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/agent/config/`)
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to load workspace AI Agent configuration.");
+      });
+  }
+
+  async getEffectiveConfig(workspaceSlug: string, projectId?: string): Promise<IAgentConfig> {
+    const params = projectId ? { project_id: projectId } : {};
+    return this.get(`/api/workspaces/${workspaceSlug}/agent/effective-config/`, { params })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw toAgentHttpError(error, "Unable to load AI Agent configuration.");
       });
   }
 
@@ -35,7 +64,7 @@ export class AgentService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/agent/config/`, data)
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to save workspace AI Agent settings.");
       });
   }
 
@@ -43,7 +72,7 @@ export class AgentService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/projects/${projectId}/agent/config/`)
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to load project AI Agent configuration.");
       });
   }
 
@@ -55,7 +84,15 @@ export class AgentService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/agent/config/`, data)
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to save project AI Agent settings.");
+      });
+  }
+
+  async deleteProjectConfig(workspaceSlug: string, projectId: string): Promise<void> {
+    return this.delete(`/api/workspaces/${workspaceSlug}/projects/${projectId}/agent/config/`)
+      .then(() => undefined)
+      .catch((error) => {
+        throw toAgentHttpError(error, "Unable to remove project AI Agent override.");
       });
   }
 
@@ -63,7 +100,7 @@ export class AgentService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/agent/sessions/`)
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to load agent sessions.");
       });
   }
 
@@ -71,7 +108,7 @@ export class AgentService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/agent/sessions/`, { project_id: projectId ?? null })
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to create agent session.");
       });
   }
 
@@ -79,15 +116,15 @@ export class AgentService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/agent/sessions/${sessionId}/`)
       .then((response) => response?.data)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to load agent session.");
       });
   }
 
   async deleteSession(workspaceSlug: string, sessionId: string): Promise<void> {
     return this.delete(`/api/workspaces/${workspaceSlug}/agent/sessions/${sessionId}/`)
-      .then((response) => response?.data)
+      .then(() => undefined)
       .catch((error) => {
-        throw error?.response?.data;
+        throw toAgentHttpError(error, "Unable to delete agent session.");
       });
   }
 
@@ -99,7 +136,7 @@ export class AgentService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/agent/sessions/${sessionId}/chat/`, data)
       .then((response) => response?.data)
       .catch((error) => {
-        throw toAgentServiceError(error);
+        throw toAgentHttpError(error, "Unable to send message.");
       });
   }
 }

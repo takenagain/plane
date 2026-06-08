@@ -23,6 +23,15 @@ def list_labels(request_user, workspace_slug: str, project_id: str, **kwargs) ->
 
 def list_members(request_user, workspace_slug: str, project_id: str | None = None, **kwargs) -> dict:
     if project_id:
+        is_member = ProjectMember.objects.filter(
+            project_id=project_id,
+            project__workspace__slug=workspace_slug,
+            member=request_user,
+            is_active=True,
+        ).exists()
+        if not is_member:
+            raise PermissionError("You do not have access to this project.")
+
         members = ProjectMember.objects.filter(project_id=project_id, is_active=True).select_related("member")
         return {
             "count": members.count(),

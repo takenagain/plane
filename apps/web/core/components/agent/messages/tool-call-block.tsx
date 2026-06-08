@@ -17,7 +17,7 @@ export function ToolCallBlock({ message }: Props) {
         <Wrench size={12} />
         <span className="font-medium">{message.tool_name ?? "tool"}</span>
         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        {message.is_error && <span className="text-red-500 ml-auto">Error</span>}
+        {message.is_error && <span className="ml-auto text-danger-primary">Error</span>}
       </button>
       {expanded && (
         <div className="font-mono border-t border-subtle px-3 py-2 text-secondary">
