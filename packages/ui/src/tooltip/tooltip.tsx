@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Tooltip2 } from "@blueprintjs/popover2";
+import { Tooltip as BlueprintTooltip } from "@blueprintjs/core";
 import React, { useEffect, useRef, useState } from "react";
 // helpers
 import { cn } from "../utils";
@@ -82,7 +82,7 @@ export function Tooltip({
   }
 
   return (
-    <Tooltip2
+    <BlueprintTooltip
       disabled={disabled}
       hoverOpenDelay={openDelay}
       hoverCloseDelay={closeDelay}
@@ -101,11 +101,11 @@ export function Tooltip({
         </div>
       }
       position={position}
-      renderTarget={({ isOpen: isTooltipOpen, ref: eleReference, ...tooltipProps }) =>
-        React.cloneElement(children, {
+      renderTarget={({ ref: eleReference, ...tooltipProps }) =>
+        React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
           ref: eleReference,
           ...tooltipProps,
-          ...children.props,
+          ...(children.props as Record<string, unknown>),
         })
       }
     />

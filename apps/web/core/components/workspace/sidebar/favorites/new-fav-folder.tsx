@@ -39,7 +39,7 @@ export const NewFavoriteFolder = observer(function NewFavoriteFolder(props: TPro
   const { addFavorite, updateFavorite, existingFolders } = useFavorite();
 
   // ref
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   // form info
   const { handleSubmit, control, setValue, setFocus } = useForm<TForm>({

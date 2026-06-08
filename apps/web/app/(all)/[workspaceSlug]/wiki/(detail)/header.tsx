@@ -6,7 +6,7 @@ import { Breadcrumbs, Header, BreadcrumbNavigationSearchDropdown } from "@plane/
 import { getPageName } from "@plane/utils";
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
 import { PageAccessIcon } from "@/components/common/page-access-icon";
-import { SwitcherIcon, SwitcherLabel } from "@/components/common/switcher-label";
+import { SwitcherLabel } from "@/components/common/switcher-label";
 import { PageHeaderActions } from "@/components/pages/header/actions";
 import { PageSyncingBadge } from "@/components/pages/header/syncing-badge";
 import { useAppRouter } from "@/hooks/use-app-router";
@@ -30,14 +30,9 @@ export const WikiPageDetailsHeader = observer(function WikiPageDetailsHeader() {
         query: getPageName(pageOption?.name),
         content: (
           <SwitcherLabel
+            logo_props={pageOption?.logo_props}
             name={getPageName(pageOption?.name)}
-            icon={
-              pageOption?.logo_props?.in_use ? (
-                <SwitcherIcon logo={pageOption?.logo_props} size={12} />
-              ) : (
-                <PageIcon className="size-3 text-tertiary" />
-              )
-            }
+            LabelIcon={PageIcon}
           />
         ),
       };
@@ -68,12 +63,12 @@ export const WikiPageDetailsHeader = observer(function WikiPageDetailsHeader() {
                   navigationItems={switcherOptions}
                   onChange={(val: string) => router.push(`/${workspaceSlug}/wiki/${val}`)}
                   title={getPageName(name)}
-                  icon={<PageAccessIcon page={page} />}
+                  icon={<PageAccessIcon {...page} />}
                 />
               }
             />
           </Breadcrumbs>
-          <PageSyncingBadge syncStatus={page.syncStatus} />
+          <PageSyncingBadge syncStatus={"isSyncingWithServer" in page ? page.isSyncingWithServer : "synced"} />
         </div>
       </Header.LeftItem>
       <Header.RightItem>

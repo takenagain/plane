@@ -51,11 +51,12 @@ export function Collapsible(props: TCollapsibleProps) {
         leave="transition-all duration-300 ease-in-out"
         leaveFrom="grid-rows-[1fr] opacity-100"
         leaveTo="grid-rows-[0fr] opacity-0"
-        className="grid overflow-hidden"
       >
-        <Disclosure.Panel static className="min-h-0">
-          {children}
-        </Disclosure.Panel>
+        <div className="grid overflow-hidden">
+          <Disclosure.Panel static className="min-h-0">
+            {children}
+          </Disclosure.Panel>
+        </div>
       </Transition>
     </Disclosure>
   );

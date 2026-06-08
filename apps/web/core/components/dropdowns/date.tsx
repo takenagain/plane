@@ -200,7 +200,6 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
                   dropdownOnChange(date ?? null);
                 }}
                 showOutsideDays
-                initialFocus
                 disabled={disabledDays}
                 mode="single"
                 fixedWeeks

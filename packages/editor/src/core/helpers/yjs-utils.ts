@@ -57,8 +57,7 @@ export const convertBinaryDataToBase64String = (document: Uint8Array): string =>
  * @param {string} document
  * @returns {Buffer<ArrayBuffer>}
  */
-export const convertBase64StringToBinaryData = (document: string): Buffer<ArrayBuffer> =>
-  Buffer.from(document, "base64");
+export const convertBase64StringToBinaryData = (document: string): Buffer => Buffer.from(document, "base64");
 
 /**
  * @description this function generates the binary equivalent of html content for the rich text editor

@@ -62,7 +62,7 @@
       "prosemirror-tables": "1.8.5",
       "prosemirror-transform": "1.11.0",
       "prosemirror-view": "1.41.7",
-      "@types/express": "4.17.23",
+      "@types/express": "5.0.6",
       "typescript": "catalog:",
       "vite": "catalog:",
       "qs": "6.15.0",

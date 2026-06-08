@@ -13,7 +13,7 @@ type Props = {
   active: boolean | undefined;
   activeKey?: string | null;
   label: string | undefined;
-  payload: Payload<ValueType, NameType>[] | undefined;
+  payload: ReadonlyArray<Payload<ValueType, NameType>> | undefined;
   itemKeys: string[];
   itemLabels: Record<string, string>;
   itemDotColors: Record<string, string>;
@@ -33,25 +33,26 @@ export const CustomTooltip = React.memo(function CustomTooltip(props: Props) {
     >
       <p className="flex-shrink-0 truncate border-b border-subtle pb-2 text-11 font-medium text-primary">{label}</p>
       {filteredPayload.map((item) => {
-        if (!item.dataKey) return null;
+        const dataKey = item.dataKey == null ? null : String(item.dataKey);
+        if (!dataKey) return null;
 
         return (
           <div
-            key={item?.dataKey}
+            key={dataKey}
             className={cn("flex items-center gap-2 text-11 transition-opacity", {
-              "opacity-20": activeKey && item.dataKey !== activeKey,
+              "opacity-20": activeKey && dataKey !== activeKey,
             })}
           >
             <div className="flex items-center gap-2 truncate">
-              {itemDotColors[item?.dataKey] && (
+              {itemDotColors[dataKey] && (
                 <div
                   className="size-2 flex-shrink-0 rounded-xs"
                   style={{
-                    backgroundColor: itemDotColors[item?.dataKey],
+                    backgroundColor: itemDotColors[dataKey],
                   }}
                 />
               )}
-              <span className="truncate text-tertiary">{itemLabels[item?.dataKey]}:</span>
+              <span className="truncate text-tertiary">{itemLabels[dataKey]}:</span>
             </div>
             <span className="flex-shrink-0 font-medium text-secondary">{item?.value}</span>
           </div>

@@ -6,7 +6,7 @@
 
 // local imports
 import { gitHubEmojis, shortcodeToEmoji } from "@tiptap/extension-emoji";
-import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Emoji } from "./emoji";
 import { emojiSuggestion } from "./suggestion";
@@ -15,8 +15,11 @@ export const EmojiExtension = Emoji.extend({
   addStorage() {
     const extensionOptions = this.options;
 
+    const parentStorage = this.parent?.();
     return {
-      ...this.parent?.(),
+      ...parentStorage,
+      emojis: parentStorage?.emojis ?? extensionOptions.emojis,
+      isSupported: parentStorage?.isSupported ?? (() => true),
       markdown: {
         serialize(state: MarkdownSerializerState, node: ProseMirrorNode) {
           const emojiItem = shortcodeToEmoji(node.attrs.name, extensionOptions.emojis);

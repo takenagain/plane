@@ -50,9 +50,9 @@ export function Tooltip(props: ITooltipProps) {
   }, [position, side, align]);
 
   return (
-    <BaseTooltip.Provider>
-      <BaseTooltip.Root delay={openDelay} closeDelay={closeDelay} disabled={disabled}>
-        <BaseTooltip.Trigger render={children} />
+    <BaseTooltip.Provider delay={openDelay}>
+      <BaseTooltip.Root disabled={disabled}>
+        <BaseTooltip.Trigger closeDelay={closeDelay} render={children as React.ReactElement<Record<string, unknown>>} />
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner
             className={cn(

@@ -8,7 +8,7 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 // types
 import type { TMentionHandler } from "@/types";
 // extension config
-import { CustomMentionExtensionConfig } from "./extension-config";
+import { CustomMentionExtensionConfig, type TMentionExtensionOptions } from "./extension-config";
 // node view
 import type { MentionNodeViewProps } from "./mention-node-view";
 import { MentionNodeView } from "./mention-node-view";
@@ -19,11 +19,15 @@ export function CustomMentionExtension(props: TMentionHandler) {
   const { searchCallback, renderComponent, getMentionedEntityDetails } = props;
   return CustomMentionExtensionConfig.extend({
     addOptions(this) {
+      const parentOptions = this.parent?.();
       return {
-        ...this.parent?.(),
+        HTMLAttributes: {},
+        renderText: ({ node }) => node.attrs.label ?? node.attrs.id ?? "",
+        renderHTML: ({ node }) => ["mention-component", {}, String(node.attrs.id ?? "")],
+        ...parentOptions,
         renderComponent,
         getMentionedEntityDetails,
-      };
+      } as TMentionExtensionOptions;
     },
 
     addNodeView() {

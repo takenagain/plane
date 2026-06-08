@@ -5,6 +5,7 @@
  */
 
 // types
+import type React from "react";
 import { ArrowRightLeft } from "lucide-react";
 import type { ICycle, IModule, IProjectView, IWorkspaceView } from "@plane/types";
 import type { TContextMenuItem } from "@plane/ui";
@@ -63,7 +64,7 @@ interface UseLayoutMenuItemsProps {
 
 type MenuResult = {
   items: TContextMenuItem[];
-  modals: JSX.Element | null;
+  modals: React.JSX.Element | null;
 };
 
 export const useCycleMenuItems = (props: UseCycleMenuItemsProps): MenuResult => {

@@ -79,7 +79,7 @@ export const StickyEditor = React.forwardRef(function StickyEditor(
   // editor config
   const { getEditorFileHandlers } = useEditorConfig();
   // derived values
-  const editorRef = isMutableRefObject<EditorRefApi>(ref) ? ref.current : null;
+  const editorRef = isMutableRefObject<EditorRefApi | null>(ref) ? ref.current : null;
   const disabledExtensions = useMemo<TExtensions[]>(
     () => [...liteTextEditorExtensions.disabled, "enter-key"],
     [liteTextEditorExtensions.disabled]

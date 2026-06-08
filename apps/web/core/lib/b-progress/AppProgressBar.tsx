@@ -7,7 +7,7 @@
 import { useEffect, useRef } from "react";
 import { BProgress } from "@bprogress/core";
 import { useNavigation } from "react-router";
-import "@bprogress/core/css";
+import "@bprogress/core/dist/index.css";
 
 /**
  * Progress bar configuration options

@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -169,11 +170,10 @@ export const BarChart = React.memo(function BarChart<K extends string, T extends
             allowDecimals={!!yAxis.allowDecimals}
           />
           {legend && (
-            // @ts-expect-error recharts types are not up to date
             <Legend
-              onMouseEnter={(payload) => setActiveLegend(payload.value)}
+              onMouseEnter={(payload: { value?: string }) => setActiveLegend(payload.value ?? null)}
               onMouseLeave={() => setActiveLegend(null)}
-              formatter={(value) => stackLabels[value]}
+              formatter={(value) => stackLabels[String(value)]}
               {...getLegendProps(legend)}
             />
           )}
@@ -187,16 +187,17 @@ export const BarChart = React.memo(function BarChart<K extends string, T extends
                 pointerEvents: "auto",
               }}
               content={({ active, label, payload }) => {
-                if (customTooltipContent) return customTooltipContent({ active, label, payload });
+                const tooltipLabel = typeof label === "string" ? label : String(label ?? "");
+                if (customTooltipContent) return customTooltipContent({ active, label: tooltipLabel, payload });
                 return (
                   <CustomTooltip
                     active={active}
-                    label={label}
+                    label={tooltipLabel}
                     payload={payload}
                     activeKey={activeBar}
                     itemKeys={stackKeys}
                     itemLabels={stackLabels}
-                    itemDotColors={getAllBarColors(payload || [])}
+                    itemDotColors={getAllBarColors([...(payload ?? [])])}
                   />
                 );
               }}

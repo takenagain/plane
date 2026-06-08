@@ -36,7 +36,7 @@ const useIntegrationPopup = ({
     }`,
   };
 
-  const popup = useRef<any>();
+  const popup = useRef<any>(undefined);
 
   const checkPopup = () => {
     const check = setInterval(() => {

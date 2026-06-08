@@ -159,7 +159,8 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
     <ModalCore isOpen={isOpen} handleClose={handleClose} position={EModalPosition.CENTER} width={EModalWidth.XXL}>
       <form>
         <Combobox
-          onChange={(val: string) => {
+          onChange={(val: string | null) => {
+            if (!val) return;
             const selectedIssues = watch("delete_issue_ids");
             if (selectedIssues.includes(val))
               setValue(
@@ -176,6 +177,7 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
             />
             <input
               type="text"
+              aria-label="Search issues to delete"
               className="h-12 w-full border-0 bg-transparent pr-4 pl-11 text-primary outline-none focus:ring-0 sm:text-13"
               placeholder="Search..."
               onChange={(event) => setQuery(event.target.value)}

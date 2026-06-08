@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 import React from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 // plane imports

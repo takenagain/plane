@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { Connection, Extension, Hocuspocus, onConfigurePayload } from "@hocuspocus/server";
+import type { Extension, Hocuspocus, onConfigurePayload } from "@hocuspocus/server";
 import { logger } from "@plane/logger";
 import { Redis } from "@/extensions/redis";
 import { AdminCommand, CloseCode, getForceCloseMessage, isForceCloseCommand } from "@/types/admin-commands";
@@ -54,14 +54,14 @@ export class ForceCloseHandler implements Extension {
       };
 
       let messageSent = 0;
-      document.connections.forEach(({ connection }: { connection: Connection }) => {
+      for (const connection of document.getConnections()) {
         try {
           connection.sendStateless(JSON.stringify(forceCloseMessage));
           messageSent++;
         } catch (error) {
           logger.error("[FORCE_CLOSE_HANDLER] Failed to send message:", error);
         }
-      });
+      }
 
       logger.info(`[FORCE_CLOSE_HANDLER] Sent force close message to ${messageSent}/${connectionCount} clients`);
 
@@ -72,14 +72,14 @@ export class ForceCloseHandler implements Extension {
       logger.info(`[FORCE_CLOSE_HANDLER] Closing ${connectionCount} connections...`);
 
       let closed = 0;
-      document.connections.forEach(({ connection }: { connection: Connection }) => {
+      for (const connection of document.getConnections()) {
         try {
           connection.close({ code, reason });
           closed++;
         } catch (error) {
           logger.error("[FORCE_CLOSE_HANDLER] Failed to close connection:", error);
         }
-      });
+      }
 
       logger.info(`[FORCE_CLOSE_HANDLER] Closed ${closed}/${connectionCount} connections for ${docId}`);
     });
@@ -125,14 +125,14 @@ export const forceCloseDocumentAcrossServers = async (
   };
 
   let messageSentCount = 0;
-  document.connections.forEach(({ connection }: { connection: Connection }) => {
+  for (const connection of document.getConnections()) {
     try {
       connection.sendStateless(JSON.stringify(forceCloseMessage));
       messageSentCount++;
     } catch (error) {
       logger.error("[FORCE_CLOSE] Failed to send message to client:", error);
     }
-  });
+  }
 
   logger.info(`[FORCE_CLOSE] Sent force close message to ${messageSentCount}/${connectionsBefore} clients`);
 
@@ -143,14 +143,14 @@ export const forceCloseDocumentAcrossServers = async (
   logger.info(`[FORCE_CLOSE] Closing ${connectionsBefore} local connections...`);
 
   let closedCount = 0;
-  document.connections.forEach(({ connection }: { connection: Connection }) => {
+  for (const connection of document.getConnections()) {
     try {
       connection.close({ code, reason });
       closedCount++;
     } catch (error) {
       logger.error("[FORCE_CLOSE] Failed to close local connection:", error);
     }
-  });
+  }
 
   logger.info(`[FORCE_CLOSE] Closed ${closedCount}/${connectionsBefore} local connections`);
 

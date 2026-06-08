@@ -35,7 +35,7 @@ type Props = {
 export function EditorContainer(props: Props) {
   const { children, displayConfig, editor, editorContainerClassName, id, isTouchDevice, provider, state } = props;
   // refs
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const hasScrolledOnce = useRef(false);
   const scrollToNode = useCallback(
     (nodeId: string) => {

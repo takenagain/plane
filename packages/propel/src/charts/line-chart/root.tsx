@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 import React, { useMemo, useState } from "react";
 import {
   CartesianGrid,
@@ -144,11 +145,10 @@ export const LineChart = React.memo(function LineChart<K extends string, T exten
             allowDecimals={!!yAxis.allowDecimals}
           />
           {legend && (
-            // @ts-expect-error recharts types are not up to date
             <Legend
-              onMouseEnter={(payload) => setActiveLegend(payload.value)}
+              onMouseEnter={(payload: { value?: string }) => setActiveLegend(payload.value ?? null)}
               onMouseLeave={() => setActiveLegend(null)}
-              formatter={(value) => itemLabels[value]}
+              formatter={(value) => itemLabels[String(value)]}
               {...getLegendProps(legend)}
             />
           )}
@@ -162,12 +162,13 @@ export const LineChart = React.memo(function LineChart<K extends string, T exten
                 pointerEvents: "auto",
               }}
               content={({ active, label, payload }) => {
-                if (customTooltipContent) return customTooltipContent({ active, label, payload });
+                const tooltipLabel = typeof label === "string" ? label : String(label ?? "");
+                if (customTooltipContent) return customTooltipContent({ active, label: tooltipLabel, payload });
                 return (
                   <CustomTooltip
                     active={active}
                     activeKey={activeLine}
-                    label={label}
+                    label={tooltipLabel}
                     payload={payload}
                     itemKeys={itemKeys}
                     itemLabels={itemLabels}

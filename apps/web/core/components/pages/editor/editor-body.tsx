@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  */
+/* oxlint-disable react/no-unstable-nested-components -- Editor overlay render props */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { observer } from "mobx-react";
@@ -58,7 +59,7 @@ export type TEditorBodyHandlers = {
 type Props = {
   config: TEditorBodyConfig;
   editorReady: boolean;
-  editorForwardRef: React.RefObject<EditorRefApi>;
+  editorForwardRef: React.RefObject<EditorRefApi | null>;
   handleEditorReady: (status: boolean) => void;
   handleOpenNavigationPane: () => void;
   handlers: TEditorBodyHandlers;
@@ -253,6 +254,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
                 <div
                   className="max-h-[50vh] !cursor-pointer overflow-hidden"
                   role="button"
+                  tabIndex={0}
                   aria-label={t("page_navigation_pane.outline_floating_button")}
                   onClick={handleOpenNavigationPane}
                 >

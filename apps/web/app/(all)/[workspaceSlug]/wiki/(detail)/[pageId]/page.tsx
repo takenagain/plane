@@ -48,14 +48,14 @@ function WikiPageDetailsPage({ params }: Route.ComponentProps) {
   const pageRootHandlers: TPageRootHandlers = useMemo(
     () => ({
       create: createPage,
-      fetchAllVersions: async () => [],
+      fetchAllVersions: async (_pageId: string) => [],
       fetchDescriptionBinary: async () => {
-        if (!id) return;
+        if (!id) return new ArrayBuffer(0);
         return await wikiPageService.fetchDescriptionBinary(workspaceSlug, id);
       },
       fetchEntity: fetchEntityCallback,
-      fetchVersionDetails: async () => undefined,
-      restoreVersion: async () => {},
+      fetchVersionDetails: async (_pageId: string, _versionId: string) => undefined,
+      restoreVersion: async (_pageId: string, _versionId: string) => undefined,
       getRedirectionLink: (targetPageId) => {
         if (targetPageId) return `/${workspaceSlug}/wiki/${targetPageId}`;
         return `/${workspaceSlug}/wiki`;

@@ -86,7 +86,7 @@ export class WikiPageService extends APIService {
   }
 
   async updateDescription(workspaceSlug: string, pageId: string, data: TDocumentPayload): Promise<void> {
-    return this.patch(`/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/description/`, data).catch((error) => {
+    await this.patch(`/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/description/`, data).catch((error) => {
       throw error;
     });
   }

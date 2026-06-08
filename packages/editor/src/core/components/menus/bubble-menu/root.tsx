@@ -6,8 +6,9 @@
 
 import { isNodeSelection } from "@tiptap/core";
 import type { Editor } from "@tiptap/core";
-import { BubbleMenu, useEditorState } from "@tiptap/react";
-import type { BubbleMenuProps } from "@tiptap/react";
+import { useEditorState } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import type { BubbleMenuProps } from "@tiptap/react/menus";
 import { useEffect, useState, useRef } from "react";
 // plane utils
 import { cn } from "@plane/utils";
@@ -112,15 +113,15 @@ export function EditorBubbleMenu(props: Props) {
 
   const bubbleMenuProps: EditorBubbleMenuProps = {
     editor,
-    shouldShow: ({ state, editor }) => {
+    shouldShow: ({ state, editor: currentEditor }) => {
       const { selection } = state;
       const { empty } = selection;
 
       if (
         empty ||
-        !editor.isEditable ||
-        editor.isActive(CORE_EXTENSIONS.IMAGE) ||
-        editor.isActive(CORE_EXTENSIONS.CUSTOM_IMAGE) ||
+        !currentEditor.isEditable ||
+        currentEditor.isActive(CORE_EXTENSIONS.IMAGE) ||
+        currentEditor.isActive(CORE_EXTENSIONS.CUSTOM_IMAGE) ||
         isNodeSelection(selection) ||
         isCellSelection(selection) ||
         isSelecting
@@ -129,10 +130,8 @@ export function EditorBubbleMenu(props: Props) {
       }
       return true;
     },
-    tippyOptions: {
-      moveTransition: "transform 0.15s ease-out",
-      duration: [300, 0],
-      zIndex: 9,
+    options: {
+      placement: "top",
       onShow: () => {
         if (editor.storage.link) {
           editor.storage.link.isBubbleMenuOpen = true;
@@ -140,14 +139,6 @@ export function EditorBubbleMenu(props: Props) {
         editor.commands.addActiveDropbarExtension("bubble-menu");
       },
       onHide: () => {
-        if (editor.storage.link) {
-          editor.storage.link.isBubbleMenuOpen = false;
-        }
-        setTimeout(() => {
-          editor.commands.removeActiveDropbarExtension("bubble-menu");
-        }, 0);
-      },
-      onHidden: () => {
         if (editor.storage.link) {
           editor.storage.link.isBubbleMenuOpen = false;
         }
@@ -211,6 +202,7 @@ export function EditorBubbleMenu(props: Props) {
               <button
                 key={item.key}
                 type="button"
+                aria-label={item.key}
                 onClick={(e) => {
                   item.command();
                   e.stopPropagation();

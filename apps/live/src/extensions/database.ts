@@ -70,7 +70,7 @@ const fetchDocument = async ({ context, documentName: pageId, instance }: FetchP
 };
 
 const storeDocument = async ({
-  context,
+  lastContext: context,
   state: pageBinaryData,
   documentName: pageId,
   instance,

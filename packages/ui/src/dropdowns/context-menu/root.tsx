@@ -58,7 +58,7 @@ export const ContextMenuContext = React.createContext<{
 } | null>(null);
 
 type ContextMenuProps = {
-  parentRef: React.RefObject<HTMLElement>;
+  parentRef: React.RefObject<HTMLElement | null>;
   items: TContextMenuItem[];
   portalContainer?: Element | null;
 };
@@ -89,6 +89,11 @@ function ContextMenuWithoutPortal(props: ContextMenuProps) {
       submenuClosersRef.current.delete(closeSubmenu);
     };
   }, []);
+
+  const contextMenuContextValue = React.useMemo(
+    () => ({ closeAllSubmenus, registerSubmenu, portalContainer }),
+    [closeAllSubmenus, registerSubmenu, portalContainer]
+  );
 
   const handleClose = () => {
     closeAllSubmenus();
@@ -219,7 +224,7 @@ function ContextMenuWithoutPortal(props: ContextMenuProps) {
         }}
         data-context-menu="true"
       >
-        <ContextMenuContext.Provider value={{ closeAllSubmenus, registerSubmenu, portalContainer }}>
+        <ContextMenuContext.Provider value={contextMenuContextValue}>
           {renderedItems.map((item, index) => (
             <ContextMenuItem
               key={item.key}

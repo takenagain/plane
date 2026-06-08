@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 import React, { useMemo, useState } from "react";
 import {
   CartesianGrid,
@@ -128,9 +129,8 @@ export const ScatterChart = React.memo(function ScatterChart<K extends string, T
             allowDecimals={!!yAxis.allowDecimals}
           />
           {legend && (
-            // @ts-expect-error recharts types are not up to date
             <Legend
-              onMouseEnter={(payload) => setActiveLegend(payload.value)}
+              onMouseEnter={(payload: { value?: string }) => setActiveLegend(payload.value ?? null)}
               onMouseLeave={() => setActiveLegend(null)}
               formatter={(value) => itemLabels[value]}
               {...getLegendProps(legend)}
@@ -147,12 +147,16 @@ export const ScatterChart = React.memo(function ScatterChart<K extends string, T
               }}
               content={({ active, label, payload }) =>
                 customTooltipContent ? (
-                  customTooltipContent({ active, label, payload })
+                  customTooltipContent({
+                    active,
+                    label: typeof label === "string" ? label : String(label ?? ""),
+                    payload,
+                  })
                 ) : (
                   <CustomTooltip
                     active={active}
                     activeKey={activePoint}
-                    label={label}
+                    label={typeof label === "string" ? label : String(label ?? "")}
                     payload={payload}
                     itemKeys={itemKeys}
                     itemLabels={itemLabels}

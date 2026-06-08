@@ -140,7 +140,8 @@ export function ExistingIssuesListModal(props: Props) {
     <ModalCore isOpen={isOpen} handleClose={handleClose} position={EModalPosition.CENTER} width={EModalWidth.XXL}>
       <Combobox
         as="div"
-        onChange={(val: ISearchIssueResponse) => {
+        onChange={(val: ISearchIssueResponse | null) => {
+          if (!val) return;
           if (selectedIssues.some((i) => i.id === val.id))
             setSelectedIssues((prevData) => prevData.filter((i) => i.id !== val.id));
           else setSelectedIssues((prevData) => [...prevData, val]);
@@ -259,7 +260,12 @@ export function ExistingIssuesListModal(props: Props) {
                         }
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <input type="checkbox" checked={selected} readOnly />
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            readOnly
+                            aria-label={`Select issue ${issue.name}`}
+                          />
                           <span
                             className="block h-1.5 w-1.5 flex-shrink-0 rounded-full"
                             style={{

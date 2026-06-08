@@ -132,7 +132,7 @@ export function SelectDuplicateInboxIssueModal(props: Props) {
 
   return (
     <ModalCore isOpen={isOpen} handleClose={handleClose} position={EModalPosition.CENTER} width={EModalWidth.XXL}>
-      <Combobox value={value} onChange={handleSubmit}>
+      <Combobox value={value} onChange={(selectedItem: string | null) => selectedItem && handleSubmit(selectedItem)}>
         <div className="relative m-1">
           <SearchIcon
             className="text-opacity-40 pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-primary"
@@ -140,6 +140,7 @@ export function SelectDuplicateInboxIssueModal(props: Props) {
           />
           <input
             type="text"
+            aria-label="Search duplicate issues"
             className="h-12 w-full border-0 bg-transparent pr-4 pl-11 text-primary outline-none focus:ring-0 sm:text-13"
             placeholder="Search..."
             onChange={(e) => setQuery(e.target.value)}

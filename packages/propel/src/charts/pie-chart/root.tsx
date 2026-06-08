@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 import React, { useMemo, useState } from "react";
 import { Cell, PieChart as CorePieChart, Label, Legend, Pie, ResponsiveContainer, Tooltip } from "recharts";
 // plane imports
@@ -66,14 +67,16 @@ export const PieChart = React.memo(function PieChart<K extends string, T extends
           }}
         >
           <Pie
-            activeIndex={activeIndex === null ? undefined : activeIndex}
-            onMouseLeave={() => setActiveIndex(null)}
-            data={data}
-            dataKey={dataKey}
-            cx="50%"
-            cy="50%"
-            blendStroke
-            activeShape={<CustomActiveShape />}
+            {...({
+              activeIndex: activeIndex === null ? undefined : activeIndex,
+              onMouseLeave: () => setActiveIndex(null),
+              data,
+              dataKey,
+              cx: "50%",
+              cy: "50%",
+              blendStroke: true,
+              activeShape: CustomActiveShape,
+            } as React.ComponentProps<typeof Pie>)}
             innerRadius={innerRadius}
             outerRadius={outerRadius}
             cornerRadius={cornerRadius}
@@ -112,10 +115,8 @@ export const PieChart = React.memo(function PieChart<K extends string, T extends
             )}
           </Pie>
           {legend && (
-            // @ts-expect-error recharts types are not up to date
             <Legend
-              onMouseEnter={(payload) => {
-                // @ts-expect-error recharts types are not up to date
+              onMouseEnter={(payload: { payload?: { key?: string } }) => {
                 const key: string | undefined = payload.payload?.key;
                 if (!key) return;
                 setActiveLegend(key);

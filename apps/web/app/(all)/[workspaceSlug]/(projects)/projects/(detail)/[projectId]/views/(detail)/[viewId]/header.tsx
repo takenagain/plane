@@ -40,7 +40,7 @@ import { CommonProjectBreadcrumbs } from "@/plane-web/components/breadcrumbs/com
 
 export const ProjectViewIssuesHeader = observer(function ProjectViewIssuesHeader() {
   // refs
-  const parentRef = useRef(null);
+  const parentRef = useRef<HTMLDivElement>(null);
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId, viewId: routerViewId } = useParams();
@@ -110,12 +110,12 @@ export const ProjectViewIssuesHeader = observer(function ProjectViewIssuesHeader
 
   const switcherOptions = projectViewIds
     ?.map((id) => {
-      const _view = id === viewId ? viewDetails : getViewById(id);
-      if (!_view) return;
+      const viewOption = id === viewId ? viewDetails : getViewById(id);
+      if (!viewOption) return;
       return {
-        value: _view.id,
-        query: _view.name,
-        content: <SwitcherLabel logo_props={_view.logo_props} name={_view.name} LabelIcon={ViewsIcon} />,
+        value: viewOption.id,
+        query: viewOption.name,
+        content: <SwitcherLabel logo_props={viewOption.logo_props} name={viewOption.name} LabelIcon={ViewsIcon} />,
       };
     })
     .filter((option) => option !== undefined) as ICustomSearchSelectOption[];

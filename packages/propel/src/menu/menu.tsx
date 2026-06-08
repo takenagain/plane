@@ -128,10 +128,16 @@ function Menu(props: TMenuProps) {
     if (menuButtonOnClick) menuButtonOnClick();
   };
 
+  const menuContextValue = React.useMemo(
+    () => ({ closeAllSubmenus, registerSubmenu }),
+    [closeAllSubmenus, registerSubmenu]
+  );
+
   return (
-    <BaseMenu.Root openOnHover={openOnHover} onOpenChange={handleOpenChange}>
+    <BaseMenu.Root onOpenChange={handleOpenChange}>
       {customButton ? (
         <BaseMenu.Trigger
+          openOnHover={openOnHover}
           type="button"
           onClick={handleMenuButtonClick}
           className={cn(customButtonClassName, "outline-none")}
@@ -145,6 +151,7 @@ function Menu(props: TMenuProps) {
         <>
           {ellipsis || verticalEllipsis ? (
             <BaseMenu.Trigger
+              openOnHover={openOnHover}
               type="button"
               onClick={handleMenuButtonClick}
               disabled={disabled}
@@ -158,6 +165,7 @@ function Menu(props: TMenuProps) {
             </BaseMenu.Trigger>
           ) : (
             <BaseMenu.Trigger
+              openOnHover={openOnHover}
               type="button"
               className={`flex items-center justify-between gap-1 rounded-md px-2.5 py-1 text-11 whitespace-nowrap duration-300 outline-none ${
                 isOpen ? "bg-surface-2 text-primary" : "text-secondary"
@@ -197,7 +205,7 @@ function Menu(props: TMenuProps) {
             )}
             data-main-menu="true"
           >
-            <MenuContext.Provider value={{ closeAllSubmenus, registerSubmenu }}>{children}</MenuContext.Provider>
+            <MenuContext.Provider value={menuContextValue}>{children}</MenuContext.Provider>
           </BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>

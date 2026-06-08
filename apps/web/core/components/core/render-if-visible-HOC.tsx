@@ -15,7 +15,7 @@ type Props = {
   horizontalOffset?: number;
   root?: MutableRefObject<HTMLElement | null>;
   children: ReactNode;
-  as?: keyof JSX.IntrinsicElements;
+  as?: keyof React.JSX.IntrinsicElements;
   classNames?: string;
   placeholderChildren?: ReactNode;
   defaultValue?: boolean;
@@ -96,7 +96,7 @@ function RenderIfVisible(props: Props) {
   const style = isVisible || !shouldRecordHeights ? {} : { height: placeholderHeight.current, width: "100%" };
   const className = isVisible || placeholderChildren ? classNames : cn(classNames, "bg-layer-1");
 
-  return React.createElement(as, { ref: intersectionRef, style, className }, child);
+  return React.createElement(as as "div", { ref: intersectionRef, style, className }, child);
 }
 
 export default RenderIfVisible;

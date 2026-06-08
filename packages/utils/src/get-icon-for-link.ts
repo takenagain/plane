@@ -4,44 +4,39 @@
  * See the LICENSE file for details.
  */
 
+import type { LucideIcon } from "lucide-react";
 import {
-  Github,
-  Linkedin,
-  Twitter,
-  Facebook,
-  Instagram,
-  Youtube,
-  Dribbble,
-  Figma,
-  FileText,
-  FileImage,
-  FileVideo,
-  FileAudio,
   FileArchive,
-  FileSpreadsheet,
+  FileAudio,
   FileCode,
-  Mail,
-  Chrome,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
+  Globe,
+  Layout,
   Link2,
+  Mail,
+  Share2,
 } from "lucide-react";
 
 type IconMatcher = {
   pattern: RegExp;
-  icon: typeof Github;
+  icon: LucideIcon;
 };
 
 const SOCIAL_MEDIA_MATCHERS: IconMatcher[] = [
-  { pattern: /github\.com/, icon: Github },
-  { pattern: /linkedin\.com/, icon: Linkedin },
-  { pattern: /(twitter\.com|x\.com)/, icon: Twitter },
-  { pattern: /facebook\.com/, icon: Facebook },
-  { pattern: /instagram\.com/, icon: Instagram },
-  { pattern: /youtube\.com/, icon: Youtube },
-  { pattern: /dribbble\.com/, icon: Dribbble },
+  { pattern: /github\.com/, icon: Share2 },
+  { pattern: /linkedin\.com/, icon: Share2 },
+  { pattern: /(twitter\.com|x\.com)/, icon: Share2 },
+  { pattern: /facebook\.com/, icon: Share2 },
+  { pattern: /instagram\.com/, icon: Share2 },
+  { pattern: /youtube\.com/, icon: Share2 },
+  { pattern: /dribbble\.com/, icon: Share2 },
 ];
 
 const PRODUCTIVITY_MATCHERS: IconMatcher[] = [
-  { pattern: /figma\.com/, icon: Figma },
+  { pattern: /figma\.com/, icon: Layout },
   { pattern: /(google\.com|docs\.|doc\.)/, icon: FileText },
 ];
 
@@ -57,7 +52,7 @@ const FILE_TYPE_MATCHERS: IconMatcher[] = [
 
 const OTHER_MATCHERS: IconMatcher[] = [
   { pattern: /^mailto:/, icon: Mail },
-  { pattern: /^http/, icon: Chrome },
+  { pattern: /^http/, icon: Globe },
 ];
 
 export const getIconForLink = (url: string) => {

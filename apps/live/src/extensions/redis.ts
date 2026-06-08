@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Redis as HocuspocusRedis } from "@hocuspocus/extension-redis";
+import { Redis as HocuspocusRedis, type RedisInstance } from "@hocuspocus/extension-redis";
 import { OutgoingMessage } from "@hocuspocus/server";
 import type { onConfigurePayload } from "@hocuspocus/server";
 import { logger } from "@plane/logger";
@@ -26,7 +26,7 @@ export class Redis extends HocuspocusRedis {
   private readonly ADMIN_CHANNEL = "hocuspocus:admin";
 
   constructor() {
-    super({ redis: getRedisClient() });
+    super({ redis: getRedisClient() as unknown as RedisInstance });
   }
 
   async onConfigure(payload: onConfigurePayload) {

@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 import React, { useMemo, useState } from "react";
 import { Area, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, ComposedChart, CartesianGrid } from "recharts";
 // plane imports
@@ -158,10 +159,9 @@ export const AreaChart = React.memo(function AreaChart<K extends string, T exten
             allowDecimals={!!yAxis.allowDecimals}
           />
           {legend && (
-            // @ts-expect-error recharts types are not up to date
             <Legend
-              formatter={(value) => itemLabels[value]}
-              onMouseEnter={(payload) => setActiveLegend(payload.value)}
+              formatter={(value) => itemLabels[String(value)]}
+              onMouseEnter={(payload: { value?: string }) => setActiveLegend(payload.value ?? null)}
               onMouseLeave={() => setActiveLegend(null)}
               {...getLegendProps(legend)}
             />
@@ -179,7 +179,7 @@ export const AreaChart = React.memo(function AreaChart<K extends string, T exten
                 <CustomTooltip
                   active={active}
                   activeKey={activeArea}
-                  label={label}
+                  label={typeof label === "string" ? label : String(label ?? "")}
                   payload={payload}
                   itemKeys={itemKeys}
                   itemLabels={itemLabels}
