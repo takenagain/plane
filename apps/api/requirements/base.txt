@@ -58,6 +58,9 @@ cryptography==48.0.0
 lxml==6.1.1
 # s3
 boto3==1.43.14
+# http client (pinned for SSRF IP pinning in webhooks and link unfurling)
+urllib3>=2.7.0
+requests==2.34.2
 # password validator
 zxcvbn==4.5.0
 # timezone
