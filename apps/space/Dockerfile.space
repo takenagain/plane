@@ -88,6 +88,7 @@ RUN apk del go 2>/dev/null || true
 RUN rm -rf /usr/local/lib/node_modules/npm/node_modules/picomatch
 
 COPY --from=installer /app/apps/space/build ./apps/space/build
+COPY --from=installer /app/apps/space/server.mjs ./apps/space/server.mjs
 COPY --from=installer /app/apps/space/node_modules ./apps/space/node_modules
 COPY --from=installer /app/node_modules ./node_modules
 
@@ -102,4 +103,4 @@ RUN apk add --no-cache curl
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -fsS http://127.0.0.1:3000/spaces/ >/dev/null || exit 1
 
-CMD ["npx", "react-router-serve", "./build/server/index.js"]
+CMD ["node", "server.mjs", "./build/server/index.js"]
