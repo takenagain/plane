@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { observer } from "mobx-react";
 import { usePopper } from "react-popper";
 import { Loader } from "lucide-react";
@@ -126,17 +126,16 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
         onChange={(value) => onSelect(value)}
         multiple
       >
-        <Combobox.Button as={Fragment}>
-          <Button
-            ref={setReferenceElement}
-            type="button"
-            variant="tertiary"
-            size="sm"
-            prependIcon={<PlusIcon />}
-            onClick={() => !projectLabels && fetchLabels()}
-          >
-            {label}
-          </Button>
+        <Combobox.Button
+          as={Button}
+          ref={setReferenceElement}
+          type="button"
+          variant="tertiary"
+          size="sm"
+          prependIcon={<PlusIcon />}
+          onClick={() => !projectLabels && fetchLabels()}
+        >
+          {label}
         </Combobox.Button>
 
         <Combobox.Options className="fixed z-10">

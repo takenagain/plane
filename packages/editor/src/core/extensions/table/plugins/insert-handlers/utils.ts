@@ -225,6 +225,10 @@ export const createRowInsertButton = (editor: Editor, tableInfo: TableInfo): HTM
 
 export const findAllTables = (editor: Editor): TableInfo[] => {
   const tables: TableInfo[] = [];
+  // TipTap 3's `editor.view` getter throws when the ProseMirror view is not
+  // mounted (before init or after destroy). Guard so deferred callers never
+  // crash the editor.
+  if (editor.isDestroyed) return tables;
   const tableElements = editor.view.dom.querySelectorAll("table");
 
   tableElements.forEach((tableElement) => {

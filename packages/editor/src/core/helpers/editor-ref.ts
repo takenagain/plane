@@ -118,8 +118,10 @@ export const getEditorRefHelpers = (args: TArgs): EditorRefApi => {
     },
     isAnyDropbarOpen: () => {
       if (!editor) return false;
+      // `storage.utility` may not be populated yet under TipTap 3's deferred
+      // initialization; optional-chain to avoid throwing (cf. line below).
       const utilityStorage = editor.storage.utility;
-      return utilityStorage.activeDropbarExtensions.length > 0;
+      return (utilityStorage?.activeDropbarExtensions.length ?? 0) > 0;
     },
     scrollSummary: (marking) => {
       if (!editor) return;

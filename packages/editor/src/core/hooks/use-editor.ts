@@ -133,9 +133,14 @@ export const useEditor = (props: TEditorHookProps) => {
     // value is null when intentionally passed where syncing is not yet
     // supported and value is undefined when the data from swr is not populated
     if (value == null) return;
-    if (editor) {
-      const { uploadInProgress: isUploadInProgress } = editor.storage.utility;
-      if (!editor.isDestroyed && !isUploadInProgress) {
+    // With `immediatelyRender: false` (TipTap 3), this effect can run after the
+    // editor object exists but before its extension storage is populated (or
+    // while it is being torn down under React 19's effect timing). Guard against
+    // a destroyed editor first and optional-chain `storage.utility` so this
+    // never throws — matching the defensive access in placeholder.ts/editor-ref.ts.
+    if (editor && !editor.isDestroyed) {
+      const isUploadInProgress = editor.storage.utility?.uploadInProgress;
+      if (!isUploadInProgress) {
         try {
           editor.commands.setContent(value, {
             emitUpdate: false,
@@ -155,7 +160,10 @@ export const useEditor = (props: TEditorHookProps) => {
 
   // update assets upload status
   useEffect(() => {
-    if (!editor) return;
+    // A destroyed editor keeps its React reference but nulls its commandManager,
+    // so `editor.commands` throws. `editor.isDestroyed` is true once the view is
+    // torn down (it reads editorView?.isDestroyed ?? true), guarding that window.
+    if (!editor || editor.isDestroyed) return;
     const assetsUploadStatus = fileHandler.assetsUploadStatus;
     editor.commands.updateAssetsUploadStatus?.(assetsUploadStatus);
   }, [editor, fileHandler.assetsUploadStatus]);

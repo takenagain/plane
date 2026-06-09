@@ -60,6 +60,11 @@ export function EditorContainer(props: Props) {
       editor.view.dispatch(tr);
 
       requestAnimationFrame(() => {
+        // TipTap 3's `editor.view` getter returns a stub Proxy once the view is torn
+        // down, and `nodeDOM` is NOT one of its stubbed methods — accessing it throws
+        // "editor view is not available". Between scheduling and firing this rAF the
+        // editor can be destroyed (React re-render / navigation), so guard first.
+        if (editor.isDestroyed) return;
         const domNode = editor.view.nodeDOM(nodePosition);
         if (domNode instanceof HTMLElement) {
           domNode.scrollIntoView({ behavior: "instant", block: "center" });

@@ -50,7 +50,14 @@ export function SelectedOptionsDisplay<V extends TFilterValue>(props: TSelectedO
         </React.Fragment>
       ))}
       {remainingCount > 0 && (
-        <Transition show appear enter="transition-opacity duration-300" enterFrom="opacity-0" enterTo="opacity-100">
+        <Transition
+          as="div"
+          show
+          appear
+          enter="transition-opacity duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+        >
           <span className="ml-1 whitespace-nowrap text-tertiary">+{remainingCount} more</span>
         </Transition>
       )}
