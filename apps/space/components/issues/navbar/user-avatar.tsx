@@ -8,7 +8,7 @@ import { Fragment, useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { Link } from "react-router";
 import { usePathname, useSearchParams } from "next/navigation";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { LogOut } from "lucide-react";
 import { Popover, Transition } from "@headlessui/react";
 // plane imports

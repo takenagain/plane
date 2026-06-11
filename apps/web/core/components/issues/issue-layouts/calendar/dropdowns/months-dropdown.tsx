@@ -6,7 +6,7 @@
 
 import React, { useState } from "react";
 import { observer } from "mobx-react";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Popover, Transition } from "@headlessui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@plane/propel/icons";
 //hooks
@@ -35,7 +35,7 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: "auto",
+    placement: "bottom-start",
     modifiers: [
       {
         name: "preventOverflow",

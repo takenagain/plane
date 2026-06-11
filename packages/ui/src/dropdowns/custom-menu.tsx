@@ -8,7 +8,7 @@ import { Menu } from "@headlessui/react";
 import { MoreHorizontal } from "lucide-react";
 import * as React from "react";
 import ReactDOM from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 import { useOutsideClickDetector } from "@plane/hooks";
 import { ChevronDownIcon, ChevronRightIcon } from "@plane/propel/icons";
 // plane helpers
@@ -94,7 +94,7 @@ function CustomMenu(props: ICustomMenuDropdownProps) {
   const submenuClosersRef = React.useRef<Set<() => void>>(new Set());
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: placement ?? "auto",
+    placement: placement ?? "bottom-start",
   });
 
   const closeAllSubmenus = React.useCallback(() => {

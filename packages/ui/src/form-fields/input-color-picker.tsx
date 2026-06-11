@@ -8,7 +8,7 @@ import { Popover, Transition } from "@headlessui/react";
 import * as React from "react";
 import * as ColorPicker from "react-color";
 import type { ColorResult } from "react-color";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 // helpers
 import { Button } from "../button";
 import { cn } from "../utils";
@@ -32,7 +32,7 @@ export function InputColorPicker(props: InputColorPickerProps) {
   const [popperElement, setPopperElement] = React.useState<HTMLDivElement | null>(null);
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: "auto",
+    placement: "bottom-start",
   });
 
   const handleColorChange = (newColor: ColorResult) => {

@@ -5,10 +5,10 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import type { Placement } from "@popperjs/core";
+import type { Placement } from "@floating-ui/react-dom";
 import { observer } from "mobx-react";
 import { createPortal } from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { Combobox } from "@headlessui/react";
 // plane imports
@@ -261,7 +261,7 @@ export const DateRangeDropdown = observer(function DateRangeDropdown(props: Prop
   );
 
   const comboOptions = (
-    <Combobox.Options data-prevent-outside-click static>
+    <Combobox.Options data-prevent-outside-click static modal={false}>
       <div
         className="z-30 my-1 overflow-hidden rounded-md border-[0.5px] border-subtle-1 bg-surface-1"
         ref={setPopperElement}

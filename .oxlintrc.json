@@ -1,14 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "react",
-    "typescript",
-    "jsx-a11y",
-    "import",
-    "promise",
-    "unicorn",
-    "oxc"
-  ],
+  "plugins": ["react", "typescript", "jsx-a11y", "import", "promise", "unicorn", "oxc"],
   "categories": {
     "correctness": "warn",
     "suspicious": "warn",
@@ -65,6 +57,8 @@
     "jsx-a11y/no-autofocus": "off",
     "jsx-a11y/prefer-tag-over-role": "off",
     "jsx-a11y/label-has-associated-control": "off",
+    "jsx-a11y/control-has-associated-label": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
     "promise/always-return": "off",
     "import/no-unassigned-import": "off",
     "import/no-named-as-default": "off",

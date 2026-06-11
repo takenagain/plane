@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import { TwitterPicker } from "react-color";
 import { Controller, useForm } from "react-hook-form";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Loader } from "lucide-react";
 import { Popover } from "@headlessui/react";
 import { PlusIcon, CloseIcon } from "@plane/propel/icons";

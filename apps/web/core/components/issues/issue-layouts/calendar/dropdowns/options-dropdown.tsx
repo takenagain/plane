@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { MoreVerticalIcon } from "lucide-react";
 import { Popover, Transition } from "@headlessui/react";
 // hooks
@@ -52,7 +52,7 @@ export const CalendarOptionsDropdown = observer(function CalendarOptionsDropdown
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: "auto",
+    placement: "bottom-start",
     modifiers: [
       {
         name: "preventOverflow",

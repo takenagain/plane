@@ -7,7 +7,7 @@
 import { Combobox } from "@headlessui/react";
 import { sortBy } from "lodash-es";
 import React, { useMemo, useRef, useState } from "react";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 // plane imports
 import { useOutsideClickDetector } from "@plane/hooks";
 // local imports
@@ -141,7 +141,7 @@ export function Dropdown(props: ISingleSelectDropdown) {
       />
 
       {isOpen && (
-        <Combobox.Options className="fixed z-10" static>
+        <Combobox.Options className="fixed z-10" static modal={false}>
           <div
             className={cn(
               "my-1 w-48 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2 text-11 shadow-raised-200 focus:outline-none",

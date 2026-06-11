@@ -6,7 +6,7 @@
 
 import type { Ref } from "react";
 import { useState } from "react";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Popover } from "@headlessui/react";
 // plane imports
 import { Button } from "@plane/propel/button";

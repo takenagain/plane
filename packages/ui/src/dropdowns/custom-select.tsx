@@ -8,7 +8,7 @@ import { Combobox } from "@headlessui/react";
 
 import React, { createContext, useCallback, useContext, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 import { useOutsideClickDetector } from "@plane/hooks";
 import { CheckIcon, ChevronDownIcon } from "@plane/propel/icons";
 // plane helpers
@@ -117,7 +117,7 @@ function CustomSelect(props: ICustomSelectProps) {
         </>
         {isOpen &&
           createPortal(
-            <Combobox.Options data-prevent-outside-click>
+            <Combobox.Options data-prevent-outside-click modal={false}>
               <div
                 className={cn(
                   "z-30 my-1 min-w-48 overflow-y-scroll rounded-md border-[0.5px] border-subtle-1 bg-surface-1 px-2 py-2.5 text-11 whitespace-nowrap focus:outline-none",

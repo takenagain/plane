@@ -7,7 +7,7 @@
 import React, { useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { createPortal } from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { CalendarDays } from "lucide-react";
 import { Combobox } from "@headlessui/react";
 // ui
@@ -181,7 +181,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
     >
       {isOpen &&
         createPortal(
-          <Combobox.Options data-prevent-outside-click static>
+          <Combobox.Options data-prevent-outside-click static modal={false}>
             <div
               className={cn(
                 "z-30 my-1 overflow-hidden rounded-md border-[0.5px] border-strong bg-surface-1 shadow-raised-200",

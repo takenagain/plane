@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useContext } from "react";
-import { usePopper } from "react-popper";
+import { usePopper } from "../../hooks/use-popper";
 import { ChevronRightIcon } from "@plane/propel/icons";
 // helpers
 import { cn } from "../../utils";

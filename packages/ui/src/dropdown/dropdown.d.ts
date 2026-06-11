@@ -1,4 +1,4 @@
-import type { Placement } from "@popperjs/core";
+import type { Placement } from "@floating-ui/react-dom";
 
 export interface IDropdown {
   // root props

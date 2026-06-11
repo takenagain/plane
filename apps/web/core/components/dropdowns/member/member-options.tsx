@@ -5,11 +5,11 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { Placement } from "@popperjs/core";
+import type { Placement } from "@floating-ui/react-dom";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Combobox } from "@headlessui/react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
@@ -126,7 +126,7 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
   );
 
   return createPortal(
-    <Combobox.Options data-prevent-outside-click static>
+    <Combobox.Options data-prevent-outside-click static modal={false}>
       <div
         className={cn(
           "z-30 my-1 w-48 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none",

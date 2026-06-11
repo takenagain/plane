@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { Placement } from "@popperjs/core";
+import type { Placement } from "@floating-ui/react-dom";
 import type { MutableRefObject, ReactNode } from "react";
 
 export type TPopoverButtonDefaultOptions = {

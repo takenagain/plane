@@ -7,7 +7,7 @@
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import { observer } from "mobx-react";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Combobox } from "@headlessui/react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
@@ -238,7 +238,7 @@ export const ProjectDropdownBase = observer(function ProjectDropdownBase(props: 
       multiple={multiple}
     >
       {isOpen && (
-        <Combobox.Options className="fixed z-10" static>
+        <Combobox.Options className="fixed z-10" static modal={false}>
           <div
             className="my-1 w-48 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none"
             ref={setPopperElement}

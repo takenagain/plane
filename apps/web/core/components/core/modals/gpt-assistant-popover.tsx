@@ -6,9 +6,9 @@
 
 import type { Ref } from "react";
 import React, { useEffect, useState, useRef } from "react";
-import type { Placement } from "@popperjs/core";
+import type { Placement } from "@floating-ui/react-dom";
 import { Controller, useForm } from "react-hook-form"; // services
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { AlertCircle } from "lucide-react";
 import { Popover, Transition } from "@headlessui/react";
 // plane imports
@@ -65,7 +65,7 @@ export function GptAssistantPopover(props: Props) {
   const responseRef = useRef<EditorRefApi>(null);
   // popper
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: placement ?? "auto",
+    placement: placement ?? "bottom-start",
   });
   // form
   const {

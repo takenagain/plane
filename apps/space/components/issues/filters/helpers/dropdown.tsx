@@ -5,8 +5,8 @@
  */
 
 import React, { Fragment, useState } from "react";
-import type { Placement } from "@popperjs/core";
-import { usePopper } from "react-popper";
+import type { Placement } from "@floating-ui/react-dom";
+import { usePopper } from "@/hooks/use-popper";
 import { Popover, Transition } from "@headlessui/react";
 // ui
 import { Button } from "@plane/propel/button";
@@ -24,7 +24,7 @@ export function FiltersDropdown(props: Props) {
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: placement ?? "auto",
+    placement: placement ?? "bottom-start",
   });
 
   return (

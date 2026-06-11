@@ -5,10 +5,10 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { Placement } from "@popperjs/core";
+import type { Placement } from "@floating-ui/react-dom";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 // components
 import { Combobox } from "@headlessui/react";
 // i18n
@@ -124,7 +124,7 @@ export const CycleOptions = observer(function CycleOptions(props: CycleOptionsPr
     query === "" ? options : options?.filter((o) => o.query.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <Combobox.Options className="fixed z-10" static>
+    <Combobox.Options className="fixed z-10" static modal={false}>
       <div
         className="my-1 w-48 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none"
         ref={setPopperElement}

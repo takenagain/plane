@@ -8,7 +8,7 @@ import { Combobox } from "@headlessui/react";
 import { Info } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 import { useOutsideClickDetector } from "@plane/hooks";
 import { CheckIcon, SearchIcon, ChevronDownIcon } from "@plane/propel/icons";
 // plane imports
@@ -141,7 +141,7 @@ export function CustomSearchSelect(props: ICustomSearchSelectProps) {
             )}
             {isOpen &&
               createPortal(
-                <Combobox.Options data-prevent-outside-click static>
+                <Combobox.Options data-prevent-outside-click static modal={false}>
                   <div
                     className={cn(
                       "z-30 my-1 min-w-48 overflow-y-scroll rounded-md border-[0.5px] border-subtle-1 bg-surface-1 py-2.5 text-11 whitespace-nowrap focus:outline-none",
