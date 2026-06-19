@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { forwardRef, useMemo } from "react";
+import { forwardRef, useMemo, useRef } from "react";
 // components
 import { EditorWrapper } from "@/components/editors/editor-wrapper";
 // extensions
@@ -16,16 +16,18 @@ const EMPTY_EXTENSIONS: NonNullable<ILiteTextEditorProps["extensions"]> = [];
 
 function LiteTextEditor(props: ILiteTextEditorProps) {
   const { onEnterKeyPress, disabledExtensions, extensions: externalExtensions = EMPTY_EXTENSIONS } = props;
+  const onEnterKeyPressRef = useRef(onEnterKeyPress);
+  onEnterKeyPressRef.current = onEnterKeyPress;
 
   const extensions = useMemo(() => {
     const resolvedExtensions = [...externalExtensions];
 
     if (!disabledExtensions?.includes("enter-key")) {
-      resolvedExtensions.push(EnterKeyExtension(onEnterKeyPress));
+      resolvedExtensions.push(EnterKeyExtension(() => onEnterKeyPressRef.current?.()));
     }
 
     return resolvedExtensions;
-  }, [externalExtensions, disabledExtensions, onEnterKeyPress]);
+  }, [externalExtensions, disabledExtensions]);
 
   return <EditorWrapper {...props} extensions={extensions} />;
 }
