@@ -1,10 +1,4 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { ensureE2ESeedData } from "./time-tracking";

@@ -25,7 +25,10 @@ class WorkspaceAgentConfigView(AgentBaseView):
             is_active=True,
         ).exists()
         if not is_admin:
-            return Response({"error": "Only workspace admins can update configuration."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Only workspace admins can update configuration."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         workspace = Workspace.objects.filter(slug=slug).first()
         if not workspace:
@@ -69,7 +72,10 @@ class ProjectAgentConfigView(AgentBaseView):
             is_active=True,
         ).exists()
         if not is_admin:
-            return Response({"error": "Only project admins can update configuration."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Only project admins can update configuration."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         config = AgentConfiguration.objects.filter(workspace_id=project.workspace_id, project_id=project_id).first()
         serializer = AgentConfigSerializer(instance=config, data=request.data, partial=bool(config))
@@ -90,7 +96,10 @@ class ProjectAgentConfigView(AgentBaseView):
             is_active=True,
         ).exists()
         if not is_admin:
-            return Response({"error": "Only project admins can update configuration."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Only project admins can update configuration."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         config = AgentConfiguration.objects.filter(workspace_id=project.workspace_id, project_id=project_id).first()
         if config:

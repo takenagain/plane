@@ -80,7 +80,6 @@ def upsert_issue_from_sentry(
     if not sentry_issue_id:
         raise ValueError("Missing Sentry issue id")
 
-    state_id = mapping.resolved_state_id if resolved else mapping.unresolved_state_id
     if resolved is None:
         status = (issue_payload.get("status") or "").lower()
         resolved = status in ("resolved", "ignored", "archived")
@@ -212,7 +211,6 @@ def link_sentry_issue_to_plane_issue(
     plane_issue: Issue,
     issue_payload: dict | None = None,
 ) -> SentryIssueLink:
-    payload = issue_payload or {"id": sentry_issue_id, "title": plane_issue.name}
     link, created = SentryIssueLink.objects.get_or_create(
         issue=plane_issue,
         defaults={

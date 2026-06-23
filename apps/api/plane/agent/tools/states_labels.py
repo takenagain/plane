@@ -17,8 +17,17 @@ def list_labels(request_user, workspace_slug: str, project_id: str, **kwargs) ->
         project_id=project_id,
     )
     if project_id:
-        labels = labels.filter(project__project_projectmember__member=request_user, project__project_projectmember__is_active=True)
-    return {"count": labels.count(), "labels": [{"id": str(l.id), "name": l.name, "color": l.color} for l in labels]}
+        labels = labels.filter(
+            project__project_projectmember__member=request_user,
+            project__project_projectmember__is_active=True,
+        )
+    return {
+        "count": labels.count(),
+        "labels": [
+            {"id": str(label.id), "name": label.name, "color": label.color}
+            for label in labels
+        ],
+    }
 
 
 def list_members(request_user, workspace_slug: str, project_id: str | None = None, **kwargs) -> dict:
@@ -35,7 +44,10 @@ def list_members(request_user, workspace_slug: str, project_id: str | None = Non
         members = ProjectMember.objects.filter(project_id=project_id, is_active=True).select_related("member")
         return {
             "count": members.count(),
-            "members": [{"id": str(m.member_id), "display_name": m.member.display_name, "role": m.role} for m in members],
+            "members": [
+                {"id": str(m.member_id), "display_name": m.member.display_name, "role": m.role}
+                for m in members
+            ],
         }
 
     members = WorkspaceMember.objects.filter(workspace__slug=workspace_slug, is_active=True).select_related("member")

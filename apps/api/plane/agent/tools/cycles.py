@@ -18,7 +18,10 @@ def list_cycles(request_user, workspace_slug: str, project_id: str, **kwargs) ->
     cycles = Cycle.objects.filter(workspace__slug=workspace_slug, project_id=project_id, archived_at__isnull=True)
     return {
         "count": cycles.count(),
-        "cycles": [{"id": str(c.id), "name": c.name, "start_date": c.start_date, "end_date": c.end_date} for c in cycles],
+        "cycles": [
+            {"id": str(c.id), "name": c.name, "start_date": c.start_date, "end_date": c.end_date}
+            for c in cycles
+        ],
     }
 
 

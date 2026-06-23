@@ -1,4 +1,3 @@
-from rest_framework import serializers
 
 from plane.app.serializers import BaseSerializer
 from plane.db.models import (

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from plane.db.models import Label, Page, PageLabel, Workspace
+from plane.db.models import Page, PageLabel, Workspace
 from .page import PageDetailSerializer, PageSerializer
 
 

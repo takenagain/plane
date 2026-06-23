@@ -1,7 +1,3 @@
-# Copyright (c) 2023-present Plane Software, Inc. and contributors
-# SPDX-License-Identifier: AGPL-3.0-only
-# See the LICENSE file for details.
-
 import uuid
 
 from django.db import transaction
@@ -228,7 +224,10 @@ class GithubRepositorySyncEndpoint(BaseAPIView):
         url = request.data.get("url")
 
         if not all([name, owner, repository_id]):
-            return Response({"error": "name, owner, and repository_id are required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "name, owner, and repository_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         repository, _ = GithubRepository.objects.update_or_create(
             project=project,
@@ -257,7 +256,11 @@ class GithubRepositorySyncEndpoint(BaseAPIView):
             },
         )
 
-        if not ProjectMember.objects.filter(project=project, member=workspace_integration.actor, is_active=True).exists():
+        if not ProjectMember.objects.filter(
+            project=project,
+            member=workspace_integration.actor,
+            is_active=True,
+        ).exists():
             ProjectMember.objects.create(
                 project=project,
                 member=workspace_integration.actor,

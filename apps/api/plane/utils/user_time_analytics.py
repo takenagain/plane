@@ -6,10 +6,8 @@ from uuid import UUID
 
 from django.db.models import (
     Case,
-    Count,
     F,
     IntegerField,
-    Q,
     QuerySet,
     Sum,
     Value,

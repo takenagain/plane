@@ -1,8 +1,4 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- *
  * Workspace Settings → Exports E2E (Goal 5: Workspace export).
  *
  * Run against local docker-compose (default http://localhost:8081):

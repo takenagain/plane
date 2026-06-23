@@ -17,7 +17,7 @@
     "sync:check": "tsx scripts/sync-check.ts",
     "postbuild": "sed -i '/import.*__exportAll.*index\\.d\\.ts/d' dist/*.js && sed -i '/__exportAll/d' dist/*.js && sed -i 's/[a-z_]*_exports as n, //g' dist/*.js && sed -i 's/, __exportAll as t//g' dist/index.d.ts",
     "check:lint": "oxlint --max-warnings=2 .",
-    "check:types": "tsc --noEmit",
+    "check:types": "pnpm run generate:types && tsc --noEmit",
     "check:format": "oxfmt --check .",
     "fix:lint": "oxlint --fix .",
     "fix:format": "oxfmt .",

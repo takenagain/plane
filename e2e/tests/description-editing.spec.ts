@@ -166,22 +166,12 @@ test.describe.serial("Create New Issue – description editor", () => {
   test("description field is editable in the Create New Issue modal", async ({ page }) => {
     await navigateToProjectIssues(page, workspaceSlug, projectId);
 
-    // Open the create-issue modal via the "Create Issue" button or keyboard shortcut
-    const createBtn = page.getByRole("button", { name: /create (issue|work item)/i }).first();
-    if (await createBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await createBtn.click();
-    } else {
-      // Fallback: use keyboard shortcut "c"
-      await page.keyboard.press("c");
-    }
+    const createBtn = page.locator('[data-ph-element="work_items_header_add_work_item_button"]');
+    await expect(createBtn).toBeVisible({ timeout: 15_000 });
+    await createBtn.click();
 
-    // The modal description editor: inside the modal, a ProseMirror editor with
-    // id="issue-modal-editor" is rendered with contenteditable="true".
-    const descEditor = page
-      .locator(`#issue-modal-editor .ProseMirror[contenteditable='true'], .ProseMirror[contenteditable='true']`)
-      .first();
-
-    await expect(descEditor).toBeVisible({ timeout: 15_000 });
+    const descEditor = page.locator("#issue-modal-editor .ProseMirror[contenteditable='true']");
+    await expect(descEditor).toBeVisible({ timeout: 30_000 });
 
     // Verify it is truly editable (not just visible as a skeleton loader)
     const isEditable = await descEditor.getAttribute("contenteditable");
