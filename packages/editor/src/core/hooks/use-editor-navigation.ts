@@ -6,7 +6,7 @@
 
 import type { Editor } from "@tiptap/core";
 import { Extension } from "@tiptap/core";
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 /**
  * Creates a title editor extension that enables keyboard navigation to the main editor
@@ -162,9 +162,11 @@ export const useEditorNavigation = () => {
     mainEditorRef.current = editor;
   }, []);
 
-  // Create extension factories that access editor refs
-  const titleNavigationExtension = createTitleNavigationExtension(getMainEditor);
-  const mainNavigationExtension = createMainNavigationExtension(getTitleEditor);
+  // Memoize extensions — TipTap 3 recreates the editor when the extensions array
+  // identity changes; creating new Extension instances every render caused an
+  // infinite mount/update loop (React #185) on collaborative page editors.
+  const titleNavigationExtension = useMemo(() => createTitleNavigationExtension(getMainEditor), [getMainEditor]);
+  const mainNavigationExtension = useMemo(() => createMainNavigationExtension(getTitleEditor), [getTitleEditor]);
 
   return {
     setTitleEditor,

@@ -22,6 +22,16 @@ export class CollaborationController {
 
   @WSDecorator("/")
   handleConnection(ws: WebSocket, req: ExpressRequest) {
+    this.acceptConnection(ws, req);
+  }
+
+  // Hocuspocus / browser clients may request the legacy ".websocket" suffix path.
+  @WSDecorator("/.websocket")
+  handleLegacyWebSocketConnection(ws: WebSocket, req: ExpressRequest) {
+    this.acceptConnection(ws, req);
+  }
+
+  private acceptConnection(ws: WebSocket, req: ExpressRequest) {
     try {
       // Initialize the connection with Hocuspocus
       this.hocusPocusServer.handleConnection(ws, req as unknown as Request);
