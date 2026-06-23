@@ -72,6 +72,7 @@ from plane.db.models.project import Project, ProjectMember
 from plane.db.models.issue import Issue, IssueAssignee
 from plane.db.models.state import State, DEFAULT_STATES
 from plane.db.models.worklog import Worklog
+from plane.db.models.intake import Intake
 from plane.license.models import Instance, InstanceAdmin
 
 email = "${ADMIN_EMAIL}".strip().lower()
@@ -183,6 +184,12 @@ ProjectMember.objects.filter(project=project).exclude(member=user).delete()
 project_members = ProjectMember.objects.filter(project=project, member=user).order_by("id")
 if project_members.count() > 1:
     project_members.exclude(id=project_members.first().id).delete()
+
+Intake.objects.get_or_create(
+    project=project,
+    workspace=workspace,
+    defaults={"name": "Intake", "is_default": True},
+)
 
 if not State.all_state_objects.filter(project=project, deleted_at__isnull=True).exists():
     for state in DEFAULT_STATES:
