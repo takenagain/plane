@@ -166,16 +166,9 @@ test.describe.serial("Create New Issue – description editor", () => {
   test("description field is editable in the Create New Issue modal", async ({ page }) => {
     await navigateToProjectIssues(page, workspaceSlug, projectId);
 
-    // Open the create-issue modal via the "Create Issue" button or keyboard shortcut
-    const createBtn = page.getByRole("button", { name: /create (issue|work item)/i }).first();
-    if (await createBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await createBtn.click();
-    } else {
-      await page.keyboard.press("c");
-    }
-
-    const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 15_000 });
+    const createBtn = page.locator('[data-ph-element="work_items_header_add_work_item_button"]');
+    await expect(createBtn).toBeVisible({ timeout: 15_000 });
+    await createBtn.click();
 
     const descEditor = page.locator("#issue-modal-editor .ProseMirror[contenteditable='true']");
     await expect(descEditor).toBeVisible({ timeout: 30_000 });

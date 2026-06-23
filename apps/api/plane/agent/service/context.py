@@ -1,7 +1,3 @@
-# Copyright (c) 2023-present Plane Software, Inc. and contributors
-# SPDX-License-Identifier: AGPL-3.0-only
-# See the LICENSE file for details.
-
 DEFAULT_SYSTEM_PROMPT = """You are an AI assistant integrated into Plane, a project management tool.
 You help users manage their work: create, update, and query issues, cycles, modules, wiki pages,
 project pages, intake/inbox, relations, worklogs, views, analytics, and more.

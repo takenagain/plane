@@ -1,10 +1,4 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
-/**
  * E2E Tests for Plane AI Agent — full feature coverage via chat UI and API smoke.
  *
  * Coverage matrix:
