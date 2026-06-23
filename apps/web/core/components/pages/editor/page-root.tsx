@@ -74,6 +74,7 @@ export const PageRoot = observer(function PageRoot(props: TPageRootProps) {
   // page fallback
   const { isFetchingFallbackBinary } = usePageFallback({
     editorRef,
+    editorReady,
     fetchPageDescription: handlers.fetchDescriptionBinary,
     page,
     collaborationState,

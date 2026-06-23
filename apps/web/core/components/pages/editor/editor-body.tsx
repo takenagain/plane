@@ -156,6 +156,8 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
       stage: { kind: "connecting" },
       isServerSynced: false,
       isServerDisconnected: false,
+      hasCachedContent: false,
+      isCacheReady: false,
     });
   }, [pageId, setSyncingStatus, onCollaborationStateChange]);
 

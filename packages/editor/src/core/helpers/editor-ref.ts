@@ -68,15 +68,33 @@ export const getEditorRefHelpers = (args: TArgs): EditorRefApi => {
       }
     },
     getDocument: () => {
-      const documentBinary = provider?.document ? Y.encodeStateAsUpdate(provider?.document) : null;
-      const documentHTML = editor?.getHTML() ?? "<p></p>";
-      const documentJSON = editor?.getJSON() ?? null;
+      const documentBinary = provider?.document ? Y.encodeStateAsUpdate(provider.document) : null;
 
-      return {
-        binary: documentBinary,
-        html: documentHTML,
-        json: documentJSON,
-      };
+      if (!editor || editor.isDestroyed || !editor.schema) {
+        return {
+          binary: documentBinary,
+          html: "<p></p>",
+          json: null,
+        };
+      }
+
+      try {
+        const documentHTML = editor.getHTML();
+        const documentJSON = editor.getJSON();
+
+        return {
+          binary: documentBinary,
+          html: documentHTML,
+          json: documentJSON,
+        };
+      } catch (error) {
+        console.error("Failed to read editor document:", error);
+        return {
+          binary: documentBinary,
+          html: "<p></p>",
+          json: null,
+        };
+      }
     },
     getDocumentInfo: () => ({
       characters: editor?.storage.characterCount?.characters?.() ?? 0,

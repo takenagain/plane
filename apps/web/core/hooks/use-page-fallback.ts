@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { debounce } from "lodash-es";
 import type { EditorRefApi, CollaborationState } from "@plane/editor";
 // plane editor
 import { convertBinaryDataToBase64String, getBinaryDataFromDocumentEditorHTMLString } from "@plane/editor";
@@ -16,6 +17,7 @@ import type { TPageInstance } from "@/store/pages/base-page";
 
 type TArgs = {
   editorRef: React.RefObject<EditorRefApi | null>;
+  editorReady: boolean;
   fetchPageDescription: () => Promise<ArrayBuffer>;
   collaborationState: CollaborationState | null;
   updatePageDescription: (data: TDocumentPayload) => Promise<void>;
@@ -23,24 +25,31 @@ type TArgs = {
 };
 
 export const usePageFallback = (args: TArgs) => {
-  const { editorRef, fetchPageDescription, collaborationState, updatePageDescription, page } = args;
+  const { editorRef, editorReady, fetchPageDescription, collaborationState, updatePageDescription, page } = args;
   const hasShownFallbackToast = useRef(false);
+  const hasHydratedFromServerRef = useRef(false);
+  const isSavingRef = useRef(false);
 
   const [isFetchingFallbackBinary, setIsFetchingFallbackBinary] = useState(false);
 
   // Derive connection failure from collaboration state
   const hasConnectionFailed = collaborationState?.stage.kind === "disconnected";
 
-  const handleUpdateDescription = useCallback(async () => {
-    if (!hasConnectionFailed) return;
+  // Reset per-page hydration when navigating to another page
+  useEffect(() => {
+    hasHydratedFromServerRef.current = false;
+    hasShownFallbackToast.current = false;
+  }, [page.id]);
+
+  const hydrateFromServer = useCallback(async () => {
+    if (!hasConnectionFailed || hasHydratedFromServerRef.current) return;
+    if (collaborationState?.hasCachedContent) {
+      hasHydratedFromServerRef.current = true;
+      return;
+    }
+
     const editor = editorRef.current;
     if (!editor) return;
-
-    // Show toast notification when fallback mechanism kicks in (only once)
-    if (!hasShownFallbackToast.current) {
-      console.warn("Websocket Connection lost, your changes are being saved using backup mechanism.");
-      hasShownFallbackToast.current = true;
-    }
 
     try {
       setIsFetchingFallbackBinary(true);
@@ -58,32 +67,129 @@ export const usePageFallback = (args: TArgs) => {
       }
 
       editor.setProviderDocument(latestDecodedDescription);
-      const { binary, html, json } = editor.getDocument();
-      if (!binary || !json) return;
-      const encodedBinary = convertBinaryDataToBase64String(binary);
-
-      await updatePageDescription({
-        description_binary: encodedBinary,
-        description_html: html,
-        description_json: json,
-      });
-    } catch (error: any) {
+      hasHydratedFromServerRef.current = true;
+    } catch (error: unknown) {
       console.error(error);
     } finally {
       setIsFetchingFallbackBinary(false);
     }
-  }, [editorRef, fetchPageDescription, hasConnectionFailed, updatePageDescription, page.description_html, page.name]);
+  }, [
+    collaborationState?.hasCachedContent,
+    editorRef,
+    fetchPageDescription,
+    hasConnectionFailed,
+    page.description_html,
+    page.name,
+  ]);
+
+  const saveDescription = useCallback(async () => {
+    if (isSavingRef.current) return;
+
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    if (hasConnectionFailed && !hasShownFallbackToast.current) {
+      console.warn("Websocket Connection lost, your changes are being saved using backup mechanism.");
+      hasShownFallbackToast.current = true;
+    }
+
+    try {
+      isSavingRef.current = true;
+
+      const { binary, html, json } = editor.getDocument();
+      if (!html?.trim()) return;
+
+      const payload: TDocumentPayload = {
+        description_html: html,
+      };
+
+      if (json) {
+        payload.description_json = json;
+      }
+
+      if (binary) {
+        payload.description_binary = convertBinaryDataToBase64String(binary);
+      }
+
+      await updatePageDescription(payload);
+    } catch (error: unknown) {
+      console.error(error);
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [editorRef, hasConnectionFailed, updatePageDescription]);
+
+  // Debounced save so edits persist without waiting for the live-server store interval.
+  const debouncedSaveRef = useRef(
+    debounce(() => {
+      void saveDescription();
+    }, 1000)
+  );
+
+  useEffect(() => {
+    debouncedSaveRef.current = debounce(() => {
+      void saveDescription();
+    }, 1000);
+    return () => {
+      debouncedSaveRef.current.cancel();
+    };
+  }, [saveDescription]);
+
+  // Flush pending saves before navigation/reload so content is not lost.
+  useEffect(() => {
+    const flushPendingSave = () => {
+      debouncedSaveRef.current.flush();
+    };
+
+    window.addEventListener("pagehide", flushPendingSave);
+    window.addEventListener("beforeunload", flushPendingSave);
+
+    return () => {
+      window.removeEventListener("pagehide", flushPendingSave);
+      window.removeEventListener("beforeunload", flushPendingSave);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!editorReady) return;
+
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    let rafId = 0;
+
+    const subscribe = () => {
+      if (cancelled) return;
+
+      const editor = editorRef.current;
+      if (!editor) {
+        rafId = requestAnimationFrame(subscribe);
+        return;
+      }
+
+      unsubscribe = editor.onStateChange(() => {
+        debouncedSaveRef.current();
+      });
+    };
+
+    subscribe();
+
+    return () => {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      unsubscribe?.();
+      debouncedSaveRef.current.cancel();
+    };
+  }, [editorRef, editorReady, page.id]);
 
   useEffect(() => {
     if (hasConnectionFailed) {
-      handleUpdateDescription();
+      void hydrateFromServer();
     } else {
-      // Reset toast flag when connection is restored
       hasShownFallbackToast.current = false;
     }
-  }, [handleUpdateDescription, hasConnectionFailed]);
+  }, [hasConnectionFailed, hydrateFromServer]);
 
-  useAutoSave(handleUpdateDescription);
+  useAutoSave(saveDescription);
 
   return { isFetchingFallbackBinary };
 };
