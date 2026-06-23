@@ -26,19 +26,19 @@ def _issue_summary(issue: Issue) -> dict:
 def _relation_type_for_issue(relation: IssueRelation, issue_id: str) -> str:
     stored_type = relation.relation_type
     if stored_type == "blocked_by":
-        if str(relation.related_issue_id) == str(issue_id):
+        if str(relation.issue_id) == str(issue_id):
             return "blocked_by"
         return "blocking"
     if stored_type == "start_before":
-        if str(relation.related_issue_id) == str(issue_id):
+        if str(relation.issue_id) == str(issue_id):
             return "start_before"
         return "start_after"
     if stored_type == "finish_before":
-        if str(relation.related_issue_id) == str(issue_id):
+        if str(relation.issue_id) == str(issue_id):
             return "finish_before"
         return "finish_after"
     if stored_type == "implemented_by":
-        if str(relation.related_issue_id) == str(issue_id):
+        if str(relation.issue_id) == str(issue_id):
             return "implemented_by"
         return "implements"
     return stored_type

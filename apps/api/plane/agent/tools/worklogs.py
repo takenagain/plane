@@ -122,6 +122,8 @@ def update_worklog(
         raise PermissionError("You do not have permission to update this worklog.")
 
     if duration is not None:
+        if duration < 1:
+            raise ValueError("Duration must be at least 1 minute.")
         worklog.duration = duration
     if logged_at is not None:
         worklog.logged_at = logged_at

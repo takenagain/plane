@@ -135,6 +135,8 @@ def update_wiki_page(
     page = Page.objects.filter(id=page_id, workspace__slug=workspace_slug, is_global=True).first()
     if not page or not _can_access_wiki_page(request_user, page):
         raise ValueError("Wiki page not found.")
+    if page.is_locked:
+        raise ValueError("Page is locked.")
 
     if name is not None:
         page.name = name

@@ -142,6 +142,8 @@ def update_page(
     page = _project_pages_queryset(request_user, workspace_slug, project_id).filter(id=page_id).first()
     if not page or not _can_access_page(request_user, page):
         raise ValueError("Page not found.")
+    if page.is_locked:
+        raise ValueError("Page is locked.")
 
     if name is not None:
         page.name = name

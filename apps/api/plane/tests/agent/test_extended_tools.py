@@ -146,6 +146,32 @@ class TestRelationTools:
         assert removed["removed"] is True
         assert not IssueRelation.objects.filter(issue_id=issue_a.id, related_issue_id=issue_b.id).exists()
 
+    def test_blocked_by_relation_labels_match_api(self, create_user, workspace, project, backlog_state):
+        issue_a = Issue.objects.create(name="Issue A", project=project, workspace=workspace, state=backlog_state)
+        issue_b = Issue.objects.create(name="Issue B", project=project, workspace=workspace, state=backlog_state)
+
+        create_issue_relation(
+            request_user=create_user,
+            workspace_slug=workspace.slug,
+            issue_id=str(issue_a.id),
+            relation_type="blocked_by",
+            related_issue_ids=[str(issue_b.id)],
+        )
+
+        listing_a = list_issue_relations(
+            request_user=create_user,
+            workspace_slug=workspace.slug,
+            issue_id=str(issue_a.id),
+        )
+        assert listing_a["relations"]["blocked_by"][0]["id"] == str(issue_b.id)
+
+        listing_b = list_issue_relations(
+            request_user=create_user,
+            workspace_slug=workspace.slug,
+            issue_id=str(issue_b.id),
+        )
+        assert listing_b["relations"]["blocking"][0]["id"] == str(issue_a.id)
+
 
 @pytest.mark.unit
 @pytest.mark.django_db
@@ -185,6 +211,23 @@ class TestWorklogTools:
             worklog_id=worklog_id,
         )
         assert deleted["deleted"] is True
+
+    def test_update_worklog_rejects_zero_duration(self, create_user, workspace, issue):
+        created = create_worklog(
+            request_user=create_user,
+            workspace_slug=workspace.slug,
+            issue_id=str(issue.id),
+            duration=60,
+            logged_at="2026-06-01",
+        )
+        with pytest.raises(ValueError, match="Duration must be at least 1 minute"):
+            update_worklog(
+                request_user=create_user,
+                workspace_slug=workspace.slug,
+                issue_id=str(issue.id),
+                worklog_id=created["worklog"]["id"],
+                duration=0,
+            )
 
 
 @pytest.mark.unit

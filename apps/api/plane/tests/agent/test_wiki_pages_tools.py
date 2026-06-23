@@ -68,6 +68,23 @@ class TestWikiPageTools:
         assert detail["name"] == "Published"
         assert "Updated" in detail["description"]
 
+    def test_update_locked_wiki_page_rejected(self, create_user, workspace):
+        created = create_wiki_page(
+            request_user=create_user,
+            workspace_slug=workspace.slug,
+            name="Locked Doc",
+        )
+        Page.objects.filter(id=created["id"]).update(is_locked=True)
+
+        with pytest.raises(ValueError, match="Page is locked"):
+            update_wiki_page(
+                request_user=create_user,
+                workspace_slug=workspace.slug,
+                page_id=created["id"],
+                name="Should Fail",
+            )
+
+
     def test_private_wiki_page_hidden_from_other_members(self, create_user, workspace, db):
         from plane.db.models import User
 
@@ -137,6 +154,24 @@ class TestProjectPageTools:
             page_id=created["id"],
         )
         assert detail["name"] == "New Title"
+
+    def test_update_locked_page_rejected(self, create_user, workspace, project):
+        created = create_page(
+            request_user=create_user,
+            workspace_slug=workspace.slug,
+            project_id=str(project.id),
+            name="Locked Page",
+        )
+        Page.objects.filter(id=created["id"]).update(is_locked=True)
+
+        with pytest.raises(ValueError, match="Page is locked"):
+            update_page(
+                request_user=create_user,
+                workspace_slug=workspace.slug,
+                project_id=str(project.id),
+                page_id=created["id"],
+                name="Should Fail",
+            )
 
 
 @pytest.mark.unit
