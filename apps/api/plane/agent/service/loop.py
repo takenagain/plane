@@ -153,7 +153,10 @@ class AgentService:
             max_step_msg = AgentChatMessage.objects.create(
                 session=session,
                 role="assistant",
-                content="I reached the configured maximum steps for this task. Please refine the request and try again.",
+                content=(
+                    "I reached the configured maximum steps for this task. "
+                    "Please refine the request and try again."
+                ),
                 is_error=True,
                 step_index=step,
             )

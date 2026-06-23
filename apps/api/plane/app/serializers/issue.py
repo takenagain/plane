@@ -818,6 +818,10 @@ class IssueSerializer(DynamicBaseSerializer):
             "link_count",
             "is_draft",
             "archived_at",
+            "recurrence_pattern",
+            "recurrence_max_occurrences",
+            "recurrence_next_run_at",
+            "recurrence_source_issue_id",
         ]
         read_only_fields = fields
 

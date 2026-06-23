@@ -4,7 +4,9 @@ import type { TCommentsOperations } from "@plane/types";
 import { CommentCreate } from "../comment-create";
 
 const liteTextEditorMock = vi.hoisted(() =>
-  vi.fn(({ id }: { id: string }) => <div data-testid="lite-text-editor" data-editor-id={id} />)
+  vi.fn(({ id, value, editable }: { id: string; value?: string | null; editable?: boolean }) => (
+    <div data-testid="lite-text-editor" data-editor-id={id} data-editable={editable} data-value={value} />
+  ))
 );
 
 vi.mock("@/components/editor/lite-text", () => ({

@@ -1,3 +1,8 @@
+# Copyright (c) 2023-present Plane Software, Inc. and contributors
+# SPDX-License-Identifier: AGPL-3.0-only
+# See the LICENSE file for details.
+
+
 import pytest
 
 from plane.agent.tools.analytics import get_project_analytics, get_workspace_project_stats
@@ -6,7 +11,7 @@ from plane.agent.tools.relations import create_issue_relation, list_issue_relati
 from plane.agent.tools.registry import TOOL_REGISTRY, get_tool_definitions
 from plane.agent.tools.views import get_view, list_views
 from plane.agent.tools.worklogs import create_worklog, delete_worklog, list_worklogs, update_worklog
-from plane.db.models import Intake, IntakeIssue, Issue, IssueRelation, IssueView, Project, ProjectMember, State, StateGroup
+from plane.db.models import Issue, IssueRelation, IssueView, Project, ProjectMember, State, StateGroup
 from plane.db.models.project import ROLE
 
 

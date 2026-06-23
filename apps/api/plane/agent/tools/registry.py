@@ -106,8 +106,17 @@ TOOL_DEFINITIONS = [
             "limit": {"type": "integer"},
         },
     ),
-    _tool_schema("get_work_item", "Get a single work item by id or identifier.", {"issue_id": {"type": "string"}, "identifier": {"type": "string"}}),
-    _tool_schema("create_work_item", "Create a work item.", {"project_id": {"type": "string"}, "name": {"type": "string"}}, ["name"]),
+    _tool_schema(
+        "get_work_item",
+        "Get a single work item by id or identifier.",
+        {"issue_id": {"type": "string"}, "identifier": {"type": "string"}},
+    ),
+    _tool_schema(
+        "create_work_item",
+        "Create a work item.",
+        {"project_id": {"type": "string"}, "name": {"type": "string"}},
+        ["name"],
+    ),
     _tool_schema("update_work_item", "Update a work item.", {"issue_id": {"type": "string"}}, ["issue_id"]),
     _tool_schema("delete_work_item", "Delete a work item.", {"issue_id": {"type": "string"}}, ["issue_id"]),
     _tool_schema(
@@ -118,7 +127,12 @@ TOOL_DEFINITIONS = [
     ),
     _tool_schema("list_cycles", "List cycles.", {"project_id": {"type": "string"}}, ["project_id"]),
     _tool_schema("get_cycle", "Get cycle details.", {"cycle_id": {"type": "string"}}, ["cycle_id"]),
-    _tool_schema("create_cycle", "Create cycle.", {"project_id": {"type": "string"}, "name": {"type": "string"}}, ["project_id", "name"]),
+    _tool_schema(
+        "create_cycle",
+        "Create cycle.",
+        {"project_id": {"type": "string"}, "name": {"type": "string"}},
+        ["project_id", "name"],
+    ),
     _tool_schema("update_cycle", "Update cycle.", {"cycle_id": {"type": "string"}}, ["cycle_id"]),
     _tool_schema(
         "add_issues_to_cycle",
@@ -134,7 +148,12 @@ TOOL_DEFINITIONS = [
     ),
     _tool_schema("list_modules", "List modules.", {"project_id": {"type": "string"}}, ["project_id"]),
     _tool_schema("get_module", "Get module details.", {"module_id": {"type": "string"}}, ["module_id"]),
-    _tool_schema("create_module", "Create module.", {"project_id": {"type": "string"}, "name": {"type": "string"}}, ["project_id", "name"]),
+    _tool_schema(
+        "create_module",
+        "Create module.",
+        {"project_id": {"type": "string"}, "name": {"type": "string"}},
+        ["project_id", "name"],
+    ),
     _tool_schema("update_module", "Update module.", {"module_id": {"type": "string"}}, ["module_id"]),
     _tool_schema(
         "add_issues_to_module",
@@ -152,7 +171,12 @@ TOOL_DEFINITIONS = [
     _tool_schema("list_labels", "List labels for project.", {"project_id": {"type": "string"}}, ["project_id"]),
     _tool_schema("list_members", "List project/workspace members.", {"project_id": {"type": "string"}}),
     _tool_schema("list_projects", "List projects in workspace.", {}),
-    _tool_schema("search", "Search issues, cycles, modules, wiki pages, and project pages.", {"query": {"type": "string"}, "project_id": {"type": "string"}}, ["query"]),
+    _tool_schema(
+        "search",
+        "Search issues, cycles, modules, wiki pages, and project pages.",
+        {"query": {"type": "string"}, "project_id": {"type": "string"}},
+        ["query"],
+    ),
     _tool_schema(
         "list_wiki_pages",
         "List workspace wiki pages.",
@@ -162,7 +186,11 @@ TOOL_DEFINITIONS = [
     _tool_schema(
         "create_wiki_page",
         "Create a workspace wiki page.",
-        {"name": {"type": "string"}, "description": {"type": "string"}, "access": {"type": "string", "enum": ["public", "private"]}},
+        {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "access": {"type": "string", "enum": ["public", "private"]},
+        },
         ["name"],
     ),
     _tool_schema(

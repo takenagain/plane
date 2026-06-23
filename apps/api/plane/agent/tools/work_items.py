@@ -67,7 +67,13 @@ def list_work_items(
     }
 
 
-def get_work_item(request_user, workspace_slug: str, issue_id: str | None = None, identifier: str | None = None, **kwargs) -> dict:
+def get_work_item(
+    request_user,
+    workspace_slug: str,
+    issue_id: str | None = None,
+    identifier: str | None = None,
+    **kwargs,
+) -> dict:
     qs = Issue.issue_objects.filter(
         workspace__slug=workspace_slug,
         project__project_projectmember__member=request_user,
@@ -176,7 +182,9 @@ def update_work_item(request_user, workspace_slug: str, issue_id: str, **fields)
     updatable = {
         k: v
         for k, v in fields.items()
-        if k in {"name", "description", "priority", "state_id", "start_date", "target_date", "parent_id"} and v is not None
+        if k
+        in {"name", "description", "priority", "state_id", "start_date", "target_date", "parent_id"}
+        and v is not None
     }
     if "description" in updatable:
         updatable["description_html"] = updatable.pop("description")

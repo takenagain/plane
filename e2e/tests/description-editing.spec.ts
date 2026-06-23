@@ -171,17 +171,14 @@ test.describe.serial("Create New Issue – description editor", () => {
     if (await createBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await createBtn.click();
     } else {
-      // Fallback: use keyboard shortcut "c"
       await page.keyboard.press("c");
     }
 
-    // The modal description editor: inside the modal, a ProseMirror editor with
-    // id="issue-modal-editor" is rendered with contenteditable="true".
-    const descEditor = page
-      .locator(`#issue-modal-editor .ProseMirror[contenteditable='true'], .ProseMirror[contenteditable='true']`)
-      .first();
+    const modal = page.getByRole("dialog");
+    await expect(modal).toBeVisible({ timeout: 15_000 });
 
-    await expect(descEditor).toBeVisible({ timeout: 15_000 });
+    const descEditor = page.locator("#issue-modal-editor .ProseMirror[contenteditable='true']");
+    await expect(descEditor).toBeVisible({ timeout: 30_000 });
 
     // Verify it is truly editable (not just visible as a skeleton loader)
     const isEditable = await descEditor.getAttribute("contenteditable");

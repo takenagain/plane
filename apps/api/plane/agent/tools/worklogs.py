@@ -1,3 +1,8 @@
+# Copyright (c) 2023-present Plane Software, Inc. and contributors
+# SPDX-License-Identifier: AGPL-3.0-only
+# See the LICENSE file for details.
+
+
 from plane.db.models import Issue, ProjectMember, Worklog
 from plane.db.models.project import ROLE
 
@@ -39,7 +44,7 @@ def list_worklogs(
     issue_id: str,
     **kwargs,
 ) -> dict:
-    issue = _get_issue(request_user, workspace_slug, issue_id)
+    _get_issue(request_user, workspace_slug, issue_id)
     worklogs = (
         Worklog.objects.filter(
             issue_id=issue_id,

@@ -14,12 +14,24 @@ on:
             - "reopened"
 
 jobs:
+    authorize:
+        name: Authorize CI
+        runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request'
+        steps:
+            - uses: actions/checkout@v6
+            - uses: ./.github/actions/authorize-pr
+
     license-check:
         name: Copy Right Check
         runs-on: ubuntu-latest
+        needs: authorize
+        if: always() && (needs.authorize.result == 'success' || github.event_name != 'pull_request')
         steps:
             - name: Checkout repository
               uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
 
             - name: Set up Go
               uses: actions/setup-go@v6
@@ -34,13 +46,35 @@ jobs:
             - name: Check Copyright For Python Files
               run: |
                   set -e
-                  echo "Running copyright check..."
-                  addlicense -check -f COPYRIGHT.txt -ignore "**/migrations/**" $(git ls-files '*.py')
+                  if [ "${{ github.event_name }}" = "pull_request" ]; then
+                    BASE="${{ github.event.pull_request.base.sha }}"
+                    HEAD="${{ github.sha }}"
+                    mapfile -t FILES < <(git diff --name-only --diff-filter=ACMRT "$BASE" "$HEAD" -- '*.py')
+                  else
+                    mapfile -t FILES < <(git ls-files '*.py')
+                  fi
+                  if [ "${#FILES[@]}" -eq 0 ]; then
+                    echo "No Python files to check."
+                    exit 0
+                  fi
+                  echo "Running copyright check on ${#FILES[@]} Python file(s)..."
+                  addlicense -check -f COPYRIGHT.txt -ignore "**/migrations/**" "${FILES[@]}"
                   echo "Copyright check passed."
 
             - name: Check Copyright For TypeScript Files
               run: |
                   set -e
-                  echo "Running copyright check..."
-                  addlicense -check -f COPYRIGHT.txt -ignore "**/*.config.ts" -ignore "**/*.d.ts" $(git ls-files '*.ts' '*.tsx')
+                  if [ "${{ github.event_name }}" = "pull_request" ]; then
+                    BASE="${{ github.event.pull_request.base.sha }}"
+                    HEAD="${{ github.sha }}"
+                    mapfile -t FILES < <(git diff --name-only --diff-filter=ACMRT "$BASE" "$HEAD" -- '*.ts' '*.tsx')
+                  else
+                    mapfile -t FILES < <(git ls-files '*.ts' '*.tsx')
+                  fi
+                  if [ "${#FILES[@]}" -eq 0 ]; then
+                    echo "No TypeScript files to check."
+                    exit 0
+                  fi
+                  echo "Running copyright check on ${#FILES[@]} TypeScript file(s)..."
+                  addlicense -check -f COPYRIGHT.txt -ignore "**/*.config.ts" -ignore "**/*.d.ts" "${FILES[@]}"
                   echo "Copyright check passed."

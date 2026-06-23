@@ -47,6 +47,13 @@ def django_client():
     return client
 
 
+@pytest.fixture(autouse=True)
+def _clear_auth_throttle():
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.mark.contract
 class TestMagicLinkGenerate:
     """Test magic link generation functionality"""
