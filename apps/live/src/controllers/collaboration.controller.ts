@@ -20,14 +20,11 @@ export class CollaborationController {
     this.hocusPocusServer = hocusPocusServer;
   }
 
+  // Clients connect to `${LIVE_BASE_PATH}/collaboration`. express-ws internally
+  // suffixes the registered route (and the incoming upgrade URL) with
+  // `/.websocket`, so this single handler is what answers the handshake.
   @WSDecorator("/")
   handleConnection(ws: WebSocket, req: ExpressRequest) {
-    this.acceptConnection(ws, req);
-  }
-
-  // Hocuspocus / browser clients may request the legacy ".websocket" suffix path.
-  @WSDecorator("/.websocket")
-  handleLegacyWebSocketConnection(ws: WebSocket, req: ExpressRequest) {
     this.acceptConnection(ws, req);
   }
 
