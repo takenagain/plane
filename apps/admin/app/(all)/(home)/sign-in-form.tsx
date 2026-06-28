@@ -20,6 +20,7 @@ import { FormHeader } from "@/components/instance/form-header";
 import { AuthBanner } from "./auth-banner";
 import { AuthHeader } from "./auth-header";
 import { authErrorHandler } from "./auth-helpers";
+import { InstanceMfaVerifyForm } from "./mfa-verify-form";
 
 // service initialization
 const authService = new AuthService();
@@ -55,6 +56,8 @@ export function InstanceSignInForm() {
   const emailParam = searchParams.get("email") || undefined;
   const errorCode = searchParams.get("error_code") || undefined;
   const errorMessage = searchParams.get("error_message") || undefined;
+  // Login MFA challenge marker injected by Django after a successful admin password check (R10).
+  const mfaMarker = searchParams.get("mfa") || undefined;
   // state
   const [showPassword, setShowPassword] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string | undefined>(undefined);
@@ -107,6 +110,9 @@ export function InstanceSignInForm() {
       }
     }
   }, [errorCode]);
+
+  // After a correct password the backend redirects back with the MFA marker; swap in the challenge.
+  if (mfaMarker === "required" || mfaMarker === "lockdown") return <InstanceMfaVerifyForm />;
 
   return (
     <>
