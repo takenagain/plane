@@ -55,6 +55,7 @@ from .issue import (
 )
 from .issue_type import IssueType
 from .label import Label
+from .mfa import MFADevice, MFARecoveryCode, UserMFA
 from .module import Module, ModuleIssue, ModuleLink, ModuleMember, ModuleUserProperties
 from .notification import EmailNotificationLog, Notification, UserNotificationPreference
 from .page import Page, PageLabel, PageLog, PageVersion, ProjectPage

@@ -76,3 +76,14 @@ opentelemetry-exporter-otlp==1.42.1
 drf-spectacular==0.29.0
 # html sanitizer
 nh3==0.3.5
+# 2FA — TOTP (authenticator apps)
+pyotp==2.10.0
+# 2FA — WebAuthn: passkeys + FIDO2 security keys (server-side RP)
+webauthn==2.8.0
+# 2FA — pin py_webauthn transitive deps for reproducible builds
+pyOpenSSL==26.2.0
+cbor2==5.6.5
+pyasn1==0.6.2
+pyasn1-modules==0.4.2
+# 2FA — QR rendering for TOTP provisioning URIs (pure-Python; no Pillow)
+segno==1.6.6
