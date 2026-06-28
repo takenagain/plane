@@ -99,17 +99,19 @@ export enum EAuthenticationErrorCodes {
   ADMIN_USER_ALREADY_EXIST = "5180",
   ADMIN_USER_DOES_NOT_EXIST = "5185",
   ADMIN_USER_DEACTIVATED = "5190",
-  // MFA / 2FA (shared contract with backend AUTHENTICATION_ERROR_CODES 5200–5230)
+  // MFA / 2FA (shared contract with backend AUTHENTICATION_ERROR_CODES 5200–5255)
   MFA_REQUIRED = "5200",
-  MFA_SETUP_REQUIRED = "5201",
-  MFA_INVALID_CODE = "5202",
-  MFA_CODE_EXPIRED = "5203",
-  MFA_ATTEMPTS_EXHAUSTED = "5204",
-  MFA_INVALID_RECOVERY_CODE = "5207",
-  MFA_STEP_UP_REQUIRED = "5208",
-  MFA_LOCKDOWN_ACTIVE = "5209",
-  WEBAUTHN_REGISTRATION_FAILED = "5210",
-  WEBAUTHN_AUTH_FAILED = "5211",
+  MFA_SETUP_REQUIRED = "5205",
+  MFA_INVALID_CODE = "5210",
+  MFA_CODE_EXPIRED = "5215",
+  MFA_ATTEMPTS_EXHAUSTED = "5220",
+  MFA_ALREADY_ENABLED = "5225",
+  MFA_NOT_ENABLED = "5230",
+  MFA_INVALID_RECOVERY_CODE = "5235",
+  MFA_STEP_UP_REQUIRED = "5240",
+  MFA_LOCKDOWN_ACTIVE = "5245",
+  WEBAUTHN_REGISTRATION_FAILED = "5250",
+  WEBAUTHN_AUTH_FAILED = "5255",
   // Rate limit
   RATE_LIMIT_EXCEEDED = "5900",
 }
@@ -405,6 +407,14 @@ const errorCodeMessages: {
     title: `Too many attempts`,
     message: () => `Too many attempts. Please wait and try again.`,
   },
+  [EAuthenticationErrorCodes.MFA_ALREADY_ENABLED]: {
+    title: `Two-factor already enabled`,
+    message: () => `Two-factor authentication is already set up on this account.`,
+  },
+  [EAuthenticationErrorCodes.MFA_NOT_ENABLED]: {
+    title: `Two-factor not enabled`,
+    message: () => `Two-factor authentication is not enabled on this account.`,
+  },
   [EAuthenticationErrorCodes.MFA_INVALID_RECOVERY_CODE]: {
     title: `Invalid recovery code`,
     message: () => `That recovery code is invalid or already used.`,
@@ -484,6 +494,8 @@ export const authErrorHandler = (errorCode: EAuthenticationErrorCodes, email?: s
     EAuthenticationErrorCodes.MFA_INVALID_CODE,
     EAuthenticationErrorCodes.MFA_CODE_EXPIRED,
     EAuthenticationErrorCodes.MFA_ATTEMPTS_EXHAUSTED,
+    EAuthenticationErrorCodes.MFA_ALREADY_ENABLED,
+    EAuthenticationErrorCodes.MFA_NOT_ENABLED,
     EAuthenticationErrorCodes.MFA_INVALID_RECOVERY_CODE,
     EAuthenticationErrorCodes.MFA_LOCKDOWN_ACTIVE,
     EAuthenticationErrorCodes.WEBAUTHN_AUTH_FAILED,

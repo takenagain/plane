@@ -55,7 +55,6 @@ export function InstanceMfaVerifyForm() {
             method="POST"
             action={`${API_BASE_URL}/auth/mfa/verify/`}
             onSubmit={() => setIsSubmitting(true)}
-            onError={() => setIsSubmitting(false)}
           >
             {errorMessage && <Banner type="error" message={errorMessage} />}
             <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />

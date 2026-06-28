@@ -90,9 +90,10 @@ export function TwoFactorVerify({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSubmittedRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  const switchView = (next: TActiveView) => {
     setLocalError(undefined);
-  }, [view]);
+    setView(next);
+  };
 
   const shownError = localError ?? error;
 
@@ -246,13 +247,15 @@ export function TwoFactorVerify({
       {!lockdown && (
         <div className="flex flex-col gap-2 border-t border-subtle pt-3">
           {hasWebauthn && view !== "webauthn" && (
-            <MethodSwitchButton label={copy.methodWebauthn} onClick={() => setView("webauthn")} />
+            <MethodSwitchButton label={copy.methodWebauthn} onClick={() => switchView("webauthn")} />
           )}
-          {hasTotp && view !== "totp" && <MethodSwitchButton label={copy.methodTotp} onClick={() => setView("totp")} />}
+          {hasTotp && view !== "totp" && (
+            <MethodSwitchButton label={copy.methodTotp} onClick={() => switchView("totp")} />
+          )}
           {view !== "recovery" && (
             <button
               type="button"
-              onClick={() => setView("recovery")}
+              onClick={() => switchView("recovery")}
               className="text-12 text-tertiary hover:text-secondary"
             >
               {copy.useRecoveryCode}

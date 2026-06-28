@@ -18,6 +18,9 @@ import { useUser } from "@/hooks/store/user";
 // local
 import { TwoFactorSetupContainer } from "./setup-container";
 
+const resolveErrorMessage = (error: unknown, fallback: string): string =>
+  (error as { error_message?: string })?.error_message ?? (error as { message?: string })?.message ?? fallback;
+
 /**
  * Settings device-management section (variant="settings", R7/R9). Lists factors and
  * lets the user add/rename/delete devices, regenerate recovery codes, and toggle
@@ -34,14 +37,15 @@ export const TwoFactorSettingsSection = observer(function TwoFactorSettingsSecti
     shouldRetryOnError: false,
   });
 
-  const errorMessage = (error: unknown, fallback: string): string =>
-    (error as { error_message?: string })?.error_message ?? (error as { message?: string })?.message ?? fallback;
-
   const handleRename = async (deviceId: string, name: string) => {
     try {
       await mfa.renameDevice(deviceId, name);
     } catch (error) {
-      setToast({ type: TOAST_TYPE.ERROR, title: "Error", message: errorMessage(error, "Failed to rename device.") });
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Error",
+        message: resolveErrorMessage(error, "Failed to rename device."),
+      });
     }
   };
 
@@ -54,7 +58,11 @@ export const TwoFactorSettingsSection = observer(function TwoFactorSettingsSecti
         message: t("auth.two_factor.settings.device_removed"),
       });
     } catch (error) {
-      setToast({ type: TOAST_TYPE.ERROR, title: "Error", message: errorMessage(error, "Failed to remove device.") });
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Error",
+        message: resolveErrorMessage(error, "Failed to remove device."),
+      });
     }
   };
 
@@ -66,7 +74,7 @@ export const TwoFactorSettingsSection = observer(function TwoFactorSettingsSecti
       setToast({
         type: TOAST_TYPE.ERROR,
         title: "Error",
-        message: errorMessage(error, "Failed to regenerate recovery codes."),
+        message: resolveErrorMessage(error, "Failed to regenerate recovery codes."),
       });
     }
   };
@@ -78,7 +86,7 @@ export const TwoFactorSettingsSection = observer(function TwoFactorSettingsSecti
       setToast({
         type: TOAST_TYPE.ERROR,
         title: "Error",
-        message: errorMessage(error, "Failed to update lockdown mode."),
+        message: resolveErrorMessage(error, "Failed to update lockdown mode."),
       });
       throw error;
     }

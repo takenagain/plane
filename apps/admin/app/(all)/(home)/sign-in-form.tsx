@@ -128,7 +128,6 @@ export function InstanceSignInForm() {
             method="POST"
             action={`${API_BASE_URL}/api/instances/admins/sign-in/`}
             onSubmit={() => setIsSubmitting(true)}
-            onError={() => setIsSubmitting(false)}
           >
             {errorData.type && errorData?.message ? (
               <Banner type="error" message={errorData?.message} />

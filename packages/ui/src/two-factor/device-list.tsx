@@ -123,6 +123,7 @@ export function TwoFactorDeviceList({
                         value={draftName}
                         onChange={(e) => setDraftName(e.target.value)}
                         autoFocus
+                        aria-label={copy.rename}
                         className="focus-visible:ring-accent-primary h-7 w-40 rounded-sm border border-strong bg-surface-1 px-2 text-13 text-primary focus:outline-none focus-visible:ring-2"
                       />
                     ) : (

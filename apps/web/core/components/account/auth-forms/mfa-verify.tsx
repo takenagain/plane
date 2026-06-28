@@ -12,6 +12,8 @@ import { TwoFactorVerify } from "@plane/ui";
 // hooks
 import { useUser } from "@/hooks/store/user";
 
+const LOGIN_AVAILABLE_METHODS: TMfaMethod[] = ["passkey", "security_key", "totp"];
+
 type Props = {
   /** Set when the backend signals hardware-key-only login (`?mfa=lockdown` / `?lockdown=1`). */
   lockdown?: boolean;
@@ -31,7 +33,7 @@ export const MfaVerifyForm = observer(function MfaVerifyForm({ lockdown = false 
 
   // In the partial session we can't enumerate the user's factors, so we offer all
   // non-lockdown methods and let the backend reject anything not enrolled.
-  const availableMethods: TMfaMethod[] = ["passkey", "security_key", "totp"];
+  const availableMethods = LOGIN_AVAILABLE_METHODS;
 
   const redirect = (target?: string) => {
     const destination = target || nextPath || "/";
