@@ -19,6 +19,13 @@ import { useWorkspace } from "@/hooks/store/use-workspace";
 //   ssr: false,
 // });
 
+// Module-level so its identity is stable across renders. An inline placeholder
+// function changes identity every render, which busts the editor's
+// resolvedExtensions memo and makes @tiptap/react destroy+recreate the
+// ProseMirror view on every keystroke (cursor loss). It closes over nothing.
+const STICKY_PLACEHOLDER = (_isFocused: boolean, value: string): string =>
+  isCommentEmpty(value) ? "Click to type here" : "";
+
 type TProps = {
   stickyData: Partial<TSticky> | undefined;
   workspaceSlug: string;
@@ -80,11 +87,7 @@ export function StickyInput(props: TProps) {
               onChange(description_html);
               handleSubmit(handleFormSubmit)();
             }}
-            placeholder={(_, value) => {
-              const isContentEmpty = isCommentEmpty(value);
-              if (!isContentEmpty) return "";
-              return "Click to type here";
-            }}
+            placeholder={STICKY_PLACEHOLDER}
             containerClassName={cn(
               "vertical-scrollbar scrollbar-sm max-h-[540px] min-h-[256px] w-full overflow-y-scroll p-4 text-14",
               {

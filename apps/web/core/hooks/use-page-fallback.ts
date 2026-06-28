@@ -99,17 +99,16 @@ export const usePageFallback = (args: TArgs) => {
       const { binary, html, json } = editor.getDocument();
       if (!html?.trim()) return;
 
+      // editor.getDocument() always returns binary + json for the document
+      // editor, so the fallbacks below only satisfy the TDocumentPayload type
+      // and never fire in this path. This mirrors convertHTMLDocumentToAllFormats,
+      // which always sends all three fields; the backend description endpoint
+      // also treats each field as optional.
       const payload: TDocumentPayload = {
         description_html: html,
+        description_json: json ?? {},
+        description_binary: binary ? convertBinaryDataToBase64String(binary) : "",
       };
-
-      if (json) {
-        payload.description_json = json;
-      }
-
-      if (binary) {
-        payload.description_binary = convertBinaryDataToBase64String(binary);
-      }
 
       await updatePageDescription(payload);
     } catch (error: unknown) {

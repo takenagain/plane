@@ -4,11 +4,11 @@
  * See the LICENSE file for details.
  */
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Script from "next/script";
 import { Links, Meta, Outlet, Scripts } from "react-router";
 import type { LinksFunction } from "react-router";
-import { ThemeProvider, useTheme } from "next-themes";
+import { ThemeProvider } from "next-themes";
 // plane imports
 import { SITE_DESCRIPTION, SITE_NAME } from "@plane/constants";
 import { cn } from "@plane/utils";
@@ -29,7 +29,6 @@ import { CustomErrorComponent } from "./error";
 import { AppProvider } from "./provider";
 // fonts
 import "@fontsource-variable/inter";
-import interVariableWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import "@fontsource/material-symbols-rounded";
 import "@fontsource/ibm-plex-mono";
 
@@ -45,13 +44,6 @@ export const links: LinksFunction = () => [
   { rel: "apple-touch-icon", sizes: "512x512", href: icon512 },
   { rel: "manifest", href: "/manifest.json" },
   { rel: "stylesheet", href: globalStyles },
-  {
-    rel: "preload",
-    href: interVariableWoff2,
-    as: "font",
-    type: "font/woff2",
-    crossOrigin: "anonymous",
-  },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -133,10 +125,20 @@ export default function Root() {
 }
 
 export function HydrateFallback() {
-  const { resolvedTheme } = useTheme();
+  // In SPA mode (ssr:false) the build prerenders this fallback to static HTML
+  // with `window` undefined, so it emits an empty <div/>. next-themes resolves
+  // the theme synchronously on the FIRST client render (from its pre-React
+  // inline script / localStorage), so the previous `resolvedTheme === undefined`
+  // guard was false on the client and rendered the spinner subtree — diverging
+  // from the prerendered <div/> and throwing React hydration error #418.
+  // Gate the spinner behind a post-hydration mount flag so the first client
+  // render is byte-identical to the server (<div/>). No theme flash: bg-canvas
+  // is a CSS variable already set via the data-theme attribute that next-themes'
+  // inline script writes to <html> before React loads.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // if we are on the server or the theme is not resolved, return an empty div
-  if (typeof window === "undefined" || resolvedTheme === undefined) return <div />;
+  if (!mounted) return <div />;
 
   return (
     <div className="relative flex h-screen w-full items-center justify-center bg-canvas">
