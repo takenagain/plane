@@ -148,6 +148,18 @@ from .user.base import (
     UserEndpoint,
     UserSessionEndpoint,
 )
+from .user.mfa import (
+    MFADeviceDetailEndpoint,
+    MFADeviceListEndpoint,
+    MFALockdownEndpoint,
+    MFARecoveryCodesRegenerateEndpoint,
+    MFAStepUpEndpoint,
+    MFATOTPSetupEndpoint,
+    MFATOTPVerifyEndpoint,
+    MFAWebAuthnRegisterBeginEndpoint,
+    MFAWebAuthnRegisterCompleteEndpoint,
+    UserMFAEndpoint,
+)
 from .view.base import (
     IssueViewFavoriteViewSet,
     IssueViewViewSet,

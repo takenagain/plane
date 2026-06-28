@@ -65,6 +65,10 @@ class InstanceEndpoint(BaseAPIView):
             POSTHOG_HOST,
             UNSPLASH_ACCESS_KEY,
             LLM_API_KEY,
+            MFA_ENABLED,
+            MFA_ENFORCED,
+            MFA_ALLOW_TOTP,
+            MFA_ALLOW_WEBAUTHN,
         ) = get_configuration_value(
             [
                 {
@@ -132,6 +136,22 @@ class InstanceEndpoint(BaseAPIView):
                     "key": "LLM_API_KEY",
                     "default": os.environ.get("LLM_API_KEY", ""),
                 },
+                {
+                    "key": "MFA_ENABLED",
+                    "default": os.environ.get("MFA_ENABLED", "1"),
+                },
+                {
+                    "key": "MFA_ENFORCED",
+                    "default": os.environ.get("MFA_ENFORCED", "1"),
+                },
+                {
+                    "key": "MFA_ALLOW_TOTP",
+                    "default": os.environ.get("MFA_ALLOW_TOTP", "1"),
+                },
+                {
+                    "key": "MFA_ALLOW_WEBAUTHN",
+                    "default": os.environ.get("MFA_ALLOW_WEBAUTHN", "1"),
+                },
             ]
         )
 
@@ -145,6 +165,12 @@ class InstanceEndpoint(BaseAPIView):
         data["is_gitea_enabled"] = IS_GITEA_ENABLED == "1"
         data["is_magic_login_enabled"] = ENABLE_MAGIC_LINK_LOGIN == "1"
         data["is_email_password_enabled"] = ENABLE_EMAIL_PASSWORD == "1"
+
+        # MFA / 2FA
+        data["is_mfa_enabled"] = MFA_ENABLED == "1"
+        data["is_mfa_enforced"] = MFA_ENABLED == "1" and MFA_ENFORCED == "1"
+        data["is_mfa_totp_enabled"] = MFA_ALLOW_TOTP == "1"
+        data["is_mfa_webauthn_enabled"] = MFA_ALLOW_WEBAUTHN == "1"
 
         # Github app name
         data["github_app_name"] = str(GITHUB_APP_NAME)

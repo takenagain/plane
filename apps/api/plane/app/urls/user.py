@@ -17,6 +17,18 @@ from plane.app.views import (
     UserWorkspaceDashboardEndpoint,
     UserSessionEndpoint,
     ## End User
+    ## MFA
+    MFADeviceDetailEndpoint,
+    MFADeviceListEndpoint,
+    MFALockdownEndpoint,
+    MFARecoveryCodesRegenerateEndpoint,
+    MFAStepUpEndpoint,
+    MFATOTPSetupEndpoint,
+    MFATOTPVerifyEndpoint,
+    MFAWebAuthnRegisterBeginEndpoint,
+    MFAWebAuthnRegisterCompleteEndpoint,
+    UserMFAEndpoint,
+    ## End MFA
     ## Workspaces
     UserWorkSpacesEndpoint,
 )
@@ -56,6 +68,42 @@ urlpatterns = [
         UserEndpoint.as_view({"get": "retrieve_instance_admin"}),
         name="users",
     ),
+    # MFA / 2FA management
+    path("users/me/mfa/", UserMFAEndpoint.as_view(), name="user-mfa"),
+    path(
+        "users/me/mfa/totp/setup/",
+        MFATOTPSetupEndpoint.as_view(),
+        name="mfa-totp-setup",
+    ),
+    path(
+        "users/me/mfa/totp/verify/",
+        MFATOTPVerifyEndpoint.as_view(),
+        name="mfa-totp-verify",
+    ),
+    path(
+        "users/me/mfa/webauthn/register/begin/",
+        MFAWebAuthnRegisterBeginEndpoint.as_view(),
+        name="mfa-webauthn-register-begin",
+    ),
+    path(
+        "users/me/mfa/webauthn/register/complete/",
+        MFAWebAuthnRegisterCompleteEndpoint.as_view(),
+        name="mfa-webauthn-register-complete",
+    ),
+    path("users/me/mfa/devices/", MFADeviceListEndpoint.as_view(), name="mfa-devices"),
+    path(
+        "users/me/mfa/devices/<uuid:pk>/",
+        MFADeviceDetailEndpoint.as_view(),
+        name="mfa-device-detail",
+    ),
+    path(
+        "users/me/mfa/recovery-codes/regenerate/",
+        MFARecoveryCodesRegenerateEndpoint.as_view(),
+        name="mfa-recovery-codes-regenerate",
+    ),
+    path("users/me/mfa/lockdown/", MFALockdownEndpoint.as_view(), name="mfa-lockdown"),
+    path("users/me/mfa/step-up/", MFAStepUpEndpoint.as_view(), name="mfa-step-up"),
+    # End MFA
     path("users/me/onboard/", UpdateUserOnBoardedEndpoint.as_view(), name="user-onboard"),
     path(
         "users/me/tour-completed/",
