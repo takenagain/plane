@@ -68,6 +68,9 @@ export interface IInstanceConfig {
   admin_base_url: string | undefined;
   is_self_managed: boolean;
   instance_changelog_url?: string;
+  /** 2FA availability/enforcement flags surfaced by the backend `InstanceEndpoint` (R18). */
+  is_mfa_enabled?: boolean;
+  is_mfa_enforced?: boolean;
 }
 
 export interface IInstanceAdmin {
