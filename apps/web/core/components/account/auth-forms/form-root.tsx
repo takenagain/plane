@@ -19,6 +19,7 @@ import { useAppRouter } from "@/hooks/use-app-router";
 import { AuthService } from "@/services/auth.service";
 // local components
 import { AuthEmailForm } from "./email";
+import { MfaVerifyForm } from "./mfa-verify";
 import { AuthPasswordForm } from "./password";
 import { AuthUniqueCodeForm } from "./unique-code";
 
@@ -42,6 +43,8 @@ export const AuthFormRoot = observer(function AuthFormRoot(props: TAuthFormRoot)
   // query params
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next_path");
+  const mfaMarker = searchParams.get("mfa");
+  const isMfaLockdown = mfaMarker === "lockdown" || searchParams.get("lockdown") === "1";
   // states
   const [isExistingEmail, setIsExistingEmail] = useState(false);
   // hooks
@@ -117,6 +120,9 @@ export const AuthFormRoot = observer(function AuthFormRoot(props: TAuthFormRoot)
         nextPath={nextPath || undefined}
       />
     );
+  }
+  if (authStep === EAuthSteps.MFA_VERIFY) {
+    return <MfaVerifyForm lockdown={isMfaLockdown} />;
   }
   if (authStep === EAuthSteps.PASSWORD) {
     return (

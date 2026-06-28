@@ -28,6 +28,7 @@ export const coreRoutes: RouteConfigEntry[] = [
   layout("./(all)/accounts/set-password/layout.tsx", [
     route("accounts/set-password", "./(all)/accounts/set-password/page.tsx"),
   ]),
+  layout("./(all)/accounts/setup-2fa/layout.tsx", [route("accounts/setup-2fa", "./(all)/accounts/setup-2fa/page.tsx")]),
 
   // Create Workspace
   layout("./(all)/create-workspace/layout.tsx", [route("create-workspace", "./(all)/create-workspace/page.tsx")]),

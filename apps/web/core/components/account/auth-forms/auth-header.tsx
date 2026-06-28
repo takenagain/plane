@@ -38,6 +38,10 @@ const Titles = {
       header: "Work in all dimensions.",
       subHeader: "Welcome back to Plane.",
     },
+    [EAuthSteps.MFA_VERIFY]: {
+      header: "Work in all dimensions.",
+      subHeader: "Confirm it's you to finish signing in.",
+    },
   },
   [EAuthModes.SIGN_UP]: {
     [EAuthSteps.EMAIL]: {
@@ -51,6 +55,10 @@ const Titles = {
     [EAuthSteps.UNIQUE_CODE]: {
       header: "Work in all dimensions.",
       subHeader: "Create your Plane account.",
+    },
+    [EAuthSteps.MFA_VERIFY]: {
+      header: "Work in all dimensions.",
+      subHeader: "Confirm it's you to finish signing in.",
     },
   },
 };

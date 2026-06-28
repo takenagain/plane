@@ -101,15 +101,9 @@ export const usePageFallback = (args: TArgs) => {
 
       const payload: TDocumentPayload = {
         description_html: html,
+        description_binary: binary ? convertBinaryDataToBase64String(binary) : "",
+        description_json: json ?? {},
       };
-
-      if (json) {
-        payload.description_json = json;
-      }
-
-      if (binary) {
-        payload.description_binary = convertBinaryDataToBase64String(binary);
-      }
 
       await updatePageDescription(payload);
     } catch (error: unknown) {

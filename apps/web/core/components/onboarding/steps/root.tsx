@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import type { IWorkspaceMemberInvitation } from "@plane/types";
 import { EOnboardingSteps } from "@plane/types";
 // local components
+import { MfaSetupStep } from "./mfa";
 import { ProfileSetupStep } from "./profile";
 import { RoleSetupStep } from "./role";
 import { InviteTeamStep } from "./team";
@@ -33,6 +34,8 @@ function OnboardingStepContent({ currentStep, invitations, handleStepChange }: P
       return <WorkspaceSetupStep invitations={invitations ?? []} handleStepChange={handleStepChange} />;
     case EOnboardingSteps.INVITE_MEMBERS:
       return <InviteTeamStep handleStepChange={handleStepChange} />;
+    case EOnboardingSteps.MFA_SETUP:
+      return <MfaSetupStep handleStepChange={handleStepChange} />;
     default:
       return null;
   }

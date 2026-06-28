@@ -30,6 +30,18 @@ export abstract class APIService {
           const currentPath = window.location.pathname;
           window.location.replace(`/${currentPath ? `?next_path=${currentPath}` : ``}`);
         }
+        // Forced 2FA setup: the backend middleware blocks every non-allowlisted request with
+        // a 403 MFA_SETUP_REQUIRED until a factor is confirmed. Route the user to the setup gate.
+        if (
+          error.response &&
+          error.response.status === 403 &&
+          error.response.data?.error_code === "MFA_SETUP_REQUIRED"
+        ) {
+          const setupPath = "/accounts/setup-2fa";
+          if (window.location.pathname !== setupPath) {
+            window.location.replace(setupPath);
+          }
+        }
         return Promise.reject(error);
       }
     );

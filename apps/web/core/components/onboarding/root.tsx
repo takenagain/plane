@@ -22,7 +22,9 @@ type Props = {
   invitations?: IWorkspaceMemberInvitation[];
 };
 
-export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [] }: Props) {
+const EMPTY_INVITATIONS: IWorkspaceMemberInvitation[] = [];
+
+export const OnboardingRoot = observer(function OnboardingRoot({ invitations = EMPTY_INVITATIONS }: Props) {
   const [currentStep, setCurrentStep] = useState<TOnboardingStep>(EOnboardingSteps.PROFILE_SETUP);
   // store hooks
   const { data: user } = useUser();
@@ -32,6 +34,10 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
 
   const workspacesList = Object.values(workspaces ?? {});
   const isSelfManaged = instanceConfig?.is_self_managed;
+  // Show the final "Secure your account" 2FA step when the instance offers 2FA and the
+  // user hasn't completed it yet (R5). Otherwise we finish onboarding directly.
+  const isMfaOnboardingStepEnabled =
+    Boolean(instanceConfig?.is_mfa_enabled) && !userProfile?.onboarding_step?.mfa_setup;
 
   // Calculate total steps based on whether invitations are available
   const hasInvitations = invitations.length > 0;
@@ -67,6 +73,12 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
     [user, userProfile, updateUserProfile]
   );
 
+  // Either jump to the final 2FA step or complete onboarding outright.
+  const goToFinalStep = useCallback(() => {
+    if (isMfaOnboardingStepEnabled) setCurrentStep(EOnboardingSteps.MFA_SETUP);
+    else finishOnboarding();
+  }, [isMfaOnboardingStepEnabled, finishOnboarding]);
+
   const handleStepChange = useCallback(
     (step: EOnboardingSteps, skipInvites?: boolean) => {
       switch (step) {
@@ -74,7 +86,7 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
           if (isSelfManaged) {
             // Skip role & use case steps for self-hosted
             stepChange({ profile_complete: true });
-            if (workspacesList.length > 0) finishOnboarding();
+            if (workspacesList.length > 0) goToFinalStep();
             else setCurrentStep(EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN);
           } else {
             setCurrentStep(EOnboardingSteps.ROLE_SETUP);
@@ -85,11 +97,11 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
           break;
         case EOnboardingSteps.USE_CASE_SETUP:
           stepChange({ profile_complete: true });
-          if (workspacesList.length > 0) finishOnboarding();
+          if (workspacesList.length > 0) goToFinalStep();
           else setCurrentStep(EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN);
           break;
         case EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN:
-          if (skipInvites) finishOnboarding();
+          if (skipInvites) goToFinalStep();
           else {
             setCurrentStep(EOnboardingSteps.INVITE_MEMBERS);
             stepChange({ workspace_create: true });
@@ -97,11 +109,15 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
           break;
         case EOnboardingSteps.INVITE_MEMBERS:
           stepChange({ workspace_invite: true });
+          goToFinalStep();
+          break;
+        case EOnboardingSteps.MFA_SETUP:
+          stepChange({ mfa_setup: true });
           finishOnboarding();
           break;
       }
     },
-    [stepChange, finishOnboarding, workspacesList, isSelfManaged]
+    [stepChange, finishOnboarding, goToFinalStep, workspacesList, isSelfManaged]
   );
 
   const updateCurrentStep = (step: EOnboardingSteps) => setCurrentStep(step);
