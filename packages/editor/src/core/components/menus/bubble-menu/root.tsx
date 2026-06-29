@@ -133,16 +133,23 @@ export function EditorBubbleMenu(props: Props) {
     options: {
       placement: "top",
       onShow: () => {
+        // The floating menu can fire `onShow` from a debounced/async update after the
+        // editor view has been torn down (navigation, unmount). A destroyed TipTap
+        // editor nulls its `commandManager`, so `editor.commands` throws
+        // "Cannot read properties of null (reading 'commands')". Bail out defensively.
+        if (editor.isDestroyed) return;
         if (editor.storage.link) {
           editor.storage.link.isBubbleMenuOpen = true;
         }
         editor.commands.addActiveDropbarExtension("bubble-menu");
       },
       onHide: () => {
+        if (editor.isDestroyed) return;
         if (editor.storage.link) {
           editor.storage.link.isBubbleMenuOpen = false;
         }
         setTimeout(() => {
+          if (editor.isDestroyed) return;
           editor.commands.removeActiveDropbarExtension("bubble-menu");
         }, 0);
       },
