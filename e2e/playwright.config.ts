@@ -1,8 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const WEB_BASE_URL = process.env.E2E_WEB_URL ?? "http://localhost:3000";
-const API_BASE_URL = process.env.E2E_API_URL ?? WEB_BASE_URL;
-const COMPOSE_PROJECT = process.env.E2E_COMPOSE_PROJECT ?? "wrrw-e2e";
+const WEB_BASE_URL = process.env.E2E_WEB_URL ?? process.env.BASE_URL ?? "http://localhost:3000";
+const API_BASE_URL = process.env.E2E_API_URL ?? process.env.E2E_API_BASE_URL ?? WEB_BASE_URL;
+const COMPOSE_PROJECT = process.env.E2E_COMPOSE_PROJECT ?? (process.env.CI ? "" : "wrrw-e2e");
 
 // Keep legacy helpers (time-tracking.ts) aligned with this config.
 process.env.PLAYWRIGHT_BASE_URL = WEB_BASE_URL;

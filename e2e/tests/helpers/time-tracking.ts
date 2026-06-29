@@ -61,8 +61,8 @@ export function resolveApiContainerName() {
     return { runtime, container: explicit };
   }
 
-  const composeProject = process.env.E2E_COMPOSE_PROJECT || "wrrw-e2e";
-  const preferred = `${composeProject}-api-1`;
+  const composeProject = process.env.E2E_COMPOSE_PROJECT?.trim();
+  const preferred = composeProject ? `${composeProject}-api-1` : null;
 
   const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
   const names = output
@@ -71,7 +71,7 @@ export function resolveApiContainerName() {
     .filter(Boolean);
 
   const container =
-    names.find((name) => name === preferred) ||
+    (preferred && names.find((name) => name === preferred)) ||
     names.find((name) => name.endsWith("-api-1")) ||
     names.find((name) => name === "api" || name.endsWith("_api_1")) ||
     "api";
@@ -583,7 +583,7 @@ async function completeOnboarding(page: Page) {
   for (let attempt = 0; attempt < 3; attempt++) {
     url = page.url();
     if (!url.includes("/onboarding")) break;
-    const anyBtn = page.getByRole("button", { name: /skip|continue|go to workspace|let's go/i });
+    const anyBtn = page.getByRole("button", { name: /skip|continue|go to workspace|let's go|not now/i });
     if (await anyBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await anyBtn.click();
       await page.waitForTimeout(3000);
@@ -595,6 +595,8 @@ async function completeOnboarding(page: Page) {
 }
 
 export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
+  tryEnsureE2ESeedData();
+
   await page.goto(BASE_URL);
   await waitForPageLoad(page);
   await page.waitForTimeout(2000);
@@ -634,6 +636,12 @@ export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
 
   if (page.url().includes("/sign-in")) {
     await loginWithEmailAndPassword(page);
+  }
+
+  if (page.url().includes("/accounts/setup-2fa")) {
+    tryEnsureE2ESeedData();
+    await page.goto(BASE_URL);
+    await waitForPageLoad(page);
   }
 
   await completeOnboarding(page);
