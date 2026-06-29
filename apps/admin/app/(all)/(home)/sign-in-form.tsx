@@ -11,7 +11,6 @@ import { Eye, EyeOff } from "lucide-react";
 import type { EAdminAuthErrorCodes, TAdminAuthErrorInfo } from "@plane/constants";
 import { API_BASE_URL } from "@plane/constants";
 import { Button } from "@plane/propel/button";
-import { AuthService } from "@plane/services";
 import { Input, Spinner } from "@plane/ui";
 // components
 import { Banner } from "@/components/common/banner";
@@ -21,9 +20,7 @@ import { AuthBanner } from "./auth-banner";
 import { AuthHeader } from "./auth-header";
 import { authErrorHandler } from "./auth-helpers";
 import { InstanceMfaVerifyForm } from "./mfa-verify-form";
-
-// service initialization
-const authService = new AuthService();
+import { useAuthCsrfToken } from "./use-auth-csrf-token";
 
 // error codes
 enum EErrorCodes {
@@ -60,18 +57,13 @@ export function InstanceSignInForm() {
   const mfaMarker = searchParams.get("mfa") || undefined;
   // state
   const [showPassword, setShowPassword] = useState(false);
-  const [csrfToken, setCsrfToken] = useState<string | undefined>(undefined);
+  const csrfToken = useAuthCsrfToken();
   const [formData, setFormData] = useState<TFormData>(defaultFromData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorInfo, setErrorInfo] = useState<TAdminAuthErrorInfo | undefined>(undefined);
 
   const handleFormChange = (key: keyof TFormData, value: string | boolean) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
-
-  useEffect(() => {
-    if (csrfToken === undefined)
-      authService.requestCSRFToken().then((data) => data?.csrf_token && setCsrfToken(data.csrf_token));
-  }, [csrfToken]);
 
   useEffect(() => {
     if (emailParam) setFormData((prev) => ({ ...prev, email: emailParam }));
@@ -112,7 +104,9 @@ export function InstanceSignInForm() {
   }, [errorCode]);
 
   // After a correct password the backend redirects back with the MFA marker; swap in the challenge.
-  if (mfaMarker === "required" || mfaMarker === "lockdown") return <InstanceMfaVerifyForm />;
+  if (mfaMarker === "required" || mfaMarker === "lockdown") {
+    return <InstanceMfaVerifyForm csrfToken={csrfToken} />;
+  }
 
   return (
     <>

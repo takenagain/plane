@@ -4,19 +4,17 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 // plane internal packages
 import { API_BASE_URL } from "@plane/constants";
 import { Button } from "@plane/propel/button";
-import { AuthService } from "@plane/services";
 import { Input, Spinner } from "@plane/ui";
 // components
 import { Banner } from "@/components/common/banner";
 import { FormHeader } from "@/components/instance/form-header";
 import { AuthHeader } from "./auth-header";
-
-const authService = new AuthService();
+import { useAuthCsrfToken } from "./use-auth-csrf-token";
 
 /**
  * Minimal admin login MFA challenge. Mirrors the native-form-POST + redirect
@@ -24,20 +22,15 @@ const authService = new AuthService();
  * shared `auth/mfa/verify/` endpoint. Hardware-key (WebAuthn) admin login is not
  * covered by this minimal mirror — see frontend integration notes.
  */
-export function InstanceMfaVerifyForm() {
+export function InstanceMfaVerifyForm({ csrfToken: initialCsrfToken }: { csrfToken?: string } = {}) {
   const searchParams = useSearchParams();
   const errorMessage = searchParams.get("error_message") || undefined;
   const nextPath = searchParams.get("next_path") || undefined;
 
-  const [csrfToken, setCsrfToken] = useState<string | undefined>(undefined);
+  const csrfToken = useAuthCsrfToken(initialCsrfToken);
   const [useRecovery, setUseRecovery] = useState(false);
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (csrfToken === undefined)
-      authService.requestCSRFToken().then((data) => data?.csrf_token && setCsrfToken(data.csrf_token));
-  }, [csrfToken]);
 
   const isButtonDisabled = isSubmitting || !code.trim() || (!useRecovery && code.trim().length !== 6);
 
