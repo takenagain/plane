@@ -77,7 +77,9 @@ class MFAEnforcementMiddleware:
         # Source of truth for the gate: UserMFA.is_enabled.
         from plane.db.models import UserMFA
 
-        if UserMFA.objects.filter(user=user, is_enabled=True).exists():
+        if not hasattr(request, "_mfa_enrolled"):
+            request._mfa_enrolled = UserMFA.objects.filter(user=user, is_enabled=True).exists()
+        if request._mfa_enrolled:
             return False
 
         # Allow the setup / verify / sign-out endpoints through.
