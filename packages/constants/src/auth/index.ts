@@ -65,6 +65,7 @@ export enum EAuthSteps {
   EMAIL = "EMAIL",
   PASSWORD = "PASSWORD",
   UNIQUE_CODE = "UNIQUE_CODE",
+  MFA_VERIFY = "MFA_VERIFY",
 }
 
 export enum EErrorAlertType {

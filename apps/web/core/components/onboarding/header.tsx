@@ -50,11 +50,14 @@ export const OnboardingHeader = observer(function OnboardingHeader(props: Onboar
 
   // step order for progress tracking — include INVITE_MEMBERS if user is currently on it
   const showInviteStep = !hasInvitations || currentStep === EOnboardingSteps.INVITE_MEMBERS;
+  // include the final 2FA step when the instance offers 2FA (or the user is already on it)
+  const showMfaStep = Boolean(instanceConfig?.is_mfa_enabled) || currentStep === EOnboardingSteps.MFA_SETUP;
   const stepOrder: TOnboardingStep[] = [
     EOnboardingSteps.PROFILE_SETUP,
     ...(isSelfManaged ? [] : [EOnboardingSteps.ROLE_SETUP, EOnboardingSteps.USE_CASE_SETUP]),
     EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN,
     ...(showInviteStep ? [EOnboardingSteps.INVITE_MEMBERS] : []),
+    ...(showMfaStep ? [EOnboardingSteps.MFA_SETUP] : []),
   ];
 
   // derived values

@@ -61,6 +61,9 @@ class UserSerializer(BaseSerializer):
 
 
 class UserMeSerializer(BaseSerializer):
+    mfa_enabled = serializers.SerializerMethodField()
+    mfa_setup_required = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -83,8 +86,20 @@ class UserMeSerializer(BaseSerializer):
             "is_email_verified",
             "last_login_medium",
             "last_login_time",
+            "mfa_enabled",
+            "mfa_setup_required",
         ]
         read_only_fields = fields
+
+    def get_mfa_enabled(self, obj):
+        from plane.authentication.utils.mfa import is_mfa_enabled_for_user
+
+        return is_mfa_enabled_for_user(obj)
+
+    def get_mfa_setup_required(self, obj):
+        from plane.authentication.utils.mfa import is_mfa_setup_required_for_user
+
+        return is_mfa_setup_required_for_user(obj)
 
 
 class UserMeSettingsSerializer(BaseSerializer):

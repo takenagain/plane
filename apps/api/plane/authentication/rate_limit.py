@@ -66,3 +66,26 @@ class EmailVerificationThrottle(UserRateThrottle):
             )
         except AuthenticationException as e:
             return Response(e.get_error_dict(), status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class MFAVerifyThrottle(UserRateThrottle):
+    """
+    Throttle for MFA verification endpoints (TOTP / recovery / WebAuthn).
+
+    The 6-digit TOTP space is brute-forceable, so verification is rate limited
+    per-user (and per-IP for the anonymous partial-auth login challenge, since
+    UserRateThrottle falls back to the client IP when no user is authenticated).
+    Defense-in-depth alongside the Redis attempt counter in utils/mfa.py.
+    """
+
+    rate = os.environ.get("MFA_VERIFY_RATE_LIMIT", "10/minute")
+    scope = "mfa_verify"
+
+    def throttle_failure_view(self, request, *args, **kwargs):
+        try:
+            raise AuthenticationException(
+                error_code=AUTHENTICATION_ERROR_CODES["RATE_LIMIT_EXCEEDED"],
+                error_message="RATE_LIMIT_EXCEEDED",
+            )
+        except AuthenticationException as e:
+            return Response(e.get_error_dict(), status=status.HTTP_429_TOO_MANY_REQUESTS)

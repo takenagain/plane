@@ -16,6 +16,7 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Input, PasswordStrengthIndicator } from "@plane/ui";
 import { getPasswordStrength } from "@plane/utils";
 // components
+import { TwoFactorSettingsSection } from "@/components/account/two-factor/settings-section";
 import { ProfileSettingsHeading } from "@/components/settings/profile/heading";
 // helpers
 import { authErrorHandler, EAuthenticationErrorCodes, passwordErrors } from "@/helpers/authentication.helper";
@@ -272,6 +273,8 @@ export const SecurityProfileSettings = observer(function SecurityProfileSettings
           </div>
         </div>
       </form>
+
+      <TwoFactorSettingsSection />
     </div>
   );
 });

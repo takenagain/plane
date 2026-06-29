@@ -28,6 +28,9 @@ def get_default_onboarding():
         "workspace_create": False,
         "workspace_invite": False,
         "workspace_join": False,
+        # 2FA setup is the final onboarding step; the authoritative source of
+        # truth for enforcement remains UserMFA.is_enabled (see the MFA gate).
+        "mfa_setup": False,
     }
 
 

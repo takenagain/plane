@@ -4,8 +4,10 @@ import { execFileSync } from "node:child_process";
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
-export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || "http://localhost:8081";
-export const API_BASE_URL = process.env.E2E_API_BASE_URL || BASE_URL;
+export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || "http://localhost:3000";
+export const API_BASE_URL =
+  process.env.E2E_API_BASE_URL || process.env.E2E_API_URL || process.env.PLAYWRIGHT_BASE_URL || BASE_URL;
+export const E2E_TOTP_SECRET = process.env.E2E_TOTP_SECRET || "JBSWY3DPEHPK3PXP";
 
 export const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.com";
 export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "TestPass123!";
@@ -52,14 +54,29 @@ function detectContainerRuntime(): string {
   throw new Error("Neither podman nor docker is available");
 }
 
-function resolveApiContainerName() {
+export function resolveApiContainerName() {
   const runtime = detectContainerRuntime();
+  const explicit = process.env.E2E_API_CONTAINER?.trim();
+  if (explicit) {
+    return { runtime, container: explicit };
+  }
+
+  const composeProject = process.env.E2E_COMPOSE_PROJECT?.trim();
+  const preferred = composeProject ? `${composeProject}-api-1` : null;
+
   const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
   const names = output
     .split(/\r?\n/)
     .map((name) => name.trim())
     .filter(Boolean);
-  return { runtime, container: names.find((name) => name === "api" || name.endsWith("_api_1")) || "api" };
+
+  const container =
+    (preferred && names.find((name) => name === preferred)) ||
+    names.find((name) => name.endsWith("-api-1")) ||
+    names.find((name) => name === "api" || name.endsWith("_api_1")) ||
+    "api";
+
+  return { runtime, container };
 }
 
 export function ensureE2ESeedData(): { workspaceSlug: string; projectId: string; issueId: string } {
@@ -108,6 +125,23 @@ user.is_email_verified = True
 user.set_password(password)
 user.save()
 
+from plane.authentication.utils import mfa as mfa_utils
+from plane.db.models import UserMFA, MFADevice
+
+e2e_totp_secret = "JBSWY3DPEHPK3PXP"
+user_mfa, _ = UserMFA.objects.get_or_create(user=user)
+user_mfa.is_enabled = True
+user_mfa.save()
+
+MFADevice.objects.filter(user=user, device_type=MFADevice.DeviceType.TOTP).delete()
+MFADevice.objects.create(
+    user=user,
+    device_type=MFADevice.DeviceType.TOTP,
+    is_confirmed=True,
+    secret_encrypted=mfa_utils.encrypt_secret(e2e_totp_secret),
+    name="E2E Authenticator",
+)
+
 instance, _ = Instance.objects.get_or_create(
     defaults={
         "instance_name": company_name,
@@ -153,6 +187,7 @@ profile.onboarding_step = {
     "workspace_create": True,
     "workspace_invite": True,
     "workspace_join": True,
+    "mfa_setup": True,
 }
 profile.last_workspace_id = workspace.id
 profile.company_name = company_name
@@ -282,6 +317,95 @@ export async function waitForPageLoad(page: Page) {
   await page.waitForLoadState("domcontentloaded");
 }
 
+export async function completeMfaChallengeForRequest(
+  request: { post: Page["request"]["post"] },
+  apiBaseUrl: string,
+  csrfToken: string
+) {
+  const { authenticator } = await import("otplib");
+  const code = authenticator.generate(E2E_TOTP_SECRET);
+
+  const verifyResponse = await request.post(`${apiBaseUrl}/auth/mfa/verify/`, {
+    data: { code },
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrfToken,
+      Referer: `${apiBaseUrl}/`,
+    },
+  });
+
+  if (verifyResponse.status() === 200) {
+    return;
+  }
+
+  const body = (await verifyResponse.json().catch(() => ({}))) as { error_message?: string };
+  if (body.error_message === "MFA_REQUIRED") {
+    return;
+  }
+
+  expect(verifyResponse.ok()).toBeTruthy();
+}
+
+export async function signInApiRequest(
+  request: { get: Page["request"]["get"]; post: Page["request"]["post"] },
+  apiBaseUrl: string = API_BASE_URL
+) {
+  let csrfToken = "";
+  for (let attempt = 0; attempt < 15; attempt++) {
+    const csrfResponse = await request.get(`${apiBaseUrl}/auth/get-csrf-token/`);
+    if (!csrfResponse.ok()) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      continue;
+    }
+    const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
+    csrfToken = csrfData.csrf_token ?? "";
+    if (csrfToken) break;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  expect(csrfToken).not.toBe("");
+
+  const signInResponse = await request.post(`${apiBaseUrl}/auth/sign-in/`, {
+    form: {
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+    },
+    headers: {
+      "X-CSRFToken": csrfToken,
+      Referer: `${apiBaseUrl}/`,
+    },
+    maxRedirects: 0,
+  });
+  expect([200, 302]).toContain(signInResponse.status());
+
+  const redirectLocation = signInResponse.headers().location ?? "";
+  if (redirectLocation.includes("mfa=required")) {
+    await completeMfaChallengeForRequest(request, apiBaseUrl, csrfToken);
+  } else {
+    const workspaceProbe = await request.get(`${apiBaseUrl}/api/workspaces/`);
+    if (!workspaceProbe.ok()) {
+      await completeMfaChallengeForRequest(request, apiBaseUrl, csrfToken);
+    }
+  }
+}
+
+async function completeMfaChallengeViaUi(page: Page) {
+  const totpInput = page.locator("#mfa-totp");
+  if (!(await totpInput.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    return;
+  }
+
+  const totpMethod = page.getByRole("button", { name: /authenticator app/i });
+  if (await totpMethod.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await totpMethod.click();
+  }
+
+  const { authenticator } = await import("otplib");
+  const code = authenticator.generate(E2E_TOTP_SECRET);
+  await totpInput.fill(code);
+  await page.waitForTimeout(3_000);
+  await waitForPageLoad(page);
+}
+
 async function resolveWorkspaceSlugWithProjectAccess(page: Page, preferredSlug = ""): Promise<string> {
   const candidateSlugs = new Set<string>();
   if (WORKSPACE_NAME) {
@@ -377,6 +501,7 @@ async function loginWithEmailAndPassword(page: Page) {
     await submitButton.click();
     await page.waitForTimeout(4000);
     await waitForPageLoad(page);
+    await completeMfaChallengeViaUi(page);
     return;
   }
 
@@ -458,7 +583,7 @@ async function completeOnboarding(page: Page) {
   for (let attempt = 0; attempt < 3; attempt++) {
     url = page.url();
     if (!url.includes("/onboarding")) break;
-    const anyBtn = page.getByRole("button", { name: /skip|continue|go to workspace|let's go/i });
+    const anyBtn = page.getByRole("button", { name: /skip|continue|go to workspace|let's go|not now/i });
     if (await anyBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await anyBtn.click();
       await page.waitForTimeout(3000);
@@ -470,6 +595,8 @@ async function completeOnboarding(page: Page) {
 }
 
 export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
+  tryEnsureE2ESeedData();
+
   await page.goto(BASE_URL);
   await waitForPageLoad(page);
   await page.waitForTimeout(2000);
@@ -511,6 +638,12 @@ export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
     await loginWithEmailAndPassword(page);
   }
 
+  if (page.url().includes("/accounts/setup-2fa")) {
+    tryEnsureE2ESeedData();
+    await page.goto(BASE_URL);
+    await waitForPageLoad(page);
+  }
+
   await completeOnboarding(page);
 
   const finalUrl = page.url();
@@ -537,37 +670,5 @@ export async function signInViaApi(page: Page) {
   }
   expect(apiReady).toBe(true);
 
-  let csrfToken = "";
-  for (let attempt = 0; attempt < 15; attempt++) {
-    const csrfResponse = await page.request.get(`${API_BASE_URL}/auth/get-csrf-token/`);
-    if (!csrfResponse.ok()) {
-      await page.waitForTimeout(1000);
-      continue;
-    }
-
-    const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
-    csrfToken = csrfData.csrf_token ?? "";
-    if (!csrfToken) {
-      const setCookieHeader = csrfResponse.headers()["set-cookie"] ?? "";
-      const cookieMatch = setCookieHeader.match(/csrftoken=([^;]+)/);
-      csrfToken = cookieMatch?.[1] ?? "";
-    }
-    if (csrfToken) {
-      break;
-    }
-    await page.waitForTimeout(1000);
-  }
-  expect(csrfToken).not.toBe("");
-
-  const signInResponse = await page.request.post(`${API_BASE_URL}/auth/sign-in/`, {
-    form: {
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    },
-    headers: {
-      "X-CSRFToken": csrfToken,
-      Referer: `${API_BASE_URL}/`,
-    },
-  });
-  expect([200, 302]).toContain(signInResponse.status());
+  await signInApiRequest(page.request, API_BASE_URL);
 }

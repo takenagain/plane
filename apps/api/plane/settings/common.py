@@ -106,6 +106,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "crum.CurrentRequestUserMiddleware",
+    "plane.authentication.middleware.mfa_enforcement.MFAEnforcementMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "plane.middleware.request_body_size.RequestBodySizeLimitMiddleware",
     "plane.middleware.logger.APITokenLogMiddleware",
@@ -413,6 +414,26 @@ LIVE_URL = urljoin(LIVE_BASE_URL, LIVE_BASE_PATH) if LIVE_BASE_URL else None
 
 # WEB URL
 WEB_URL = os.environ.get("WEB_URL")
+
+###### Local 2FA / MFA ######
+
+# How long the partial-auth ("password OK, 2FA pending") window stays valid
+# before the user must re-enter the first factor.
+MFA_PENDING_TTL_SECONDS = int(os.environ.get("MFA_PENDING_TTL_SECONDS", 300))
+
+# TTL for a single WebAuthn / registration challenge stored in Redis.
+MFA_CHALLENGE_TTL_SECONDS = int(os.environ.get("MFA_CHALLENGE_TTL_SECONDS", 300))
+
+# Max wrong verification attempts per challenge window before lockout.
+MFA_MAX_VERIFY_ATTEMPTS = int(os.environ.get("MFA_MAX_VERIFY_ATTEMPTS", 5))
+
+# How long a step-up re-auth remains valid for sensitive management ops.
+MFA_STEP_UP_TTL_SECONDS = int(os.environ.get("MFA_STEP_UP_TTL_SECONDS", 300))
+
+# WebAuthn relying-party defaults (overridable via InstanceConfiguration).
+MFA_WEBAUTHN_RP_ID = os.environ.get("MFA_WEBAUTHN_RP_ID", "")
+MFA_WEBAUTHN_RP_NAME = os.environ.get("MFA_WEBAUTHN_RP_NAME", "Plane")
+MFA_WEBAUTHN_ORIGIN = os.environ.get("MFA_WEBAUTHN_ORIGIN", "")
 
 HARD_DELETE_AFTER_DAYS = int(os.environ.get("HARD_DELETE_AFTER_DAYS", 60))
 

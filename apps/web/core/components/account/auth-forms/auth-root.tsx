@@ -39,6 +39,8 @@ export const AuthRoot = observer(function AuthRoot(props: TAuthRoot) {
   const invitation_id = searchParams.get("invitation_id");
   const workspaceSlug = searchParams.get("slug");
   const error_code = searchParams.get("error_code");
+  // Login MFA challenge marker injected by Django after a successful password check (R10).
+  const mfaMarker = searchParams.get("mfa");
   // props
   const { authMode: currentAuthMode } = props;
   // states
@@ -57,6 +59,14 @@ export const AuthRoot = observer(function AuthRoot(props: TAuthRoot) {
   useEffect(() => {
     if (!authMode && currentAuthMode) setAuthMode(currentAuthMode);
   }, [currentAuthMode, authMode]);
+
+  // When the backend redirects back with the MFA marker, jump straight to the verify step.
+  useEffect(() => {
+    if (mfaMarker === "required" || mfaMarker === "lockdown") {
+      setAuthMode(EAuthModes.SIGN_IN);
+      setAuthStep(EAuthSteps.MFA_VERIFY);
+    }
+  }, [mfaMarker]);
 
   useEffect(() => {
     if (error_code && authMode) {
@@ -93,6 +103,21 @@ export const AuthRoot = observer(function AuthRoot(props: TAuthRoot) {
         ) {
           setAuthMode(EAuthModes.SIGN_IN);
           setAuthStep(EAuthSteps.UNIQUE_CODE);
+        }
+        // MFA challenge errors: keep the user on the verify step to retry.
+        if (
+          [
+            EAuthenticationErrorCodes.MFA_REQUIRED,
+            EAuthenticationErrorCodes.MFA_INVALID_CODE,
+            EAuthenticationErrorCodes.MFA_CODE_EXPIRED,
+            EAuthenticationErrorCodes.MFA_ATTEMPTS_EXHAUSTED,
+            EAuthenticationErrorCodes.MFA_INVALID_RECOVERY_CODE,
+            EAuthenticationErrorCodes.MFA_LOCKDOWN_ACTIVE,
+            EAuthenticationErrorCodes.WEBAUTHN_AUTH_FAILED,
+          ].includes(errorhandler.code)
+        ) {
+          setAuthMode(EAuthModes.SIGN_IN);
+          setAuthStep(EAuthSteps.MFA_VERIFY);
         }
 
         setErrorInfo(errorhandler);

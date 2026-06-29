@@ -17,6 +17,8 @@
     "check:lint": "turbo run check:lint",
     "check:format": "turbo run check:format",
     "check:types": "turbo run check:types",
+    "test:e2e": "pnpm --dir e2e test",
+    "test:e2e:install": "pnpm --dir e2e install && pnpm --dir e2e exec playwright install chromium",
     "prepare": "husky",
     "doctor": "npx react-doctor@latest"
   },
