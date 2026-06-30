@@ -135,7 +135,7 @@ export const TwoFactorSettingsSection = observer(function TwoFactorSettingsSecti
               />
             )}
 
-            {mfa.isEnabled && (
+            {mfa.isEnabled && !isAdding && (
               <div className="flex flex-col gap-3">
                 {regeneratedCodes ? (
                   <RecoveryCodesPanel

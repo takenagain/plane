@@ -21,9 +21,12 @@ rest with the existing Fernet helper.
 """
 
 # Python imports
+import hashlib
+import logging
 import os
 import secrets
 from datetime import timedelta
+from types import SimpleNamespace
 
 # Django imports
 from django.conf import settings
@@ -40,7 +43,19 @@ from webauthn import (
     verify_authentication_response,
     verify_registration_response,
 )
-from webauthn.helpers import bytes_to_base64url
+from webauthn.helpers import (
+    aaguid_to_string,
+    bytes_to_base64url,
+    byteslike_to_bytes,
+    decode_credential_public_key,
+    parse_attestation_object,
+    parse_backup_flags,
+    parse_client_data_json,
+    parse_registration_credential_json,
+)
+from webauthn.helpers.exceptions import InvalidRegistrationResponse
+from webauthn.helpers.structs import ClientDataType, PublicKeyCredentialType
+from webauthn.registration.generate_registration_options import default_supported_pub_key_algs
 from webauthn.helpers.structs import (
     AttestationConveyancePreference,
     AuthenticatorAttachment,
@@ -97,6 +112,30 @@ def _strip_scheme(host):
     # Drop any path / port.
     host = host.split("/", 1)[0]
     return host.split(":", 1)[0]
+
+
+logger = logging.getLogger("plane.authentication")
+
+
+def _expected_origins(origin):
+    """Return one or more acceptable WebAuthn origins for verification.
+
+    Self-hosted deployments often terminate TLS at a reverse proxy while
+    ``WEB_URL`` still uses ``http://``. Accept both schemes for the same host
+    so registration works regardless of which one is configured.
+    """
+    if not origin:
+        return origin
+    origins = [origin]
+    if origin.startswith("https://"):
+        alt = "http://" + origin[len("https://") :]
+    elif origin.startswith("http://"):
+        alt = "https://" + origin[len("http://") :]
+    else:
+        return origin
+    if alt not in origins:
+        origins.append(alt)
+    return origins if len(origins) > 1 else origins[0]
 
 
 def get_webauthn_rp_config():
@@ -335,23 +374,147 @@ def build_registration_options(
         user_id=str(user_id).encode("utf-8"),
         user_name=user_name,
         user_display_name=user_display_name or user_name,
-        attestation=AttestationConveyancePreference.DIRECT,
+        # Prefer no attestation so consumer passkeys and YubiKeys register reliably;
+        # AAGUID / device classification still come from authenticator data.
+        attestation=AttestationConveyancePreference.NONE,
         authenticator_selection=authenticator_selection,
         exclude_credentials=exclude,
     )
     return options, options.challenge
 
 
+def _is_attestation_verification_error(exc):
+    """True when strict verify failed only on attestation-statement checks."""
+    message = str(exc).lower()
+    return "attestation" in message
+
+
+def _verify_registration_trust_on_use(
+    credential,
+    expected_challenge,
+    expected_rp_id,
+    expected_origin,
+    require_user_verification=False,
+):
+    """Verify origin/challenge/RP binding without attestation certificate chains.
+
+    Consumer passkeys and YubiKeys often return attestation formats (``packed``,
+    ``apple``, …) whose certificate chains cannot be validated in a typical
+    self-hosted deployment. For MFA enrollment we only need a bound credential
+    public key for future assertions.
+    """
+    if isinstance(credential, (str, dict)):
+        credential = parse_registration_credential_json(credential)
+
+    if bytes_to_base64url(credential.raw_id) != credential.id:
+        raise InvalidRegistrationResponse("id and raw_id were not equivalent")
+
+    if credential.type != PublicKeyCredentialType.PUBLIC_KEY:
+        raise InvalidRegistrationResponse(
+            f'Unexpected credential type "{credential.type}", expected "public-key"'
+        )
+
+    response = credential.response
+    client_data_bytes = byteslike_to_bytes(response.client_data_json)
+    attestation_object_bytes = byteslike_to_bytes(response.attestation_object)
+
+    try:
+        client_data = parse_client_data_json(client_data_bytes)
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "clientDataJSON was malformed. See __cause__ for more info"
+        ) from exc
+
+    if client_data.type != ClientDataType.WEBAUTHN_CREATE:
+        raise InvalidRegistrationResponse(
+            f'Unexpected client data type "{client_data.type}", expected "{ClientDataType.WEBAUTHN_CREATE}"'
+        )
+
+    if expected_challenge != client_data.challenge:
+        raise InvalidRegistrationResponse("Client data challenge was not expected challenge")
+
+    origins = [expected_origin] if isinstance(expected_origin, str) else list(expected_origin)
+    if client_data.origin not in origins:
+        raise InvalidRegistrationResponse(
+            f'Unexpected client data origin "{client_data.origin}", expected one of {origins}'
+        )
+
+    try:
+        attestation_object = parse_attestation_object(attestation_object_bytes)
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "attestationObject was malformed. See __cause__ for more info"
+        ) from exc
+
+    auth_data = attestation_object.auth_data
+    expected_rp_id_hash = hashlib.sha256(expected_rp_id.encode("utf-8")).digest()
+    if auth_data.rp_id_hash != expected_rp_id_hash:
+        raise InvalidRegistrationResponse("Unexpected RP ID hash")
+
+    if not auth_data.flags.up:
+        raise InvalidRegistrationResponse(
+            "User presence was required, but was not present during attestation"
+        )
+
+    if require_user_verification and not auth_data.flags.uv:
+        raise InvalidRegistrationResponse(
+            "User verification is required but user was not verified during attestation"
+        )
+
+    if not auth_data.attested_credential_data:
+        raise InvalidRegistrationResponse("Authenticator did not provide attested credential data")
+
+    attested_credential_data = auth_data.attested_credential_data
+    if not attested_credential_data.credential_id:
+        raise InvalidRegistrationResponse("Authenticator did not provide a credential ID")
+    if not attested_credential_data.credential_public_key:
+        raise InvalidRegistrationResponse("Authenticator did not provide a credential public key")
+    if not attested_credential_data.aaguid:
+        raise InvalidRegistrationResponse("Authenticator did not provide an AAGUID")
+
+    decoded_public_key = decode_credential_public_key(attested_credential_data.credential_public_key)
+    if decoded_public_key.alg not in default_supported_pub_key_algs:
+        raise InvalidRegistrationResponse(
+            f'Unsupported credential public key alg "{decoded_public_key.alg}"'
+        )
+
+    parsed_backup_flags = parse_backup_flags(auth_data.flags)
+    return SimpleNamespace(
+        credential_id=attested_credential_data.credential_id,
+        credential_public_key=attested_credential_data.credential_public_key,
+        sign_count=auth_data.sign_count,
+        aaguid=aaguid_to_string(attested_credential_data.aaguid),
+        credential_device_type=parsed_backup_flags.credential_device_type,
+        credential_backed_up=parsed_backup_flags.credential_backed_up,
+    )
+
+
 def verify_registration(credential, expected_challenge, require_user_verification=False):
     """Verify a registration response. Returns a dict of persisted fields."""
     rp_id, _rp_name, origin = get_webauthn_rp_config()
-    verification = verify_registration_response(
-        credential=credential,
-        expected_challenge=expected_challenge,
-        expected_origin=origin,
-        expected_rp_id=rp_id,
-        require_user_verification=require_user_verification,
-    )
+    origins = _expected_origins(origin)
+    try:
+        verification = verify_registration_response(
+            credential=credential,
+            expected_challenge=expected_challenge,
+            expected_origin=origins,
+            expected_rp_id=rp_id,
+            require_user_verification=require_user_verification,
+        )
+    except InvalidRegistrationResponse as exc:
+        if not _is_attestation_verification_error(exc):
+            raise
+        logger.warning(
+            "Strict WebAuthn attestation verification failed (%s); using trust-on-use fallback",
+            exc,
+        )
+        verification = _verify_registration_trust_on_use(
+            credential=credential,
+            expected_challenge=expected_challenge,
+            expected_origin=origins,
+            expected_rp_id=rp_id,
+            require_user_verification=require_user_verification,
+        )
 
     device_class = _device_type_to_class(getattr(verification, "credential_device_type", None))
     backed_up = bool(getattr(verification, "credential_backed_up", False))
@@ -415,7 +578,7 @@ def verify_authentication(
         credential=credential,
         expected_challenge=expected_challenge,
         expected_rp_id=rp_id,
-        expected_origin=origin,
+        expected_origin=_expected_origins(origin),
         credential_public_key=base64url_to_bytes(public_key),
         credential_current_sign_count=current_sign_count,
         require_user_verification=require_user_verification,

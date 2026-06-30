@@ -139,8 +139,9 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
       router.push(`/${pathname ? `?next_path=${pathname}` : ``}`);
       return <></>;
     }
-    // Once setup is satisfied, send the user on to the app (or onboarding if still pending).
-    if (!mfaSetupRequired) {
+    // ForcedTwoFactorSetup owns navigation once the user finishes the wizard (recovery
+    // codes + Done). Only bounce away on entry when setup is already satisfied.
+    if (!mfaSetupRequired && !mfa.status?.is_enabled) {
       if (currentUserProfile?.id && isUserOnboard) {
         router.replace(getWorkspaceRedirectionUrl());
         return <></>;

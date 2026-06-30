@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 # Python imports
+import logging
 from datetime import timedelta
 
 # Django imports
@@ -24,6 +25,8 @@ from plane.authentication.adapter.error import (
 from plane.authentication.rate_limit import MFAVerifyThrottle
 from plane.authentication.utils import mfa as mfa_utils
 from plane.db.models import MFADevice, MFARecoveryCode, User, UserMFA
+
+logger = logging.getLogger("plane.authentication")
 
 
 def _error(code, status_code=status.HTTP_400_BAD_REQUEST, **payload):
@@ -213,7 +216,8 @@ class MFAWebAuthnRegisterCompleteEndpoint(BaseAPIView):
                 expected_challenge=challenge,
                 require_user_verification=require_uv,
             )
-        except Exception:
+        except Exception as exc:
+            logger.exception("WebAuthn registration verification failed: %s", exc)
             return _error("WEBAUTHN_REGISTRATION_FAILED")
 
         # Read client-reported signals from the raw payload, then resolve the

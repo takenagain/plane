@@ -36,12 +36,25 @@ const DEFAULT_ERROR_COPY: Record<string, string> = {
   default: "Something went wrong talking to your authenticator. Please try again.",
 };
 
+const API_ERROR_COPY: Record<string, string> = {
+  MFA_CODE_EXPIRED: "Your setup session expired. Please try again.",
+  WEBAUTHN_REGISTRATION_FAILED: DEFAULT_ERROR_COPY.default,
+};
+
 /**
  * Maps a thrown error from a WebAuthn ceremony to friendly, user-facing copy.
  * Ceremony-aborted errors (fired by `WebAuthnAbortService` on route changes) are
  * marked `silent` so callers can swallow them.
  */
 export const mapWebAuthnError = (error: unknown): TWebAuthnErrorCopy => {
+  if (error && typeof error === "object" && "error_message" in error) {
+    const code = String((error as { error_message?: string }).error_message ?? "");
+    return {
+      name: code,
+      message: API_ERROR_COPY[code] ?? DEFAULT_ERROR_COPY.default,
+      silent: false,
+    };
+  }
   if (error instanceof WebAuthnError) {
     // `code` is library-specific; ERROR_CEREMONY_ABORTED is fired on cancelCeremony().
     const isAborted = error.code === "ERROR_CEREMONY_ABORTED" || error.name === "AbortError";

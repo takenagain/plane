@@ -153,7 +153,6 @@ export class MfaStore implements IMfaStore {
       runInAction(() => {
         this.status = status;
         this.isLoading = false;
-        if (status.is_enabled) this.forcedSetupRequired = false;
       });
       return status;
     } catch (error) {

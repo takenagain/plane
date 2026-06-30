@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 import useSWR from "swr";
 import { useTranslation } from "@plane/i18n";
@@ -22,25 +22,31 @@ import { TwoFactorSetupContainer } from "./setup-container";
  * is enabled we route the user back into the workspace.
  */
 export const ForcedTwoFactorSetup = observer(function ForcedTwoFactorSetup() {
-  const { mfa } = useUser();
+  const { mfa, fetchCurrentUser } = useUser();
   const { t } = useTranslation();
   const router = useAppRouter();
+  const hasHandledInitialStatus = useRef(false);
 
   const { isLoading } = useSWR("MFA_STATUS", () => mfa.fetchStatus(), {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
 
-  // If 2FA is already enabled (e.g. set up elsewhere), leave the gate.
+  // If 2FA was already enabled before this visit (e.g. set up elsewhere), leave the gate.
+  // Do not redirect when enrollment completes mid-wizard — the user must acknowledge
+  // recovery codes and click Done first.
   useEffect(() => {
+    if (isLoading || hasHandledInitialStatus.current) return;
+    hasHandledInitialStatus.current = true;
     if (mfa.status?.is_enabled) {
       mfa.setForcedSetupRequired(false);
       router.replace("/");
     }
-  }, [mfa.status?.is_enabled, mfa, router]);
+  }, [isLoading, mfa.status?.is_enabled, mfa, router]);
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     mfa.setForcedSetupRequired(false);
+    await fetchCurrentUser().catch(() => undefined);
     router.replace("/");
   };
 

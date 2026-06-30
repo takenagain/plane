@@ -41,6 +41,21 @@ class TestWebAuthnRegistrationOptions:
 
 
 @pytest.mark.unit
+class TestExpectedOrigins:
+    def test_accepts_both_schemes_for_https_config(self):
+        assert mfa_utils._expected_origins("https://plan.example.com") == [
+            "https://plan.example.com",
+            "http://plan.example.com",
+        ]
+
+    def test_accepts_both_schemes_for_http_config(self):
+        assert mfa_utils._expected_origins("http://localhost:3000") == [
+            "http://localhost:3000",
+            "https://localhost:3000",
+        ]
+
+
+@pytest.mark.unit
 class TestWebAuthnRegistrationVerify:
     def _fake_verification(self):
         return SimpleNamespace(
@@ -66,6 +81,25 @@ class TestWebAuthnRegistrationVerify:
         assert result["aaguid"] == "aaguid-test"
         assert result["device_class"] == "single"
         assert result["backed_up"] is False
+
+    def test_attestation_failure_falls_back_to_trust_on_use(self):
+        from webauthn.helpers.exceptions import InvalidRegistrationResponse
+
+        with patch.object(
+            mfa_utils,
+            "verify_registration_response",
+            side_effect=InvalidRegistrationResponse("Attestation statement could not be verified"),
+        ), patch.object(
+            mfa_utils,
+            "_verify_registration_trust_on_use",
+            return_value=self._fake_verification(),
+        ) as trust_on_use:
+            result = mfa_utils.verify_registration(
+                credential="{}",
+                expected_challenge=b"challenge",
+            )
+        trust_on_use.assert_called_once()
+        assert result["credential_id"] == bytes_to_base64url(b"\x01\x02\x03")
 
 
 @pytest.mark.unit
