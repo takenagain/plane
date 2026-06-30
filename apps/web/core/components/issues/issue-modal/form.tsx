@@ -48,7 +48,7 @@ import { DeDupeButtonRoot } from "@/plane-web/components/de-dupe/de-dupe-button"
 import { DuplicateModalRoot } from "@/plane-web/components/de-dupe/duplicate-modal";
 import { IssueTypeSelect, WorkItemTemplateSelect } from "@/plane-web/components/issues/issue-modal";
 import { WorkItemModalAdditionalProperties } from "@/plane-web/components/issues/issue-modal/modal-additional-properties";
-import { useDebouncedDuplicateIssues } from "@/plane-web/hooks/use-debounced-duplicate-issues";
+import { useDebouncedDuplicateIssues } from "@/hooks/use-debounced-duplicate-issues";
 
 export interface IssueFormProps {
   data?: Partial<TIssue>;
@@ -520,6 +520,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                         if (e.key === "Enter") onCreateMoreToggleChange(!isCreateMoreToggleEnabled);
                       }}
                       role="button"
+                      tabIndex={0}
                     >
                       <ToggleSwitch value={isCreateMoreToggleEnabled} onChange={() => {}} size="sm" />
                       <span className="text-caption-sm-regular">{t("create_more")}</span>

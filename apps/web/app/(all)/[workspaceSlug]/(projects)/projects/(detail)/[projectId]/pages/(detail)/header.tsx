@@ -23,7 +23,7 @@ import { useAppRouter } from "@/hooks/use-app-router";
 // plane web imports
 import { CommonProjectBreadcrumbs } from "@/plane-web/components/breadcrumbs/common";
 import { PageDetailsHeaderExtraActions } from "@/plane-web/components/pages";
-import { EPageStoreType, usePage, usePageStore } from "@/plane-web/hooks/store";
+import { EPageStoreType, usePage, usePageStore } from "@/hooks/store";
 
 export interface IPagesHeaderProps {
   showButton?: boolean;
@@ -47,15 +47,19 @@ export const PageDetailsHeader = observer(function PageDetailsHeader() {
 
   const switcherOptions = projectPageIds
     .map((id) => {
-      const _page = id === pageId ? page : getPageById(id);
-      if (!_page) return;
+      const pageOption = id === pageId ? page : getPageById(id);
+      if (!pageOption) return;
       return {
-        value: _page.id,
-        query: _page.name,
+        value: pageOption.id,
+        query: pageOption.name,
         content: (
           <div className="flex items-center justify-between gap-2">
-            <SwitcherLabel logo_props={_page.logo_props} name={getPageName(_page.name)} LabelIcon={PageIcon} />
-            <PageAccessIcon {..._page} />
+            <SwitcherLabel
+              logo_props={pageOption.logo_props}
+              name={getPageName(pageOption.name)}
+              LabelIcon={PageIcon}
+            />
+            <PageAccessIcon {...pageOption} />
           </div>
         ),
       };
