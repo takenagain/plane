@@ -18,5 +18,11 @@
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
   "extends": "@plane/typescript-config/react-router.json",
-  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"]
+  "include": [
+    "**/*",
+    "**/.server/**/*",
+    "**/.client/**/*",
+    ".react-router/types/**/*",
+    "../../packages/utils/vite/**/*"
+  ]
 }
