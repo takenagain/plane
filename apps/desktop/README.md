@@ -1,16 +1,35 @@
-# README
+# Plane Desktop
 
-## About
+Cross-platform desktop client for Plane, built with [Wails](https://wails.io/) (Go backend + Svelte frontend).
 
-This is the official Wails Svelte template.
+## Documentation
 
-## Live Development
+- [Requirements](docs/requirements.md)
+- [Design](docs/design.md)
+- [Tasks](docs/tasks.md)
+- [Status report spec](docs/status-report-spec.md)
+- [Current status report](docs/status-report.md)
+- [Feature specs](docs/specs/)
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+## Prerequisites
+
+- Go 1.24+
+- Node.js 20+ (for frontend build)
+- Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0`
+- Linux: `libayatana-appindicator3-dev` and `libgtk-3-dev` for system tray
+
+## Development
+
+```bash
+cd apps/desktop
+wails dev
+```
 
 ## Building
 
-To build a redistributable, production mode package, use `wails build`.
+```bash
+cd apps/desktop/frontend && npm install && npm run build
+cd .. && go build .
+# or
+wails build
+```

@@ -1,79 +1,109 @@
 <script>
-  import logo from './assets/images/logo-universal.png'
-  import {Greet} from '../wailsjs/go/main/App.js'
+  import logo from "./assets/images/logo-universal.png";
+  import { GetConfig, GetTimerState, GetCurrentUser } from "../wailsjs/go/main/App.js";
 
-  let resultText = "Please enter your name below 👇"
-  let name
+  let config = { plane_url: "" };
+  let timerState = { is_active: false, issue_title: "", elapsed_secs: 0 };
+  let user = null;
+  let loadError = "";
 
-  function greet() {
-    Greet(name).then(result => resultText = result)
+  async function refresh() {
+    try {
+      config = await GetConfig();
+      timerState = await GetTimerState();
+      user = await GetCurrentUser();
+      loadError = "";
+    } catch (err) {
+      loadError = String(err);
+    }
   }
+
+  refresh();
 </script>
 
 <main>
-  <img alt="Wails logo" id="logo" src="{logo}">
-  <div class="result" id="result">{resultText}</div>
-  <div class="input-box" id="input">
-    <input autocomplete="off" bind:value={name} class="input" id="name" type="text"/>
-    <button class="btn" on:click={greet}>Greet</button>
-  </div>
+  <img alt="Plane logo" id="logo" src={logo} />
+  <h1>Plane Desktop</h1>
+
+  {#if loadError}
+    <p class="error">{loadError}</p>
+  {/if}
+
+  <section class="panel">
+    <h2>Configuration</h2>
+    <p><strong>Instance:</strong> {config?.plane_url || "Not configured"}</p>
+  </section>
+
+  <section class="panel">
+    <h2>Authentication</h2>
+    {#if user}
+      <p>Signed in as {user.display_name || user.email}</p>
+    {:else}
+      <p>Not authenticated — webview login is not yet implemented.</p>
+    {/if}
+  </section>
+
+  <section class="panel">
+    <h2>Time Tracking</h2>
+    {#if timerState?.is_active}
+      <p>Tracking: {timerState.issue_title}</p>
+      <p>Elapsed: {Math.floor((timerState.elapsed_seconds || 0) / 60)}m {(timerState.elapsed_seconds || 0) % 60}s</p>
+    {:else}
+      <p>No active tracking session.</p>
+    {/if}
+  </section>
+
+  <button class="btn" onclick={refresh}>Refresh</button>
 </main>
 
 <style>
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem;
+    color: #e2e8f0;
+  }
 
   #logo {
     display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
+    width: 120px;
+    margin: 0 auto 1rem;
   }
 
-  .result {
-    height: 20px;
-    line-height: 20px;
-    margin: 1.5rem auto;
+  h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
   }
 
-  .input-box .btn {
-    width: 60px;
-    height: 30px;
-    line-height: 30px;
-    border-radius: 3px;
+  .panel {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .panel h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    color: #94a3b8;
+  }
+
+  .error {
+    color: #f87171;
+  }
+
+  .btn {
+    display: block;
+    margin: 1.5rem auto 0;
+    padding: 0.5rem 1.25rem;
     border: none;
-    margin: 0 0 0 20px;
-    padding: 0 8px;
+    border-radius: 6px;
     cursor: pointer;
+    background: #3b82f6;
+    color: white;
   }
 
-  .input-box .btn:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
+  .btn:hover {
+    background: #2563eb;
   }
-
-  .input-box .input {
-    border: none;
-    border-radius: 3px;
-    outline: none;
-    height: 30px;
-    line-height: 30px;
-    padding: 0 10px;
-    background-color: rgba(240, 240, 240, 1);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .input-box .input:hover {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-  .input-box .input:focus {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
 </style>
