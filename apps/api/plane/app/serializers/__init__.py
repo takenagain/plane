@@ -115,6 +115,7 @@ from .workspace import (
     WorkspaceLiteSerializer,
     WorkspaceMemberAdminSerializer,
     WorkSpaceMemberInviteSerializer,
+    WorkSpaceMemberInvitePublicSerializer,
     WorkspaceMemberMeSerializer,
     WorkSpaceMemberSerializer,
     WorkspaceRecentVisitSerializer,
