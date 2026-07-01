@@ -11,6 +11,7 @@ import { ChevronDownIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
 // local imports
 import type { TCustomImageAlignment } from "../../types";
+import { EditorIcon } from "@/helpers/react-compat";
 import { IMAGE_ALIGNMENT_OPTIONS } from "../../utils";
 
 type Props = {
@@ -43,8 +44,8 @@ export function ImageAlignmentAction(props: Props) {
           className="flex h-full items-center gap-1 text-white/60 transition-colors hover:text-white"
           onClick={() => setIsDropdownOpen((prev) => !prev)}
         >
-          {activeAlignmentDetails && <activeAlignmentDetails.icon className="size-3 flex-shrink-0" />}
-          <ChevronDownIcon className="size-2 flex-shrink-0" />
+          {activeAlignmentDetails && <EditorIcon icon={activeAlignmentDetails.icon} className="size-3 flex-shrink-0" />}
+          <EditorIcon icon={ChevronDownIcon} className="size-2 flex-shrink-0" />
         </button>
       </Tooltip>
       {isDropdownOpen && (
@@ -59,7 +60,7 @@ export function ImageAlignmentAction(props: Props) {
                   setIsDropdownOpen(false);
                 }}
               >
-                <option.icon className="size-3" />
+                <EditorIcon icon={option.icon} className="size-3" />
               </button>
             </Tooltip>
           ))}

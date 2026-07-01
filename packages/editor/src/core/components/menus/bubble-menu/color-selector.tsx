@@ -15,6 +15,7 @@ import { COLORS_LIST } from "@/constants/common";
 import { FloatingMenuRoot } from "../floating-menu/root";
 import { useFloatingMenu } from "../floating-menu/use-floating-menu";
 import { BackgroundColorItem, TextColorItem } from "../menu-items";
+import { EditorIcon } from "@/helpers/react-compat";
 import type { EditorStateType } from "./root";
 
 type Props = {
@@ -48,7 +49,8 @@ export function BubbleMenuColorSelector(props: Props) {
               backgroundColor: activeBackgroundColor ? activeBackgroundColor.backgroundColor : "transparent",
             }}
           >
-            <ALargeSmall
+            <EditorIcon
+              icon={ALargeSmall}
               className={cn("size-3.5", {
                 "text-primary": !activeTextColor,
               })}
@@ -83,7 +85,7 @@ export function BubbleMenuColorSelector(props: Props) {
               className="grid size-6 flex-shrink-0 place-items-center rounded-sm border-[0.5px] border-strong-1 text-tertiary transition-colors hover:bg-layer-1"
               onClick={() => TextColorItem(editor).command({ color: undefined })}
             >
-              <Ban className="size-4" />
+              <EditorIcon icon={Ban} className="size-4" />
             </button>
           </div>
         </div>
@@ -106,7 +108,7 @@ export function BubbleMenuColorSelector(props: Props) {
               className="grid size-6 flex-shrink-0 place-items-center rounded-sm border-[0.5px] border-strong-1 text-tertiary transition-colors hover:bg-layer-1"
               onClick={() => BackgroundColorItem(editor).command({ color: undefined })}
             >
-              <Ban className="size-4" />
+              <EditorIcon icon={Ban} className="size-4" />
             </button>
           </div>
         </div>

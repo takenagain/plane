@@ -8,8 +8,7 @@ import { observer } from "mobx-react";
 import useSWR from "swr";
 import type { TPageNavigationTabs } from "@plane/types";
 // hooks
-import type { EPageStoreType } from "@/hooks/store";
-import { usePageStore } from "@/hooks/store";
+import { EPageStoreType, usePageStore } from "@/hooks/store";
 // local imports
 import { PagesListHeaderRoot } from "./header";
 import { PagesListMainContent } from "./pages-list-main-content";

@@ -3,6 +3,7 @@
 import { execFileSync } from "node:child_process";
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { generateE2eTotpCode } from "./totp";
 
 export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || "http://localhost:3000";
 export const API_BASE_URL =
@@ -322,8 +323,7 @@ export async function completeMfaChallengeForRequest(
   apiBaseUrl: string,
   csrfToken: string
 ) {
-  const { authenticator } = await import("otplib");
-  const code = authenticator.generate(E2E_TOTP_SECRET);
+  const code = generateE2eTotpCode(E2E_TOTP_SECRET);
 
   const verifyResponse = await request.post(`${apiBaseUrl}/auth/mfa/verify/`, {
     data: { code },
@@ -399,8 +399,7 @@ async function completeMfaChallengeViaUi(page: Page) {
     await totpMethod.click();
   }
 
-  const { authenticator } = await import("otplib");
-  const code = authenticator.generate(E2E_TOTP_SECRET);
+  const code = generateE2eTotpCode(E2E_TOTP_SECRET);
   await totpInput.fill(code);
   await page.waitForTimeout(3_000);
   await waitForPageLoad(page);

@@ -19,6 +19,7 @@ import { useUploader, useDropZone, uploadFirstFileAndInsertRemaining } from "@/h
 // local imports
 import { ECustomImageStatus } from "../types";
 import { getImageComponentImageFileMap } from "../utils";
+import { EditorIcon } from "@/helpers/react-compat";
 import type { CustomImageNodeViewProps } from "./node-view";
 
 type CustomImageUploaderProps = CustomImageNodeViewProps & {
@@ -235,7 +236,7 @@ export function CustomImageUploader(props: CustomImageUploaderProps) {
         }
       }}
     >
-      <ImageIcon className="size-4" />
+      <EditorIcon icon={ImageIcon} className="size-4" />
       <div className="flex-1 text-14 font-medium">{getDisplayMessage()}</div>
       {hasDuplicationFailed && editor.isEditable && (
         <button
@@ -249,7 +250,7 @@ export function CustomImageUploader(props: CustomImageUploaderProps) {
           )}
           title="Retry duplication"
         >
-          <RotateCcw className="size-3" />
+          <EditorIcon icon={RotateCcw} className="size-3" />
           <span className="text-11">Retry</span>
         </button>
       )}

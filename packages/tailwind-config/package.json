@@ -13,10 +13,10 @@
     "./postcss.config.js": "./postcss.config.js"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "4.3.0",
-    "postcss": "8.5.15"
+    "@tailwindcss/postcss": "4.3.2",
+    "postcss": "8.5.16"
   },
   "devDependencies": {
-    "tailwindcss": "4.3.0"
+    "tailwindcss": "4.3.2"
   }
 }

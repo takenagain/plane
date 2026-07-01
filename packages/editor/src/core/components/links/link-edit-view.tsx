@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // components
 import type { LinkViewProps, LinkViews } from "@/components/links";
 // helpers
+import { EditorIcon } from "@/helpers/react-compat";
 import { isValidHttpUrl } from "@/helpers/common";
 
 type InputViewProps = {
@@ -137,18 +138,18 @@ export function LinkEditView({ viewProps }: LinkEditViewProps) {
 
   return (
     <div
+      role="dialog"
       onKeyDown={handleKeyDown}
       className="shadow-md animate-in fade-in flex translate-y-1 flex-col gap-3 rounded-sm border-2 border-subtle bg-layer-1 p-2"
       style={{
         transition: "all 0.1s cubic-bezier(.55, .085, .68, .53)",
       }}
-      tabIndex={0}
     >
       <InputView label="URL" placeholder="Enter or paste URL" value={localUrl} onChange={setLocalUrl} autoFocus />
       <InputView label="Text" placeholder="Enter Text to display" value={localText} onChange={handleTextChange} />
       <div className="bg-strong mb-1 h-[1px] w-full gap-2" />
       <div className="flex items-center gap-2 text-13 text-secondary">
-        <Link2Off size={14} className="inline-block" />
+        <EditorIcon icon={Link2Off} size={14} className="inline-block" />
         <button onClick={removeLink} className="cursor-pointer transition-colors hover:text-placeholder">
           Remove Link
         </button>

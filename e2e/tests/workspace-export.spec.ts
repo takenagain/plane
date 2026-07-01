@@ -81,7 +81,11 @@ test.describe.serial("Workspace export settings", () => {
     const postResponse = await postPromise;
 
     expect(postResponse.status()).toBe(200);
-    const requestBody = postResponse.request().postDataJSON() as { provider?: string; multiple?: boolean };
+    const requestBody = postResponse.request().postDataJSON() as {
+      provider?: string;
+      multiple?: boolean;
+      project?: string[];
+    };
     expect(requestBody.provider).toBe("json");
     expect(requestBody.multiple).toBe(true);
     expect(requestBody.project).toEqual([]);

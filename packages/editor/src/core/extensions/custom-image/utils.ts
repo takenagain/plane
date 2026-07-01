@@ -6,7 +6,7 @@
 
 import type { Editor } from "@tiptap/core";
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { TEditorIcon } from "@/helpers/react-compat";
 // local imports
 import { ECustomImageAttributeNames, ECustomImageStatus } from "./types";
 import type { TCustomImageAlignment, Pixel, TCustomImageAttributes } from "./types";
@@ -41,7 +41,7 @@ export const ensurePixelString = <TDefault>(
 export const IMAGE_ALIGNMENT_OPTIONS: {
   label: string;
   value: TCustomImageAlignment;
-  icon: LucideIcon;
+  icon: TEditorIcon;
 }[] = [
   {
     label: "Left",

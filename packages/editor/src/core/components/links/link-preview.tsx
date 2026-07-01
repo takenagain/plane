@@ -7,6 +7,7 @@
 import { Link2Off } from "lucide-react";
 import { CopyIcon, GlobeIcon, EditIcon } from "@plane/propel/icons";
 // components
+import { EditorIcon } from "@/helpers/react-compat";
 import type { LinkViewProps, LinkViews } from "@/components/links";
 
 export function LinkPreview({
@@ -36,11 +37,11 @@ export function LinkPreview({
       }}
     >
       <div className="shadow-md flex items-center gap-3 rounded-sm border-2 border-subtle bg-layer-1 p-2 text-11 text-tertiary">
-        <GlobeIcon width={14} height={14} className="inline-block" />
+        <EditorIcon icon={GlobeIcon} width={14} height={14} className="inline-block" />
         <p>{url?.length > 40 ? url.slice(0, 40) + "..." : url}</p>
         <div className="flex gap-2">
           <button onClick={copyLinkToClipboard} className="cursor-pointer transition-colors hover:text-primary">
-            <CopyIcon width={14} height={14} className="inline-block" />
+            <EditorIcon icon={CopyIcon} width={14} height={14} className="inline-block" />
           </button>
           {editor.isEditable && (
             <>
@@ -48,10 +49,10 @@ export function LinkPreview({
                 onClick={() => switchView("LinkEditView")}
                 className="cursor-pointer transition-colors hover:text-primary"
               >
-                <EditIcon width={14} height={14} className="inline-block" />
+                <EditorIcon icon={EditIcon} width={14} height={14} className="inline-block" />
               </button>
               <button onClick={removeLink} className="cursor-pointer transition-colors hover:text-primary">
-                <Link2Off size={14} className="inline-block" />
+                <EditorIcon icon={Link2Off} size={14} className="inline-block" />
               </button>
             </>
           )}

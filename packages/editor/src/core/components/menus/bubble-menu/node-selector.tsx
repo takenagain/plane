@@ -29,6 +29,7 @@ import {
 import type { TEditorCommands } from "@/types";
 // local imports
 import { FloatingMenuRoot } from "../floating-menu/root";
+import { EditorIcon } from "@/helpers/react-compat";
 import { useFloatingMenu } from "../floating-menu/use-floating-menu";
 
 type Props = {
@@ -73,7 +74,7 @@ export function BubbleMenuNodeSelector(props: Props) {
       menuButton={
         <>
           <span>{activeItem?.name}</span>
-          <ChevronDownIcon className="size-3 shrink-0" />
+          <EditorIcon icon={ChevronDownIcon} className="size-3 shrink-0" />
         </>
       }
       options={options}
@@ -98,10 +99,12 @@ export function BubbleMenuNodeSelector(props: Props) {
             )}
           >
             <div className="flex items-center space-x-2">
-              <item.icon className="size-3 flex-shrink-0" />
+              <EditorIcon icon={item.icon} className="size-3 flex-shrink-0" />
               <span>{item.name}</span>
             </div>
-            {activeItem.name === item.name && <CheckIcon className="size-3 flex-shrink-0 text-tertiary" />}
+            {activeItem.name === item.name && (
+              <EditorIcon icon={CheckIcon} className="size-3 flex-shrink-0 text-tertiary" />
+            )}
           </button>
         ))}
       </section>

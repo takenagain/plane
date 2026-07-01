@@ -12,6 +12,7 @@ import type { BubbleMenuProps } from "@tiptap/react/menus";
 import { useEffect, useState, useRef } from "react";
 // plane utils
 import { cn } from "@plane/utils";
+import { EditorIcon } from "@/helpers/react-compat";
 // components
 import type { EditorMenuItem } from "@/components/menus";
 import {
@@ -221,7 +222,7 @@ export function EditorBubbleMenu(props: Props) {
                   }
                 )}
               >
-                <item.icon className="size-4" />
+                <EditorIcon icon={item.icon} className="size-4" />
               </button>
             ))}
           </div>

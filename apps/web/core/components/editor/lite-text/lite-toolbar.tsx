@@ -8,7 +8,9 @@ import React from "react";
 import { ArrowUp, Paperclip } from "lucide-react";
 // constants
 import type { ToolbarMenuItem } from "@plane/editor";
-import { IMAGE_ITEM } from "@plane/editor";
+import { COMPLEX_ITEMS } from "@plane/editor";
+
+const IMAGE_ITEM = COMPLEX_ITEMS.find((item): item is ToolbarMenuItem<"image"> => item.itemKey === "image")!;
 
 type LiteToolbarProps = {
   onSubmit: (e: React.KeyboardEvent<HTMLDivElement> | React.MouseEvent<HTMLButtonElement>) => void;

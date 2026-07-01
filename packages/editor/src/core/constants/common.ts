@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { LucideIcon } from "lucide-react";
+import type { TEditorIcon } from "@/helpers/react-compat";
 import {
   AlignCenter,
   AlignLeft,
@@ -42,7 +42,7 @@ export type ToolbarMenuItem<T extends TEditorCommands = TEditorCommands> = {
   itemKey: T;
   renderKey: string;
   name: string;
-  icon: LucideIcon;
+  icon: TEditorIcon;
   shortcut?: string[];
   editors: TEditorTypes[];
   extraProps?: ExtraPropsForCommand<T>;

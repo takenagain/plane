@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { authenticator } from "otplib";
+import { generateE2eTotpCode } from "./helpers/totp";
 
 const API_BASE_URL = process.env.E2E_API_URL ?? process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3003";
 const TEST_PASSWORD = "E2e-Test-Password-123!";
@@ -14,7 +14,7 @@ async function enrollTotpOnSetupPage(page: Page) {
   const secretLocator = page.locator("code.font-mono").first();
   await expect(secretLocator).toBeVisible();
   const secret = (await secretLocator.innerText()).replace(/\s/g, "");
-  const code = authenticator.generate(secret);
+  const code = generateE2eTotpCode(secret);
   await page.locator("#totp-code").fill(code);
 
   await expect

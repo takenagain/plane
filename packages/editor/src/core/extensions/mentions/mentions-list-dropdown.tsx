@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import { FloatingOverlay } from "@floating-ui/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -15,6 +14,7 @@ import { cn } from "@plane/utils";
 // helpers
 import { DROPDOWN_NAVIGATION_KEYS, getNextValidIndex } from "@/helpers/tippy";
 // types
+import { EditorFloatingOverlay } from "@/helpers/react-compat";
 import type { TMentionHandler, TMentionSection, TMentionSuggestion } from "@/types";
 
 export type MentionsListDropdownProps = SuggestionProps<TMentionSection, TMentionSuggestion> &
@@ -138,7 +138,7 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
   return (
     <>
       {/* Backdrop */}
-      <FloatingOverlay
+      <EditorFloatingOverlay
         style={{
           zIndex: 99,
         }}

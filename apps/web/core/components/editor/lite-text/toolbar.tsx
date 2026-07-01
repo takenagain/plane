@@ -10,6 +10,7 @@ import type { LucideIcon } from "lucide-react";
 import { EIssueCommentAccessSpecifier } from "@plane/constants";
 // editor
 import type { EditorRefApi } from "@plane/editor";
+import { EditorIcon } from "@plane/editor";
 // i18n
 import { useTranslation } from "@plane/i18n";
 // ui
@@ -162,7 +163,8 @@ export function IssueCommentToolbar(props: Props) {
                         }
                       )}
                     >
-                      <item.icon
+                      <EditorIcon
+                        icon={item.icon}
                         className={cn("h-3.5 w-3.5", {
                           "text-primary": isItemActive,
                         })}

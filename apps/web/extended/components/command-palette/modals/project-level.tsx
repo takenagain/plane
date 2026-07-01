@@ -7,7 +7,7 @@ import { CreateUpdateProjectViewModal } from "@/components/views/modal";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 // plane web hooks
-import { EPageStoreType } from "@/plane-web/hooks/store";
+import { EPageStoreType } from "@/hooks/store";
 
 export type TProjectLevelModalsProps = {
   workspaceSlug: string;

@@ -2,7 +2,7 @@
   "extends": "@plane/typescript-config/react-router.json",
   "compilerOptions": {
     "rootDirs": [".", "./.react-router/types"],
-    "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types", "./node_modules"],
     "paths": {
       "@/*": ["./*"]
     },

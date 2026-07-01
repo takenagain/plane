@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Disclosure } from "@headlessui/react";
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import type { Editor } from "@tiptap/core";
 import { Ban, Palette } from "lucide-react";
 // plane imports
@@ -12,6 +12,7 @@ import { ChevronRightIcon } from "@plane/propel/icons";
 import { cn } from "@plane/utils";
 // constants
 import { COLORS_LIST } from "@/constants/common";
+import { EditorIcon } from "@/helpers/react-compat";
 import { CORE_EXTENSIONS } from "@/constants/extension";
 
 // TODO: implement text color selector
@@ -45,8 +46,8 @@ export function TableDragHandleDropdownColorSelector(props: Props) {
   const { editor, onSelect } = props;
 
   return (
-    <Disclosure defaultOpen>
-      <Disclosure.Button
+    <Disclosure as="div" defaultOpen>
+      <DisclosureButton
         as="button"
         type="button"
         className="flex w-full items-center justify-between gap-2 truncate rounded-sm px-1 py-1.5 text-left text-11 text-secondary hover:bg-layer-1"
@@ -54,18 +55,19 @@ export function TableDragHandleDropdownColorSelector(props: Props) {
         {({ open }) => (
           <>
             <span className="flex items-center gap-2">
-              <Palette className="size-3 shrink-0" />
+              <EditorIcon icon={Palette} className="size-3 shrink-0" />
               Color
             </span>
-            <ChevronRightIcon
+            <EditorIcon
+              icon={ChevronRightIcon}
               className={cn("size-3 shrink-0 transition-transform duration-200", {
                 "rotate-90": open,
               })}
             />
           </>
         )}
-      </Disclosure.Button>
-      <Disclosure.Panel className="mb-1.5 space-y-2 p-1">
+      </DisclosureButton>
+      <DisclosurePanel className="mb-1.5 space-y-2 p-1">
         {/* <div className="space-y-1.5">
           <p className="text-11 text-tertiary font-semibold">Text colors</p>
           <div className="flex items-center flex-wrap gap-2">
@@ -85,7 +87,7 @@ export function TableDragHandleDropdownColorSelector(props: Props) {
               className="flex-shrink-0 size-6 grid place-items-center rounded-sm text-tertiary border-[0.5px] border-strong-1 hover:bg-layer-1 transition-colors"
               onClick={() => handleTextColorChange(editor, null)}
             >
-              <Ban className="size-4" />
+              <EditorIcon icon={Ban} className="size-4" />
             </button>
           </div>
         </div> */}
@@ -114,11 +116,11 @@ export function TableDragHandleDropdownColorSelector(props: Props) {
                 onSelect(null);
               }}
             >
-              <Ban className="size-4" />
+              <EditorIcon icon={Ban} className="size-4" />
             </button>
           </div>
         </div>
-      </Disclosure.Panel>
+      </DisclosurePanel>
     </Disclosure>
   );
 }

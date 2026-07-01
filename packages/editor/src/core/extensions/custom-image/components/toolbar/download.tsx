@@ -6,6 +6,7 @@
 
 import { Download } from "lucide-react";
 // plane imports
+import { EditorIcon } from "@/helpers/react-compat";
 import { Tooltip } from "@plane/propel/tooltip";
 
 type Props = {
@@ -23,7 +24,7 @@ export function ImageDownloadAction(props: Props) {
         className="grid h-full flex-shrink-0 place-items-center text-white/60 transition-colors hover:text-white"
         aria-label="Download image"
       >
-        <Download className="size-3" />
+        <EditorIcon icon={Download} className="size-3" />
       </button>
     </Tooltip>
   );

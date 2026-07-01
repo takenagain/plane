@@ -1,4 +1,5 @@
 // additional.d.ts
+/// <reference types="vite/client" />
 /// <reference types="next-images" />
 
 // `@bprogress/core/css` is a side-effect-only stylesheet export (it resolves to

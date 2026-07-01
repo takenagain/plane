@@ -7,7 +7,6 @@
 import {
   autoUpdate,
   flip,
-  FloatingOverlay,
   FloatingPortal,
   shift,
   useClick,
@@ -44,6 +43,7 @@ import {
 } from "../marker-utils";
 import { showCellContent } from "../utils";
 import { RowOptionsDropdown } from "./dropdown";
+import { EditorFloatingOverlay, EditorIcon, editorFloatingStyle } from "@/helpers/react-compat";
 import { calculateRowDropIndex, constructRowDragPreview, getTableRowNodesInfo } from "./utils";
 
 export type RowDragHandleProps = {
@@ -234,13 +234,13 @@ export function RowDragHandle(props: RowDragHandleProps) {
             "hover:bg-layer-1-hover": !isDropdownOpen,
           })}
         >
-          <Ellipsis className="size-4 rotate-90 text-primary" />
+          <EditorIcon icon={Ellipsis} className="size-4 rotate-90 text-primary" />
         </button>
       </div>
       {isDropdownOpen && (
         <FloatingPortal>
           {/* Backdrop */}
-          <FloatingOverlay
+          <EditorFloatingOverlay
             style={{
               zIndex: 99,
             }}
@@ -250,10 +250,7 @@ export function RowDragHandle(props: RowDragHandleProps) {
             className="max-h-[90vh] w-[12rem] overflow-y-auto rounded-md border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 shadow-raised-200"
             ref={refs.setFloating}
             {...getFloatingProps()}
-            style={{
-              ...floatingStyles,
-              zIndex: 100,
-            }}
+            style={editorFloatingStyle({ ...floatingStyles, zIndex: 100 })}
           >
             <RowOptionsDropdown editor={editor} onClose={() => context.onOpenChange(false)} />
           </div>

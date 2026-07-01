@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import type { EditorRefApi } from "@plane/editor";
+import { EditorIcon } from "@plane/editor";
 // plane imports
 import { CheckIcon, ChevronDownIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -54,7 +55,8 @@ const ToolbarButton = React.memo(function ToolbarButton(props: ToolbarButtonProp
           "hover:bg-layer-transparent-hover": !isActive,
         })}
       >
-        <item.icon
+        <EditorIcon
+          icon={item.icon}
           className={cn("size-4 transition-transform duration-200", {
             "text-primary": isActive,
           })}
@@ -156,7 +158,7 @@ export function PageToolbar(props: Props) {
             }}
           >
             <span className="flex items-center gap-2">
-              <item.icon className="size-3" />
+              <EditorIcon icon={item.icon} className="size-3" />
               {item.name}
             </span>
             {activeTypography?.itemKey === item.itemKey && <CheckIcon className="size-3 shrink-0 text-tertiary" />}

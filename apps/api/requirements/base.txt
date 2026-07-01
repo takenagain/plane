@@ -1,7 +1,7 @@
 # base requirements
 
 # django
-Django==6.0.5
+Django==6.0.6
 # rest framework
 djangorestframework==3.17.1
 # postgres
@@ -12,8 +12,8 @@ dj-database-url==3.1.2
 # mongo
 pymongo==4.17.0
 # redis
-redis==7.4.0
-django-redis==6.0.0
+redis==8.0.1
+django-redis==7.0.0
 # cors
 django-cors-headers==4.9.0
 # celery
@@ -23,7 +23,7 @@ django-celery-results==2.6.0
 # file serve
 whitenoise==6.12.0
 # fake data
-faker==40.19.1
+faker==40.27.0
 # filters
 django-filter==25.2
 # json model
@@ -33,15 +33,15 @@ django-storages==1.14.6
 # user management
 django-crum==0.7.9
 # web server
-uvicorn==0.48.0
+uvicorn==0.49.0
 # sockets
 channels==4.3.2
-channels-redis==4.2.1
+channels-redis==4.3.0
 # ai
-openai==2.38.0
-any-llm-sdk[openai,anthropic,gemini,mistral]
+openai==2.44.0
+any-llm-sdk[openai,anthropic,gemini,mistral]==1.13.0
 # slack
-slack-sdk==3.42.0
+slack-sdk==3.43.0
 # apm
 scout-apm==3.5.3
 # xlsx generation
@@ -49,17 +49,17 @@ openpyxl==3.1.5
 # logging
 python-json-logger==4.1.0
 # html parser
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
 # analytics
-posthog==7.15.4
+posthog==7.21.2
 # crypto
-cryptography==48.0.1
+cryptography==49.0.0
 # html validator
 lxml==6.1.1
 # s3
-boto3==1.43.14
+boto3==1.43.38
 # http client (pinned for SSRF IP pinning in webhooks and link unfurling)
-urllib3>=2.7.0
+urllib3==2.7.0
 requests==2.34.2
 # password validator
 zxcvbn==4.5.0
@@ -75,15 +75,15 @@ opentelemetry-exporter-otlp==1.42.1
 # OpenAPI Specification
 drf-spectacular==0.29.0
 # html sanitizer
-nh3==0.3.5
+nh3==0.3.6
 # 2FA — TOTP (authenticator apps)
 pyotp==2.10.0
 # 2FA — WebAuthn: passkeys + FIDO2 security keys (server-side RP)
-webauthn==2.8.0
+webauthn==3.0.0
 # 2FA — pin py_webauthn transitive deps for reproducible builds
-pyOpenSSL==26.2.0
-cbor2==5.6.5
-pyasn1==0.6.2
+pyOpenSSL==26.3.0
+cbor2==6.1.2
+pyasn1==0.6.3
 pyasn1-modules==0.4.2
 # 2FA — QR rendering for TOTP provisioning URIs (pure-Python; no Pillow)
 segno==1.6.6

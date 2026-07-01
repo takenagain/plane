@@ -9,59 +9,130 @@ importers:
   .:
     devDependencies:
       '@playwright/test':
-        specifier: ^1.50.0
-        version: 1.58.2
+        specifier: 1.61.1
+        version: 1.61.1
       '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.12
+        specifier: 26.1.0
+        version: 26.1.0
+      otplib:
+        specifier: 13.4.1
+        version: 13.4.1
 
 packages:
 
-  '@playwright/test@1.58.2':
-    resolution: {integrity: sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==}
+  '@noble/hashes@2.2.0':
+    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
+    engines: {node: '>= 20.19.0'}
+
+  '@otplib/core@13.4.1':
+    resolution: {integrity: sha512-KIXgK1hNtWJEBMTastbe1bpmuais+3f+ATeO8TkMs2rNkfGO1FbQy8+/UWVEu3TR/iTJerU0idkPudaPmLP2BA==}
+
+  '@otplib/hotp@13.4.1':
+    resolution: {integrity: sha512-g9q04SwpG5ZtMnVkUcgcoAlwCH4YLROZN1qhyBwgkBzqYYVSYhpP6gSGaxGHwePLt1c+e6NqDlgIZN+e1/XPuA==}
+
+  '@otplib/plugin-base32-scure@13.4.1':
+    resolution: {integrity: sha512-Fs/r5qisC05SRhT6xWXaypB6PVC0vgWf6zztmi0J5RnQ09OJiPDWCJFH6cDm6ANsrdvB9di7X+Jb7L13BoEbUA==}
+
+  '@otplib/plugin-crypto-noble@13.4.1':
+    resolution: {integrity: sha512-PJfVW8/1hdS6CfxLheKPZSLTwDq4TijZbN4yRjxlv0ODdzmxpM+wGwWr1JXMdy0xJPxLziydQD5gdVqrR4/gAg==}
+
+  '@otplib/totp@13.4.1':
+    resolution: {integrity: sha512-QOkBVPrf6AM4qZaReZPSk9/I8ATVdZpIISJz115MqeVtcrbcr5llPZ0J7804tpnjnp1vCRkI5Qjd47HhgVteBQ==}
+
+  '@otplib/uri@13.4.1':
+    resolution: {integrity: sha512-xaIm7bvICMhoB2rZIR5luiaMdssWR5nY5nXnR1fdezUgZuEO58D6zrGzLp7pQuBmlpmL0HagnscDQFoskp9yiA==}
+
+  '@playwright/test@1.61.1':
+    resolution: {integrity: sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==}
     engines: {node: '>=18'}
     hasBin: true
 
-  '@types/node@22.19.12':
-    resolution: {integrity: sha512-0QEp0aPJYSyf6RrTjDB7HlKgNMTY+V2C7ESTaVt6G9gQ0rPLzTGz7OF2NXTLR5vcy7HJEtIUsyWLsfX0kTqJBA==}
+  '@scure/base@2.2.0':
+    resolution: {integrity: sha512-b8XEupJibegiXV+tDUseI8oLQc8ei3d/4Jkb2RpbHh3MfE054ov3uIz2dhFkB3FI8iwYkEh0gGCApkrYggkPNg==}
+
+  '@types/node@26.1.0':
+    resolution: {integrity: sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw==}
 
   fsevents@2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  playwright-core@1.58.2:
-    resolution: {integrity: sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg==}
+  otplib@13.4.1:
+    resolution: {integrity: sha512-o5CxfDw6bh7hoDv0NUUIcc0RqzJ9ipfUrzeKheKJ+vs4rXZnDlA9n4a/7R1cDjpmLjKLix4BgNVRmoDkm5rLSQ==}
+
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.58.2:
-    resolution: {integrity: sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A==}
+  playwright@1.61.1:
+    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
     engines: {node: '>=18'}
     hasBin: true
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+  undici-types@8.3.0:
+    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
 snapshots:
 
-  '@playwright/test@1.58.2':
-    dependencies:
-      playwright: 1.58.2
+  '@noble/hashes@2.2.0': {}
 
-  '@types/node@22.19.12':
+  '@otplib/core@13.4.1': {}
+
+  '@otplib/hotp@13.4.1':
     dependencies:
-      undici-types: 6.21.0
+      '@otplib/core': 13.4.1
+      '@otplib/uri': 13.4.1
+
+  '@otplib/plugin-base32-scure@13.4.1':
+    dependencies:
+      '@otplib/core': 13.4.1
+      '@scure/base': 2.2.0
+
+  '@otplib/plugin-crypto-noble@13.4.1':
+    dependencies:
+      '@noble/hashes': 2.2.0
+      '@otplib/core': 13.4.1
+
+  '@otplib/totp@13.4.1':
+    dependencies:
+      '@otplib/core': 13.4.1
+      '@otplib/hotp': 13.4.1
+      '@otplib/uri': 13.4.1
+
+  '@otplib/uri@13.4.1':
+    dependencies:
+      '@otplib/core': 13.4.1
+
+  '@playwright/test@1.61.1':
+    dependencies:
+      playwright: 1.61.1
+
+  '@scure/base@2.2.0': {}
+
+  '@types/node@26.1.0':
+    dependencies:
+      undici-types: 8.3.0
 
   fsevents@2.3.2:
     optional: true
 
-  playwright-core@1.58.2: {}
-
-  playwright@1.58.2:
+  otplib@13.4.1:
     dependencies:
-      playwright-core: 1.58.2
+      '@otplib/core': 13.4.1
+      '@otplib/hotp': 13.4.1
+      '@otplib/plugin-base32-scure': 13.4.1
+      '@otplib/plugin-crypto-noble': 13.4.1
+      '@otplib/totp': 13.4.1
+      '@otplib/uri': 13.4.1
+
+  playwright-core@1.61.1: {}
+
+  playwright@1.61.1:
+    dependencies:
+      playwright-core: 1.61.1
     optionalDependencies:
       fsevents: 2.3.2
 
-  undici-types@6.21.0: {}
+  undici-types@8.3.0: {}
