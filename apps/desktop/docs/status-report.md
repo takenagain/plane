@@ -64,27 +64,28 @@ The Plane Desktop app is an **early backend prototype with a minimal frontend sh
 
 ## 7. Outstanding Work
 
-| Item                        | Priority | Spec                                   | Blocked by                   |
-| --------------------------- | -------- | -------------------------------------- | ---------------------------- |
-| Webview + cookie extraction | P0       | `docs/specs/webview-integration.md`    | Wails webview API research   |
-| Issue selection dialog      | P0       | `docs/specs/issue-selection-dialog.md` | Auth + API                   |
-| Settings dialog             | P1       | `docs/specs/settings-dialog.md`        | Frontend UI                  |
-| Secure cookie storage       | P1       | `docs/specs/secure-cookie-storage.md`  | Platform keychain libs       |
-| Desktop notifications       | P2       | `docs/specs/desktop-notifications.md`  | Wails notification API       |
-| Custom tray icons           | P2       | `docs/specs/custom-tray-icons.md`      | Asset design                 |
-| Auto-update                 | P3       | `docs/specs/auto-update.md`            | Release pipeline             |
-| Unit / integration tests    | P1       | `design.md` §8                         | Test harness setup           |
-| CI workflow for desktop     | P2       | —                                      | Go + Wails in GitHub Actions |
+| Item                        | Priority | Spec                                   | Blocked by                               |
+| --------------------------- | -------- | -------------------------------------- | ---------------------------------------- |
+| Webview + cookie extraction | P0       | `docs/specs/webview-integration.md`    | Wails webview API research               |
+| Issue selection dialog      | P0       | `docs/specs/issue-selection-dialog.md` | Auth + API                               |
+| Settings dialog             | P1       | `docs/specs/settings-dialog.md`        | Frontend UI                              |
+| Secure cookie storage       | P1       | `docs/specs/secure-cookie-storage.md`  | Platform keychain libs                   |
+| Desktop notifications       | P2       | `docs/specs/desktop-notifications.md`  | Wails notification API                   |
+| Custom tray icons           | P2       | `docs/specs/custom-tray-icons.md`      | Asset design                             |
+| Auto-update                 | P3       | `docs/specs/auto-update.md`            | Release pipeline                         |
+| Unit / integration tests    | P1       | `design.md` §8                         | Test harness setup                       |
+| CI workflow for desktop     | P2       | `.github/workflows/desktop.yml`        | `ci-approved` label for bot-authored PRs |
 
 ## 8. Verification Performed
 
 ```text
 - [x] git merge origin/staging (clean)
 - [x] npm run build (frontend) — pass (Svelte 5 / Vite 6)
-- [ ] go build . — blocked on Linux: missing `libayatana-appindicator3-dev` for systray CGO
+- [ ] go build . — requires `libayatana-appindicator3-dev` + `libgtk-3-dev` on Linux (systray CGO); covered by `.github/workflows/desktop.yml`
 - [ ] go test ./... (no tests exist yet)
 - [ ] wails build (Wails CLI not installed in environment)
-- [ ] pnpm check — fail: `admin#check:types` TS6307 (pre-existing on staging, unrelated to desktop)
+- [x] admin#check:types TS6307 — fixed via tsconfig include for `packages/utils/vite`
+- [ ] pnpm check (full monorepo) — not re-run after tsconfig fix
 - [ ] Manual smoke test on target OS (not run in agent environment)
 ```
 

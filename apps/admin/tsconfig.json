@@ -12,6 +12,12 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"],
+  "include": [
+    "**/*",
+    "**/.server/**/*",
+    "**/.client/**/*",
+    ".react-router/types/**/*",
+    "../../packages/utils/vite/**/*"
+  ],
   "exclude": ["node_modules"]
 }
