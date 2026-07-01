@@ -95,7 +95,9 @@
               "message": "Zkuste to prosím znovu."
             }
           }
-        }
+        },
+        "all_projects": "Všechny projekty",
+        "export_all_projects": "Exportovat všechny projekty"
       },
       "webhooks": {
         "heading": "Webhooky",

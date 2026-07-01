@@ -95,7 +95,9 @@
               "message": "Spróbuj ponownie."
             }
           }
-        }
+        },
+        "all_projects": "Wszystkie projekty",
+        "export_all_projects": "Eksportuj wszystkie projekty"
       },
       "webhooks": {
         "heading": "Webhooki",

@@ -717,7 +717,8 @@
     "developer": "Developer",
     "work_structure": "Work structure",
     "execution": "Execution",
-    "administration": "Administration"
+    "administration": "Administration",
+    "time_logged": "已記錄時間"
   },
   "chart": {
     "x_axis": "X 軸",

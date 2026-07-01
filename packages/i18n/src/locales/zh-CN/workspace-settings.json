@@ -95,7 +95,9 @@
               "message": "导出未成功。请重试。"
             }
           }
-        }
+        },
+        "all_projects": "所有项目",
+        "export_all_projects": "导出所有项目"
       },
       "webhooks": {
         "heading": "Webhooks",

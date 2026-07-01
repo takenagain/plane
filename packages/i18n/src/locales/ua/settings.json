@@ -110,7 +110,8 @@
       "assigned": "Призначено",
       "created": "Створено",
       "subscribed": "Підписано",
-      "activity": "Активність"
+      "activity": "Активність",
+      "time": "Затрачені години"
     },
     "empty_state": {
       "activity": {

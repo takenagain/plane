@@ -95,7 +95,9 @@
               "message": "Xuất không thành công. Vui lòng thử lại."
             }
           }
-        }
+        },
+        "all_projects": "Tất cả dự án",
+        "export_all_projects": "Xuất tất cả dự án"
       },
       "webhooks": {
         "heading": "Webhook",

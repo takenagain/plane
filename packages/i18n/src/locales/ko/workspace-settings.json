@@ -95,7 +95,9 @@
               "message": "내보내기가 실패했습니다. 다시 시도해주세요."
             }
           }
-        }
+        },
+        "all_projects": "모든 프로젝트",
+        "export_all_projects": "모든 프로젝트보내기"
       },
       "webhooks": {
         "heading": "웹훅",

@@ -95,7 +95,9 @@
               "message": "Dışa aktarma başarısız oldu. Lütfen tekrar deneyin."
             }
           }
-        }
+        },
+        "all_projects": "Tüm projeler",
+        "export_all_projects": "Tüm projeleri dışa aktar"
       },
       "webhooks": {
         "heading": "Webhook'lar",

@@ -95,7 +95,9 @@
               "message": "Ekspor tidak berhasil. Silakan coba lagi."
             }
           }
-        }
+        },
+        "all_projects": "Semua proyek",
+        "export_all_projects": "Ekspor semua proyek"
       },
       "webhooks": {
         "heading": "Webhook",

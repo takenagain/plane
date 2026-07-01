@@ -110,7 +110,8 @@
       "assigned": "Přiřazeno",
       "created": "Vytvořeno",
       "subscribed": "Odebíráno",
-      "activity": "Aktivita"
+      "activity": "Aktivita",
+      "time": "Zaznamenané hodiny"
     },
     "empty_state": {
       "activity": {

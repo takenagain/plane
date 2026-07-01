@@ -95,7 +95,9 @@
               "message": "La exportación no tuvo éxito. Por favor, inténtalo de nuevo."
             }
           }
-        }
+        },
+        "all_projects": "Todos los proyectos",
+        "export_all_projects": "Exportar todos los proyectos"
       },
       "webhooks": {
         "heading": "Webhooks",

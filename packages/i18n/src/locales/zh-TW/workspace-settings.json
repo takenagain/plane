@@ -95,7 +95,9 @@
               "message": "匯出未成功。請再試一次。"
             }
           }
-        }
+        },
+        "all_projects": "所有專案",
+        "export_all_projects": "匯出所有專案"
       },
       "webhooks": {
         "heading": "Webhooks",

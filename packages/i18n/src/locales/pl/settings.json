@@ -110,7 +110,8 @@
       "assigned": "Przypisane",
       "created": "Utworzone",
       "subscribed": "Subskrybowane",
-      "activity": "Aktywność"
+      "activity": "Aktywność",
+      "time": "Zarejestrowane godziny"
     },
     "empty_state": {
       "activity": {

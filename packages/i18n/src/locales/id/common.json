@@ -717,7 +717,8 @@
     "developer": "Developer",
     "work_structure": "Work structure",
     "execution": "Execution",
-    "administration": "Administration"
+    "administration": "Administration",
+    "time_logged": "Waktu yang dicatat"
   },
   "chart": {
     "x_axis": "Sumbu-X",

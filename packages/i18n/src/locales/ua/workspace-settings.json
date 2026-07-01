@@ -95,7 +95,9 @@
               "message": "Спробуйте ще раз."
             }
           }
-        }
+        },
+        "all_projects": "Усі проєкти",
+        "export_all_projects": "Експортувати всі проєкти"
       },
       "webhooks": {
         "heading": "Вебхуки",
