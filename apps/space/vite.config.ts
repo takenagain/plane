@@ -4,6 +4,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { joinUrlPath } from "@plane/utils";
+import { sharedAppResolveAliases } from "../../config/vite/app-resolve-aliases";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
@@ -28,6 +29,7 @@ export default defineConfig(() => ({
   plugins: [reactRouter(), tsconfigPaths({ projects: [path.resolve(__dirname, "tsconfig.json")] })],
   resolve: {
     alias: {
+      ...sharedAppResolveAliases,
       // Next.js compatibility shims used within space
       "next/navigation": path.resolve(__dirname, "app/compat/next/navigation.ts"),
     },
