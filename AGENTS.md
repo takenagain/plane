@@ -23,6 +23,14 @@
 - **Testing**: All features require unit tests, use existing test framework per package
 - **Components**: Build in `@plane/ui` with Storybook for isolated development
 
+## Dependency management
+
+- **Pin versions**: Always pin production dependencies to explicit versions — no floating ranges (e.g. `^`, `~`, `>=`).
+- **Bump to latest stable**: When updating dependencies, target the latest stable release at bump time (not the minimum patched version) to maximize security posture while avoiding supply-chain drift from unpinned ranges.
+- **Monorepo enforcement**: Use pnpm `catalog:` entries in `pnpm-workspace.yaml` and `pnpm.overrides` in the root `package.json` to enforce pins consistently across the monorepo.
+- **After security bumps**: Run `pnpm install`, verify the lockfile, then run `pnpm check`.
+- **Python**: Pin with `==` in requirements files.
+
 ## Backend tests (Docker)
 
 The Django/pytest suite for `apps/api` runs in an isolated stack defined by `docker-compose-test.yml` at the repo root.
