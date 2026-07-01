@@ -1,8 +1,9 @@
 import path from "node:path";
-import * as dotenv from "@dotenvx/dotenvx";
+import * as dotenv from "dotenv";
 import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { sharedAppResolveAliases } from "../../packages/utils/vite/app-resolve-aliases";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
@@ -14,6 +15,8 @@ const viteEnv = Object.keys(process.env)
     return a;
   }, {});
 
+const apiProxyTarget = process.env.VITE_DEV_API_PROXY;
+
 export default defineConfig(() => ({
   define: {
     "process.env": JSON.stringify(viteEnv),
@@ -24,6 +27,7 @@ export default defineConfig(() => ({
   plugins: [reactRouter(), tsconfigPaths({ projects: [path.resolve(__dirname, "tsconfig.json")] })],
   resolve: {
     alias: {
+      ...sharedAppResolveAliases,
       // Next.js compatibility shims used within web
       "next/link": path.resolve(__dirname, "app/compat/next/link.tsx"),
       "next/navigation": path.resolve(__dirname, "app/compat/next/navigation.ts"),
@@ -33,6 +37,14 @@ export default defineConfig(() => ({
   },
   server: {
     host: "127.0.0.1",
+    ...(apiProxyTarget
+      ? {
+          proxy: {
+            "/api": { target: apiProxyTarget, changeOrigin: true },
+            "/auth": { target: apiProxyTarget, changeOrigin: true },
+          },
+        }
+      : {}),
   },
   // No SSR-specific overrides needed; alias resolves to ESM build
 }));

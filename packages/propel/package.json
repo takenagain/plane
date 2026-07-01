@@ -1,6 +1,6 @@
 {
   "name": "@plane/propel",
-  "version": "1.2.0",
+  "version": "1.3.1",
   "private": true,
   "license": "AGPL-3.0",
   "type": "module",
@@ -50,7 +50,7 @@
     "./styles/react-day-picker": "./dist/styles/react-day-picker.css"
   },
   "scripts": {
-    "dev": "tsdown --watch",
+    "dev": "tsdown --watch --no-clean",
     "build": "tsdown",
     "check:lint": "oxlint --max-warnings=3605 .",
     "check:types": "tsc --noEmit",
@@ -62,35 +62,35 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@base-ui-components/react": "1.0.0-beta.3",
-    "@plane/constants": "workspace:*",
-    "@plane/hooks": "workspace:*",
-    "@plane/types": "workspace:*",
-    "@plane/utils": "workspace:*",
-    "@tanstack/react-table": "^8.21.3",
+    "@base-ui-components/react": "1.0.0-rc.0",
+    "@plane/constants": "workspace:^1.3.1",
+    "@plane/hooks": "workspace:^1.3.1",
+    "@plane/types": "workspace:^1.3.1",
+    "@plane/utils": "workspace:^1.3.1",
+    "@tanstack/react-table": "8.21.3",
     "class-variance-authority": "0.7.1",
-    "clsx": "^2.1.1",
-    "cmdk": "^1.1.1",
-    "framer-motion": "^12.23.0",
-    "frimousse": "^0.3.0",
-    "lucide-react": "catalog:",
+    "clsx": "2.1.1",
+    "cmdk": "1.1.1",
+    "framer-motion": "12.42.2",
+    "frimousse": "0.3.0",
+    "lucide-react": "1.22.0",
     "react": "catalog:",
-    "react-day-picker": "9.5.0",
+    "react-day-picker": "10.0.1",
     "react-dom": "catalog:",
-    "recharts": "^2.15.1",
-    "tailwind-merge": "3.4.0",
-    "use-font-face-observer": "^1.3.0"
+    "recharts": "3.9.1",
+    "tailwind-merge": "3.6.0",
+    "use-font-face-observer": "1.3.0"
   },
   "devDependencies": {
-    "@plane/tailwind-config": "workspace:*",
-    "@plane/typescript-config": "workspace:*",
-    "@storybook/addon-designs": "10.0.2",
-    "@storybook/addon-docs": "9.1.10",
-    "@storybook/react-vite": "9.1.10",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "storybook": "9.1.19",
-    "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "@plane/tailwind-config": "workspace:^1.3.1",
+    "@plane/typescript-config": "workspace:^1.3.1",
+    "@storybook/addon-designs": "11.1.3",
+    "@storybook/addon-docs": "10.4.6",
+    "@storybook/react-vite": "10.4.6",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "storybook": "10.4.6",
+    "tsdown": "0.22.3",
+    "typescript": "6.0.3"
   }
 }

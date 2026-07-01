@@ -68,15 +68,33 @@ export const getEditorRefHelpers = (args: TArgs): EditorRefApi => {
       }
     },
     getDocument: () => {
-      const documentBinary = provider?.document ? Y.encodeStateAsUpdate(provider?.document) : null;
-      const documentHTML = editor?.getHTML() ?? "<p></p>";
-      const documentJSON = editor?.getJSON() ?? null;
+      const documentBinary = provider?.document ? Y.encodeStateAsUpdate(provider.document) : null;
 
-      return {
-        binary: documentBinary,
-        html: documentHTML,
-        json: documentJSON,
-      };
+      if (!editor || editor.isDestroyed || !editor.schema) {
+        return {
+          binary: documentBinary,
+          html: "<p></p>",
+          json: null,
+        };
+      }
+
+      try {
+        const documentHTML = editor.getHTML();
+        const documentJSON = editor.getJSON();
+
+        return {
+          binary: documentBinary,
+          html: documentHTML,
+          json: documentJSON,
+        };
+      } catch (error) {
+        console.error("Failed to read editor document:", error);
+        return {
+          binary: documentBinary,
+          html: "<p></p>",
+          json: null,
+        };
+      }
     },
     getDocumentInfo: () => ({
       characters: editor?.storage.characterCount?.characters?.() ?? 0,
@@ -118,8 +136,10 @@ export const getEditorRefHelpers = (args: TArgs): EditorRefApi => {
     },
     isAnyDropbarOpen: () => {
       if (!editor) return false;
+      // `storage.utility` may not be populated yet under TipTap 3's deferred
+      // initialization; optional-chain to avoid throwing (cf. line below).
       const utilityStorage = editor.storage.utility;
-      return utilityStorage.activeDropbarExtensions.length > 0;
+      return (utilityStorage?.activeDropbarExtensions.length ?? 0) > 0;
     },
     scrollSummary: (marking) => {
       if (!editor) return;
@@ -130,8 +150,9 @@ export const getEditorRefHelpers = (args: TArgs): EditorRefApi => {
         ?.chain()
         .setMeta(CORE_EDITOR_META.SKIP_FILE_DELETION, true)
         .setMeta(CORE_EDITOR_META.INTENTIONAL_DELETION, true)
-        .setContent(content, emitUpdate, {
-          preserveWhitespace: true,
+        .setContent(content, {
+          emitUpdate,
+          parseOptions: { preserveWhitespace: true },
         })
         .run();
     },

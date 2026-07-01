@@ -114,13 +114,20 @@ class ProjectCreateSerializer(BaseSerializer):
         if project_identifier is not None and re.match(Project.FORBIDDEN_IDENTIFIER_CHARS_PATTERN, project_identifier):
             raise serializers.ValidationError("Project identifier cannot contain special characters.")
 
-        if data.get("project_lead", None) is not None:
-            # Check if the project lead is a member of the workspace
-            if not WorkspaceMember.objects.filter(
+        project_lead = data.get("project_lead")
+        if (
+            project_lead
+            and not WorkspaceMember.objects.filter(
                 workspace_id=self.context["workspace_id"],
-                member_id=data.get("project_lead"),
-            ).exists():
-                raise serializers.ValidationError("Project lead should be a user in the workspace")
+                member=project_lead,
+                is_active=True,
+            ).exists()
+        ):
+            # Field-shaped error so DRF surfaces it under the specific key
+            # rather than as non_field_errors. Also requires the membership
+            # to be active so that revoked / removed members can't slip
+            # through and trigger the FK error downstream.
+            raise serializers.ValidationError({"project_lead": "The provided user is not a member of this workspace."})
 
         if data.get("default_assignee", None) is not None:
             # Check if the default assignee is a member of the workspace
@@ -271,13 +278,18 @@ class ProjectSerializer(BaseSerializer):
             if not is_valid:
                 raise serializers.ValidationError({"error": "html content is not valid"})
 
-        # auto_transfer_cycle_issues requires auto_create_cycles
+        if "auto_create_cycles" in data and not data["auto_create_cycles"]:
+            if not ("auto_transfer_cycle_issues" in data and data["auto_transfer_cycle_issues"]):
+                data["auto_transfer_cycle_issues"] = False
+
         auto_create = data.get("auto_create_cycles", getattr(self.instance, "auto_create_cycles", False))
         auto_transfer = data.get(
             "auto_transfer_cycle_issues", getattr(self.instance, "auto_transfer_cycle_issues", False)
         )
         if auto_transfer and not auto_create:
-            raise serializers.ValidationError("Auto-transfer cycle issues requires auto-create cycles to be enabled.")
+            raise serializers.ValidationError(
+                {"auto_transfer_cycle_issues": "Auto-transfer requires auto-create cycles to be enabled."}
+            )
 
         return data
 

@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
@@ -24,7 +23,7 @@ import {
 // helpers
 import { getSidebarNavigationItemIcon } from "@/plane-web/components/workspace/sidebar/helper";
 // types
-import type { TPersonalNavigationItemKey } from "@/types/navigation-preferences";
+import type { TPersonalNavigationItemKey } from "@plane/types";
 
 type TCustomizeNavigationDialogProps = {
   isOpen: boolean;
@@ -102,7 +101,7 @@ export const CustomizeNavigationDialog = observer(function CustomizeNavigationDi
       };
     });
 
-    return items.sort((a, b) => a.sortOrder - b.sortOrder);
+    return items.toSorted((a, b) => a.sortOrder - b.sortOrder);
   }, [workspaceSlug, allowPermissions, workspacePreferences]);
 
   // Handle checkbox toggle
@@ -151,7 +150,7 @@ export const CustomizeNavigationDialog = observer(function CustomizeNavigationDi
       };
     });
 
-    return items.sort((a, b) => a.sortOrder - b.sortOrder);
+    return items.toSorted((a, b) => a.sortOrder - b.sortOrder);
   }, [personalPreferences, filteredPersonalItems]);
 
   // Prevent typing invalid characters in number input
@@ -231,7 +230,7 @@ export const CustomizeNavigationDialog = observer(function CustomizeNavigationDi
 
           {/* Workspace Section */}
           <div className="flex flex-col gap-2">
-            <h3 className="text-13 font-semibold text-placeholder">{t("workspace")}</h3>
+            <h3 className="text-13 font-semibold text-placeholder">{t("common.workspace")}</h3>
             <div className="rounded-md border border-subtle bg-surface-2 py-2">
               {/* Pinned Items - Draggable */}
               <Sortable

@@ -6,9 +6,8 @@
 
 import { Combobox } from "@headlessui/react";
 import { sortBy } from "lodash-es";
-import type { FC } from "react";
 import React, { useMemo, useRef, useState } from "react";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 // plane imports
 import { useOutsideClickDetector } from "@plane/hooks";
 // local imports
@@ -50,7 +49,7 @@ export function MultiSelectDropdown(props: IMultiSelectDropdown) {
   // states
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
   // refs
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   // popper-js refs
@@ -141,15 +140,19 @@ export function MultiSelectDropdown(props: IMultiSelectDropdown) {
       />
 
       {isOpen && (
-        <Combobox.Options className="fixed z-10" static>
+        <Combobox.Options
+          ref={setPopperElement}
+          style={styles.popper}
+          {...attributes.popper}
+          className="fixed z-10"
+          static
+          modal={false}
+        >
           <div
             className={cn(
               "my-1 w-48 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none",
               optionsContainerClassName
             )}
-            ref={setPopperElement}
-            style={styles.popper}
-            {...attributes.popper}
           >
             <DropdownOptions
               isOpen={isOpen}

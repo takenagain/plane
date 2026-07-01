@@ -6,16 +6,15 @@
 
 import React, { useState } from "react";
 import { observer } from "mobx-react";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Popover, Transition } from "@headlessui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@plane/propel/icons";
 //hooks
 // icons
 // constants
 import { getDate } from "@plane/utils";
-import { MONTHS_LIST } from "@/constants/calendar";
+import { MONTHS_LIST } from "@plane/constants";
 import { useCalendarView } from "@/hooks/store/use-calendar-view";
-import type { IProjectEpicsFilter } from "@/plane-web/store/issue/epic";
 import type { ICycleIssuesFilter } from "@/store/issue/cycle";
 import type { IModuleIssuesFilter } from "@/store/issue/module";
 import type { IProjectIssuesFilter } from "@/store/issue/project";
@@ -33,10 +32,10 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
   const calendarLayout = issuesFilterStore.issueFilters?.displayFilters?.calendar?.layout ?? "month";
 
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: "auto",
+    placement: "bottom-start",
     modifiers: [
       {
         name: "preventOverflow",
@@ -82,17 +81,16 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
 
   return (
     <Popover className="relative">
-      <Popover.Button as={React.Fragment}>
-        <button
-          type="button"
-          ref={setReferenceElement}
-          className="text-18 font-semibold outline-none"
-          disabled={calendarLayout === "week"}
-        >
-          {calendarLayout === "month"
-            ? `${MONTHS_LIST[activeMonthDate.getMonth() + 1].title} ${activeMonthDate.getFullYear()}`
-            : getWeekLayoutHeader()}
-        </button>
+      <Popover.Button
+        as="button"
+        type="button"
+        ref={setReferenceElement}
+        className="text-18 font-semibold outline-none"
+        disabled={calendarLayout === "week"}
+      >
+        {calendarLayout === "month"
+          ? `${MONTHS_LIST[activeMonthDate.getMonth() + 1].title} ${activeMonthDate.getFullYear()}`
+          : getWeekLayoutHeader()}
       </Popover.Button>
       <Transition
         as={React.Fragment}
@@ -103,13 +101,8 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
         leaveFrom="opacity-100 translate-y-0"
         leaveTo="opacity-0 translate-y-1"
       >
-        <Popover.Panel className="fixed z-50">
-          <div
-            ref={setPopperElement}
-            style={styles.popper}
-            {...attributes.popper}
-            className="w-56 divide-y divide-subtle-1 rounded-sm border border-subtle bg-surface-1 p-3 shadow-raised-200"
-          >
+        <Popover.Panel ref={setPopperElement} style={styles.popper} {...attributes.popper} className="fixed z-50">
+          <div className="w-56 divide-y divide-subtle-1 rounded-sm border border-subtle bg-surface-1 p-3 shadow-raised-200">
             <div className="flex items-center justify-between gap-2 pb-3">
               <button
                 type="button"

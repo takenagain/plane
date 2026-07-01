@@ -50,6 +50,7 @@ export const useYjsSetup = ({ docId, serverUrl, authToken, onStateChange }: UseY
   const isDisposedRef = useRef(false);
   const stageRef = useRef<CollabStage>({ kind: "initial" });
   const lastReconnectTimeRef = useRef(0);
+  const wasEditableRef = useRef(false);
 
   // Create/destroy provider in effect (not during render)
   useEffect(() => {
@@ -58,6 +59,7 @@ export const useYjsSetup = ({ docId, serverUrl, authToken, onStateChange }: UseY
     isDisposedRef.current = false;
     forcedCloseSignalRef.current = false;
     stageRef.current = { kind: "initial" };
+    wasEditableRef.current = false;
 
     const provider = new HocuspocusProvider({
       name: docId,
@@ -216,16 +218,20 @@ export const useYjsSetup = ({ docId, serverUrl, authToken, onStateChange }: UseY
         const isStale = ws?.readyState === WebSocket.CLOSED || ws?.readyState === WebSocket.CLOSING;
 
         // If disconnected or stale, re-enable reconnection and force reconnect
-        if (isStale || stageRef.current.kind === "disconnected") {
+        const disconnectedStage = stageRef.current;
+        const isPermanentlyDisconnected =
+          disconnectedStage.kind === "disconnected" &&
+          (disconnectedStage.error.type === "max-retries" ||
+            disconnectedStage.error.type === "forced-close" ||
+            disconnectedStage.error.type === "auth-failed");
+
+        // Only auto-reconnect for stale sockets; do not spin on permanent disconnects.
+        if (isStale && !isPermanentlyDisconnected) {
           lastReconnectTimeRef.current = now;
 
-          // Re-enable connection on tab focus (even if manually disconnected before sleep)
           wsProvider.shouldConnect = true;
-
-          // Reset retry count for fresh reconnection attempt
           retryCountRef.current = 0;
 
-          // Move to connecting state
           const newStage = { kind: "connecting" as const };
           stageRef.current = newStage;
           setStage(newStage);
@@ -239,6 +245,15 @@ export const useYjsSetup = ({ docId, serverUrl, authToken, onStateChange }: UseY
     // Handle online/offline events
     const handleOnline = () => {
       if (isDisposedRef.current) return;
+
+      const disconnectedStage = stageRef.current;
+      const isPermanentlyDisconnected =
+        disconnectedStage.kind === "disconnected" &&
+        (disconnectedStage.error.type === "max-retries" ||
+          disconnectedStage.error.type === "forced-close" ||
+          disconnectedStage.error.type === "auth-failed");
+
+      if (isPermanentlyDisconnected) return;
 
       const wsProvider = provider.configuration.websocketProvider;
       if (wsProvider) {
@@ -338,15 +353,24 @@ export const useYjsSetup = ({ docId, serverUrl, authToken, onStateChange }: UseY
       stage,
       isServerSynced,
       isServerDisconnected,
+      hasCachedContent,
+      isCacheReady,
     };
 
     stateChangeCallbackRef.current(state);
-  }, [stage]);
+  }, [stage, hasCachedContent, isCacheReady]);
 
   // Derived values for convenience
   const isServerSynced = stage.kind === "synced";
   const isServerDisconnected = stage.kind === "disconnected";
-  const isDocReady = isServerSynced || isServerDisconnected || (isCacheReady && hasCachedContent);
+  const isLocallyReady = isServerSynced || isServerDisconnected || (isCacheReady && hasCachedContent);
+
+  if (isLocallyReady) {
+    wasEditableRef.current = true;
+  }
+
+  // Stay editable after the first ready state so reconnect attempts do not hide the editor.
+  const isDocReady = wasEditableRef.current || isLocallyReady;
 
   const signalForcedClose = useCallback((value: boolean) => {
     forcedCloseSignalRef.current = value;

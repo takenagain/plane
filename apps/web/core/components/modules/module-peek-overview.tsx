@@ -31,7 +31,7 @@ export const ModulePeekOverview = observer(function ModulePeekOverview({
   const searchParams = useSearchParams();
   const peekModule = searchParams.get("peekModule");
   // refs
-  const ref = React.useRef(null);
+  const ref = React.useRef<HTMLDivElement>(null);
   // store hooks
   const { fetchModuleDetails, fetchArchivedModuleDetails } = useModule();
 

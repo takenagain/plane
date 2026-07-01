@@ -4,16 +4,15 @@
 
 from django.urls import path
 
-
 from plane.app.views import (
-    ModuleViewSet,
+    ModuleArchiveUnarchiveEndpoint,
+    ModuleFavoriteViewSet,
     ModuleIssueViewSet,
     ModuleLinkViewSet,
-    ModuleFavoriteViewSet,
+    ModuleTransferEndpoint,
     ModuleUserPropertiesEndpoint,
-    ModuleArchiveUnarchiveEndpoint,
+    ModuleViewSet,
 )
-
 
 urlpatterns = [
     path(
@@ -101,5 +100,10 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/archived-modules/<uuid:pk>/",
         ModuleArchiveUnarchiveEndpoint.as_view(),
         name="module-archive-unarchive",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/modules/<uuid:module_id>/transfer/",
+        ModuleTransferEndpoint.as_view(),
+        name="module-transfer",
     ),
 ]

@@ -26,15 +26,24 @@ import { redisManager } from "@/redis";
 
 export class Server {
   private app: Express;
+  private wsInstance: expressWs.Instance;
   private router: Router;
   private hocuspocusServer: Hocuspocus | undefined;
   private httpServer: HttpServer | undefined;
 
   constructor() {
     this.app = express();
-    expressWs(this.app);
+    // `expressWs(app)` patches `.ws()` onto the app and, in Express 4, onto the
+    // Router *prototype*. Express 5 rewrote the Router so that prototype patch no
+    // longer reaches `express.Router()` instances — `router.ws` ends up undefined
+    // and every WebSocket route is silently dropped at registration time (the
+    // collaboration handshake then 404s and clients reconnect forever). We capture
+    // the instance and explicitly `applyTo` our router so `.ws()` is guaranteed to
+    // exist regardless of the Express major version.
+    this.wsInstance = expressWs(this.app);
     this.setupMiddleware();
     this.router = express.Router();
+    this.wsInstance.applyTo(this.router);
     this.app.set("port", env.PORT || 3000);
     this.app.use(env.LIVE_BASE_PATH, this.router);
   }

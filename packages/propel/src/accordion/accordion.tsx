@@ -9,6 +9,11 @@ import { Accordion as BaseAccordion } from "@base-ui-components/react";
 
 import { PlusIcon } from "../icons";
 
+const DEFAULT_ACCORDION_VALUE: string[] = [];
+const DEFAULT_ACCORDION_TRIGGER_ICON = (
+  <PlusIcon aria-hidden="true" className="transition-all ease-out group-data-[panel-open]:rotate-45" />
+);
+
 export interface AccordionRootProps {
   defaultValue?: string[];
   allowMultiple?: boolean;
@@ -37,9 +42,14 @@ export interface AccordionContentProps {
   children: React.ReactNode;
 }
 
-function AccordionRoot({ defaultValue = [], allowMultiple = false, className = "", children }: AccordionRootProps) {
+function AccordionRoot({
+  defaultValue = DEFAULT_ACCORDION_VALUE,
+  allowMultiple = false,
+  className = "",
+  children,
+}: AccordionRootProps) {
   return (
-    <BaseAccordion.Root defaultValue={defaultValue} openMultiple={allowMultiple} className={`text-14 ${className}`}>
+    <BaseAccordion.Root defaultValue={defaultValue} multiple={allowMultiple} className={`text-14 ${className}`}>
       {children}
     </BaseAccordion.Root>
   );
@@ -55,7 +65,7 @@ function AccordionItem({ value, disabled, className = "", children }: AccordionI
 
 function AccordionTrigger({
   className = "",
-  icon = <PlusIcon aria-hidden="true" className="transition-all ease-out group-data-[panel-open]:rotate-45" />,
+  icon = DEFAULT_ACCORDION_TRIGGER_ICON,
   iconClassName = "",
   children,
   asChild = false,

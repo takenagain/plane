@@ -44,6 +44,10 @@ export interface IUser extends IUserLite {
   is_email_verified: boolean;
   is_password_autoset: boolean;
   is_tour_completed: boolean;
+  /** True once the user has at least one confirmed 2FA factor (UserMFA.is_enabled). */
+  mfa_enabled?: boolean;
+  /** True when the forced-2FA gate requires the user to configure 2FA before continuing. */
+  mfa_setup_required?: boolean;
   mobile_number: string | null;
   last_workspace_id: string;
   user_timezone: string;
@@ -151,6 +155,8 @@ export type TOnboardingSteps = {
   workspace_create: boolean;
   workspace_invite: boolean;
   workspace_join: boolean;
+  /** Final "Secure your account" 2FA step (R5). Optional so instances with MFA disabled are unaffected. */
+  mfa_setup?: boolean;
 };
 
 export interface IUserProfileData {

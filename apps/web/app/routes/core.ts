@@ -28,6 +28,7 @@ export const coreRoutes: RouteConfigEntry[] = [
   layout("./(all)/accounts/set-password/layout.tsx", [
     route("accounts/set-password", "./(all)/accounts/set-password/page.tsx"),
   ]),
+  layout("./(all)/accounts/setup-2fa/layout.tsx", [route("accounts/setup-2fa", "./(all)/accounts/setup-2fa/page.tsx")]),
 
   // Create Workspace
   layout("./(all)/create-workspace/layout.tsx", [route("create-workspace", "./(all)/create-workspace/page.tsx")]),
@@ -97,6 +98,10 @@ export const coreRoutes: RouteConfigEntry[] = [
           route(
             ":workspaceSlug/profile/:userId/activity",
             "./(all)/[workspaceSlug]/(projects)/profile/[userId]/activity/page.tsx"
+          ),
+          route(
+            ":workspaceSlug/profile/:userId/time",
+            "./(all)/[workspaceSlug]/(projects)/profile/[userId]/time/page.tsx"
           ),
         ]),
 
@@ -267,12 +272,12 @@ export const coreRoutes: RouteConfigEntry[] = [
             "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/members/page.tsx"
           ),
           route(
-            ":workspaceSlug/settings/billing",
-            "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/billing/page.tsx"
-          ),
-          route(
             ":workspaceSlug/settings/exports",
             "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/exports/page.tsx"
+          ),
+          route(
+            ":workspaceSlug/settings/integrations",
+            "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/integrations/page.tsx"
           ),
           route(
             ":workspaceSlug/settings/webhooks",
@@ -281,6 +286,10 @@ export const coreRoutes: RouteConfigEntry[] = [
           route(
             ":workspaceSlug/settings/webhooks/:webhookId",
             "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/webhooks/[webhookId]/page.tsx"
+          ),
+          route(
+            ":workspaceSlug/settings/ai-agent",
+            "./(all)/[workspaceSlug]/(settings)/settings/(workspace)/ai-agent/page.tsx"
           ),
         ]),
 
@@ -337,6 +346,10 @@ export const coreRoutes: RouteConfigEntry[] = [
             route(
               ":workspaceSlug/settings/projects/:projectId/estimates",
               "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/estimates/page.tsx"
+            ),
+            route(
+              ":workspaceSlug/settings/projects/:projectId/ai-agent",
+              "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/ai-agent/page.tsx"
             ),
             // Project Automations
             layout("./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/automations/layout.tsx", [

@@ -7,9 +7,9 @@
 import type { Editor } from "@tiptap/core";
 import { TableMap } from "@tiptap/pm/tables";
 import { ArrowDown, ArrowUp, ToggleRight } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { TEditorIcon } from "@/helpers/react-compat";
+import { EditorIcon } from "@/helpers/react-compat";
 // extensions
-import type { ISvgIcons } from "@plane/propel/icons";
 import { CopyIcon, TrashIcon, CloseIcon } from "@plane/propel/icons";
 import { findTable, getSelectedRows } from "@/extensions/table/table/utilities/helpers";
 // local imports
@@ -19,7 +19,7 @@ import { TableDragHandleDropdownColorSelector } from "../color-selector";
 const DROPDOWN_ITEMS: {
   key: string;
   label: string;
-  icon: LucideIcon | React.FC<ISvgIcons>;
+  icon: TEditorIcon;
   action: (editor: Editor) => void;
 }[] = [
   {
@@ -84,7 +84,7 @@ export function RowOptionsDropdown(props: Props) {
         }}
       >
         <div className="flex-grow truncate">Header row</div>
-        <ToggleRight className="size-3 shrink-0" />
+        <EditorIcon icon={ToggleRight} className="size-3 shrink-0" />
       </button>
       <hr className="my-2 border-subtle" />
       <TableDragHandleDropdownColorSelector editor={editor} onSelect={onClose} />
@@ -100,7 +100,7 @@ export function RowOptionsDropdown(props: Props) {
             onClose();
           }}
         >
-          <item.icon className="size-3 shrink-0" />
+          <EditorIcon icon={item.icon} className="size-3 shrink-0" />
           <div className="flex-grow truncate">{item.label}</div>
         </button>
       ))}

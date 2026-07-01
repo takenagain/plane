@@ -4,7 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { FloatingOverlay, FloatingPortal } from "@floating-ui/react";
+import { FloatingPortal } from "@floating-ui/react";
+import { EditorFloatingOverlay, editorFloatingStyle } from "@/helpers/react-compat";
 import type { UseInteractionsReturn, UseFloatingReturn } from "@floating-ui/react";
 
 type Props = {
@@ -44,7 +45,7 @@ export function FloatingMenuRoot(props: Props) {
       {context.open && (
         <FloatingPortal>
           {/* Backdrop */}
-          <FloatingOverlay
+          <EditorFloatingOverlay
             style={{
               zIndex: 99,
             }}
@@ -53,10 +54,7 @@ export function FloatingMenuRoot(props: Props) {
           <div
             ref={refs.setFloating}
             {...getFloatingProps()}
-            style={{
-              ...floatingStyles,
-              zIndex: 100,
-            }}
+            style={editorFloatingStyle({ ...floatingStyles, zIndex: 100 })}
           >
             {children}
           </div>

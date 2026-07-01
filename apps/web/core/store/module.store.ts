@@ -77,6 +77,13 @@ export interface IModuleStore {
   // archive
   archiveModule: (workspaceSlug: string, projectId: string, moduleId: string) => Promise<void>;
   restoreModule: (workspaceSlug: string, projectId: string, moduleId: string) => Promise<void>;
+  // transfer
+  transferModule: (
+    workspaceSlug: string,
+    projectId: string,
+    moduleId: string,
+    targetProjectId: string
+  ) => Promise<{ message: string; module_id: string }>;
 }
 
 export class ModulesStore implements IModuleStore {
@@ -120,6 +127,7 @@ export class ModulesStore implements IModuleStore {
       removeModuleFromFavorites: action,
       archiveModule: action,
       restoreModule: action,
+      transferModule: action,
     });
 
     this.rootStore = _rootStore;
@@ -637,5 +645,28 @@ export class ModulesStore implements IModuleStore {
       .catch((error) => {
         console.error("Failed to restore module in module store", error);
       });
+  };
+
+  /**
+   * @description transfers a module to another project
+   * @param workspaceSlug
+   * @param projectId
+   * @param moduleId
+   * @param targetProjectId
+   * @returns response with message and new module_id
+   */
+  transferModule = async (
+    workspaceSlug: string,
+    projectId: string,
+    moduleId: string,
+    targetProjectId: string
+  ): Promise<{ message: string; module_id: string }> => {
+    const response = await this.moduleService.transferModule(workspaceSlug, projectId, moduleId, {
+      target_project_id: targetProjectId,
+    });
+    runInAction(() => {
+      delete this.moduleMap[moduleId];
+    });
+    return response;
   };
 }

@@ -21,6 +21,9 @@ from .views import (
     MagicGenerateEndpoint,
     MagicSignInEndpoint,
     MagicSignUpEndpoint,
+    MFAVerifyEndpoint,
+    MFAWebAuthnAuthenticateBeginEndpoint,
+    MFAWebAuthnAuthenticateCompleteEndpoint,
     SignInAuthEndpoint,
     SignOutAuthEndpoint,
     SignUpAuthEndpoint,
@@ -57,6 +60,18 @@ urlpatterns = [
     path("spaces/sign-out/", SignOutAuthSpaceEndpoint.as_view(), name="space-sign-out"),
     # csrf token
     path("get-csrf-token/", CSRFTokenEndpoint.as_view(), name="get_csrf_token"),
+    # MFA login-flow challenge (partial-auth)
+    path("mfa/verify/", MFAVerifyEndpoint.as_view(), name="mfa-verify"),
+    path(
+        "mfa/webauthn/authenticate/begin/",
+        MFAWebAuthnAuthenticateBeginEndpoint.as_view(),
+        name="mfa-webauthn-authenticate-begin",
+    ),
+    path(
+        "mfa/webauthn/authenticate/complete/",
+        MFAWebAuthnAuthenticateCompleteEndpoint.as_view(),
+        name="mfa-webauthn-authenticate-complete",
+    ),
     # Magic sign in
     path("magic-generate/", MagicGenerateEndpoint.as_view(), name="magic-generate"),
     path("magic-sign-in/", MagicSignInEndpoint.as_view(), name="magic-sign-in"),

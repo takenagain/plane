@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   sidebar: {
     projects: "Проекты",
@@ -402,7 +396,6 @@ export default {
   time_tracking_description: "Записывайте время, потраченное на рабочие элементы и проекты.",
   work_management_description: "Управление рабочими элементами и проектами",
   documentation: "Документация",
-  message_support: "Написать в поддержку",
   contact_sales: "Связаться с отделом продаж",
   hyper_mode: "Гиперрежим",
   keyboard_shortcuts: "Горячие клавиши",
@@ -2869,7 +2862,6 @@ export default {
       open_plane_documentation: "Открыть документацию Plane",
       join_forum: "Присоединиться к Forum",
       report_bug: "Сообщить об ошибке",
-      chat_with_us: "Написать нам",
     },
     page_placeholders: {
       default: "Введите команду или поиск",

@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { Menu, Transition } from "@headlessui/react";
@@ -54,6 +53,7 @@ export const SwitchAccountDropdown = observer(function SwitchAccountDropdown(pro
           <span className="text-13 font-medium text-secondary">{displayName}</span>
         </Menu.Button>
         <Transition
+          as="div"
           enter="transition duration-100 ease-out"
           enterFrom="transform scale-95 opacity-0"
           enterTo="transform scale-100 opacity-100"

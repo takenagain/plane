@@ -8,7 +8,7 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { useParams, useRouter } from "next/navigation";
-import { EUserPermissionsLevel, EPageAccess } from "@plane/constants";
+import { EUserPermissionsLevel, EPageAccess, EUserPermissions } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { EmptyStateDetailed } from "@plane/propel/empty-state";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -19,7 +19,7 @@ import { PageLoader } from "@/components/pages/loaders/page-loader";
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 // plane web hooks
-import { EPageStoreType, usePageStore } from "@/plane-web/hooks/store";
+import { EPageStoreType, usePageStore } from "@/hooks/store";
 
 type Props = {
   children: React.ReactNode;
@@ -33,10 +33,14 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
   const { t } = useTranslation();
   // store hooks
   const { currentProjectDetails } = useProject();
-  const { isAnyPageAvailable, getCurrentProjectFilteredPageIdsByTab, getCurrentProjectPageIdsByTab, loader } =
-    usePageStore(storeType);
+  const {
+    isAnyPageAvailable,
+    getCurrentProjectFilteredPageIdsByTab,
+    getCurrentProjectPageIdsByTab,
+    loader,
+    createPage,
+  } = usePageStore(storeType);
   const { allowPermissions } = useUserPermissions();
-  const { createPage } = usePageStore(EPageStoreType.PROJECT);
   // states
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   // router
@@ -45,10 +49,10 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
   // derived values
   const pageIds = getCurrentProjectPageIdsByTab(pageType);
   const filteredPageIds = getCurrentProjectFilteredPageIdsByTab(pageType);
-  const canPerformEmptyStateActions = allowPermissions(
-    [EUserProjectRoles.ADMIN, EUserProjectRoles.MEMBER],
-    EUserPermissionsLevel.PROJECT
-  );
+  const isWiki = storeType === EPageStoreType.WIKI;
+  const canPerformEmptyStateActions = isWiki
+    ? allowPermissions([EUserPermissions.ADMIN, EUserPermissions.MEMBER], EUserPermissionsLevel.WORKSPACE)
+    : allowPermissions([EUserProjectRoles.ADMIN, EUserProjectRoles.MEMBER], EUserPermissionsLevel.PROJECT);
 
   // handle page create
   const handleCreatePage = async () => {
@@ -60,7 +64,9 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
 
     await createPage(payload)
       .then((res) => {
-        const pageId = `/${workspaceSlug}/projects/${currentProjectDetails?.id}/pages/${res?.id}`;
+        const pageId = isWiki
+          ? `/${workspaceSlug}/wiki/${res?.id}`
+          : `/${workspaceSlug}/projects/${currentProjectDetails?.id}/pages/${res?.id}`;
         router.push(pageId);
       })
       .catch((err) => {
@@ -80,11 +86,15 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
       return (
         <EmptyStateDetailed
           assetKey="page"
-          title={t("project_empty_state.pages.title")}
-          description={t("project_empty_state.pages.description")}
+          title={isWiki ? t("workspace_pages.empty_state.general.title") : t("project_empty_state.pages.title")}
+          description={
+            isWiki ? t("workspace_pages.empty_state.general.description") : t("project_empty_state.pages.description")
+          }
           actions={[
             {
-              label: t("project_empty_state.pages.cta_primary"),
+              label: isWiki
+                ? t("workspace_pages.empty_state.general.primary_button.text")
+                : t("project_empty_state.pages.cta_primary"),
               onClick: () => {
                 handleCreatePage();
               },
@@ -99,11 +109,15 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
       return (
         <EmptyStateDetailed
           assetKey="page"
-          title={t("project_empty_state.pages.title")}
-          description={t("project_empty_state.pages.description")}
+          title={isWiki ? t("workspace_pages.empty_state.public.title") : t("project_empty_state.pages.title")}
+          description={
+            isWiki ? t("workspace_pages.empty_state.public.description") : t("project_empty_state.pages.description")
+          }
           actions={[
             {
-              label: t("project_empty_state.pages.cta_primary"),
+              label: isWiki
+                ? t("workspace_pages.empty_state.public.primary_button.text")
+                : t("project_empty_state.pages.cta_primary"),
               onClick: () => {
                 handleCreatePage();
               },
@@ -117,11 +131,15 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
       return (
         <EmptyStateDetailed
           assetKey="page"
-          title={t("project_empty_state.pages.title")}
-          description={t("project_empty_state.pages.description")}
+          title={isWiki ? t("workspace_pages.empty_state.private.title") : t("project_empty_state.pages.title")}
+          description={
+            isWiki ? t("workspace_pages.empty_state.private.description") : t("project_empty_state.pages.description")
+          }
           actions={[
             {
-              label: t("project_empty_state.pages.cta_primary"),
+              label: isWiki
+                ? t("workspace_pages.empty_state.private.primary_button.text")
+                : t("project_empty_state.pages.cta_primary"),
               onClick: () => {
                 handleCreatePage();
               },
@@ -135,8 +153,14 @@ export const PagesListMainContent = observer(function PagesListMainContent(props
       return (
         <EmptyStateDetailed
           assetKey="page"
-          title={t("project_empty_state.archive_pages.title")}
-          description={t("project_empty_state.archive_pages.description")}
+          title={
+            isWiki ? t("workspace_pages.empty_state.archived.title") : t("project_empty_state.archive_pages.title")
+          }
+          description={
+            isWiki
+              ? t("workspace_pages.empty_state.archived.description")
+              : t("project_empty_state.archive_pages.description")
+          }
         />
       );
   }

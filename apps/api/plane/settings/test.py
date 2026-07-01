@@ -19,6 +19,11 @@ APP_BASE_URL = "http://localhost:3000"
 # Ensure EMAIL_HOST is set for tests (matches CI environment where EMAIL_HOST=localhost)
 os.environ.setdefault("EMAIL_HOST", "localhost")
 
+# MFA enforcement defaults ON in production, but the existing test suite signs in
+# users that have no second factor configured. Default the forced-setup gate OFF
+# for tests; the dedicated MFA tests opt back in via InstanceConfiguration rows.
+os.environ.setdefault("MFA_ENFORCED", "0")
+
 INSTALLED_APPS.append(  # noqa
     "plane.tests"
 )

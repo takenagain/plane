@@ -1,8 +1,4 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- *
  * E2E Tests for Work Item Description Editing
  *
  * Coverage:
@@ -139,6 +135,64 @@ async function navigateToIssueDetail(page: Page) {
 
 // ---------------------------------------------------------------------------
 // Tests
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Helper: navigate to a project issues page and wait for it to load
+// ---------------------------------------------------------------------------
+async function navigateToProjectIssues(page: Page, ws: string, proj: string) {
+  await page.goto(`${BASE_URL}/${ws}/projects/${proj}/issues/`);
+  await waitForPageLoad(page);
+
+  // Dismiss welcome modal if present
+  const dismiss = page.getByRole("button", { name: /no thanks|explore it myself/i });
+  if (await dismiss.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await dismiss.click();
+    await page.waitForTimeout(500);
+  }
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+}
+
+// ---------------------------------------------------------------------------
+// Tests: Create New Issue description editability
+// ---------------------------------------------------------------------------
+
+test.describe.serial("Create New Issue – description editor", () => {
+  test.beforeEach(async ({ page }) => {
+    await signInAndEnsureWorkspace(page);
+  });
+
+  test("description field is editable in the Create New Issue modal", async ({ page }) => {
+    await navigateToProjectIssues(page, workspaceSlug, projectId);
+
+    const createBtn = page.locator('[data-ph-element="work_items_header_add_work_item_button"]');
+    await expect(createBtn).toBeVisible({ timeout: 15_000 });
+    await createBtn.click();
+
+    const descEditor = page.locator("#issue-modal-editor .ProseMirror[contenteditable='true']");
+    await expect(descEditor).toBeVisible({ timeout: 30_000 });
+
+    // Verify it is truly editable (not just visible as a skeleton loader)
+    const isEditable = await descEditor.getAttribute("contenteditable");
+    expect(isEditable).toBe("true");
+
+    // Click and type into the description
+    await descEditor.click();
+    const testText = "Create modal description test";
+    await page.keyboard.type(testText, { delay: 60 });
+
+    // The typed text should appear in the editor
+    const content = await descEditor.textContent();
+    expect(content).toContain(testText);
+
+    // Close without submitting
+    await page.keyboard.press("Escape");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: Editing description of an existing work item
 // ---------------------------------------------------------------------------
 
 test.describe.serial("Work item description editing", () => {

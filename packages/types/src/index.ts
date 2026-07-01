@@ -7,6 +7,7 @@
 export * from "./activity";
 export * from "./ai";
 export * from "./analytics";
+export * from "./agent";
 export * from "./api_token";
 export * from "./auth";
 export * from "./calendar";
@@ -31,10 +32,11 @@ export * from "./integration";
 export * from "./issues";
 export * from "./issues/base"; // TODO: Remove this after development and the refactor/mobx-store-issue branch is stable
 export * from "./issues/issue-identifier";
+export * from "./issues/issue-property-values";
 export * from "./layout";
 export * from "./module";
+export * from "./navigation-preferences";
 export * from "./page";
-export * from "./payment";
 export * from "./pragmatic";
 export * from "./project";
 export * from "./publish";
@@ -59,3 +61,4 @@ export * from "./worklog";
 export * from "./workspace-views";
 export * from "./base-layouts";
 export * from "./pagination";
+export * from "./profile-time-analytics";

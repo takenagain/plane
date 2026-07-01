@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { FC, RefObject } from "react";
+import { useCallback, useMemo, useRef, type RefObject } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { ETabIndices } from "@plane/constants";
@@ -32,7 +32,7 @@ type TInboxIssueDescription = {
   workspaceId: string;
   data: Partial<TIssue>;
   handleData: (issueKey: keyof Partial<TIssue>, issueValue: Partial<TIssue>[keyof Partial<TIssue>]) => void;
-  editorRef: RefObject<EditorRefApi>;
+  editorRef: RefObject<EditorRefApi | null>;
   onEnterKeyPress?: (e?: any) => void;
   onAssetUpload?: (assetId: string) => void;
 };
@@ -59,6 +59,26 @@ export const InboxIssueDescription = observer(function InboxIssueDescription(pro
 
   const { getIndex } = getTabIndex(ETabIndices.INTAKE_ISSUE_FORM, isMobile);
 
+  // Stabilize the props that feed the editor's resolvedExtensions memo. Inline
+  // function literals here change identity every render (this observer re-renders
+  // on each keystroke as `data` updates), which made @tiptap/react destroy and
+  // recreate the ProseMirror view and drop the cursor. `t` is kept in a ref so a
+  // new translation function each render doesn't bust the memo.
+  const tRef = useRef(t);
+  tRef.current = t;
+  const resolvedPlaceholder = useMemo(
+    () => (isFocused: boolean, value: string) => tRef.current(`${getDescriptionPlaceholderI18n(isFocused, value)}`),
+    []
+  );
+  const searchMentionCallback = useCallback(
+    async (payload: Parameters<typeof workspaceService.searchEntity>[1]) =>
+      await workspaceService.searchEntity(workspaceSlug?.toString() ?? "", {
+        ...payload,
+        project_id: projectId?.toString() ?? "",
+      }),
+    [workspaceSlug, projectId]
+  );
+
   if (loader === "issue-loading")
     return (
       <Loader className="min-h-[6rem] rounded-md border border-subtle">
@@ -77,13 +97,8 @@ export const InboxIssueDescription = observer(function InboxIssueDescription(pro
       projectId={projectId}
       dragDropEnabled={false}
       onChange={(_description: object, description_html: string) => handleData("description_html", description_html)}
-      placeholder={(isFocused, description) => t(`${getDescriptionPlaceholderI18n(isFocused, description)}`)}
-      searchMentionCallback={async (payload) =>
-        await workspaceService.searchEntity(workspaceSlug?.toString() ?? "", {
-          ...payload,
-          project_id: projectId?.toString() ?? "",
-        })
-      }
+      placeholder={resolvedPlaceholder}
+      searchMentionCallback={searchMentionCallback}
       containerClassName={containerClassName}
       onEnterKeyPress={onEnterKeyPress}
       tabIndex={getIndex("description_html")}
@@ -103,7 +118,7 @@ export const InboxIssueDescription = observer(function InboxIssueDescription(pro
           return asset_id;
         } catch (error) {
           console.log("Error in uploading work item asset:", error);
-          throw new Error("Asset upload failed. Please try again later.");
+          throw new Error("Asset upload failed. Please try again later.", { cause: error });
         }
       }}
       duplicateFile={async (assetId: string) => {

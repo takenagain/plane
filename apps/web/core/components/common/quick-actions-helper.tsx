@@ -5,6 +5,8 @@
  */
 
 // types
+import type React from "react";
+import { ArrowRightLeft } from "lucide-react";
 import type { ICycle, IModule, IProjectView, IWorkspaceView } from "@plane/types";
 import type { TContextMenuItem } from "@plane/ui";
 // hooks
@@ -37,6 +39,7 @@ interface UseModuleMenuItemsProps {
   handleDelete: () => void;
   handleCopyLink: () => void;
   handleOpenInNewTab: () => void;
+  handleTransfer: () => void;
 }
 
 interface UseViewMenuItemsProps {
@@ -61,7 +64,7 @@ interface UseLayoutMenuItemsProps {
 
 type MenuResult = {
   items: TContextMenuItem[];
-  modals: JSX.Element | null;
+  modals: React.JSX.Element | null;
 };
 
 export const useCycleMenuItems = (props: UseCycleMenuItemsProps): MenuResult => {
@@ -107,6 +110,13 @@ export const useModuleMenuItems = (props: UseModuleMenuItemsProps): MenuResult =
       description: isInArchivableGroup ? undefined : "Only completed or cancelled modules can be archived",
     }),
     factory.createRestoreMenuItem(handlers.handleRestore, isEditingAllowed && isArchived),
+    {
+      key: "transfer",
+      title: "Transfer to project",
+      icon: ArrowRightLeft,
+      action: handlers.handleTransfer,
+      shouldRender: isEditingAllowed && !isArchived,
+    },
     factory.createDeleteMenuItem(handlers.handleDelete, isEditingAllowed && !isArchived),
   ].filter((item) => item.shouldRender !== false);
 

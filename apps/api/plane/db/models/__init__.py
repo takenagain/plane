@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+from .agent import AgentChatMessage, AgentChatSession, AgentConfiguration
 from .analytic import AnalyticView
 from .api import APIActivityLog, APIToken
 from .asset import FileAsset
@@ -28,6 +29,9 @@ from .integration import (
     GithubRepository,
     GithubRepositorySync,
     Integration,
+    SentryIssueLink,
+    SentryProjectMapping,
+    SentryWorkspaceConnection,
     SlackProjectSync,
     WorkspaceIntegration,
 )
@@ -51,6 +55,7 @@ from .issue import (
 )
 from .issue_type import IssueType
 from .label import Label
+from .mfa import MFADevice, MFARecoveryCode, UserMFA
 from .module import Module, ModuleIssue, ModuleLink, ModuleMember, ModuleUserProperties
 from .notification import EmailNotificationLog, Notification, UserNotificationPreference
 from .page import Page, PageLabel, PageLog, PageVersion, ProjectPage

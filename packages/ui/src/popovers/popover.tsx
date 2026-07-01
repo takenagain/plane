@@ -8,7 +8,7 @@ import { Popover as HeadlessReactPopover, Transition } from "@headlessui/react";
 import { EllipsisVertical } from "lucide-react";
 import type { Ref } from "react";
 import React, { Fragment, useState } from "react";
-import { usePopper } from "react-popper";
+import { usePopper } from "../hooks/use-popper";
 // helpers
 import { cn } from "../utils";
 // types
@@ -29,7 +29,7 @@ export function Popover(props: TPopover) {
   } = props;
   // states
   const [referenceElement, setReferenceElement] = useState<HTMLDivElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
 
   // react-popper derived values
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
@@ -72,7 +72,7 @@ export function Popover(props: TPopover) {
         leaveTo="opacity-0 translate-y-1"
       >
         <HeadlessReactPopover.Panel
-          ref={setPopperElement}
+          ref={(node) => setPopperElement(node as HTMLDivElement | null)}
           style={styles.popper}
           {...attributes.popper}
           className={cn("absolute top-full left-0 z-20 mt-2 w-screen max-w-xs", panelClassName)}

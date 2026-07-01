@@ -40,6 +40,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   TARGET_BRANCH: ${{ github.ref_name }}
   ARM64_BUILD: ${{ github.event.inputs.arm64 }}
@@ -387,6 +391,8 @@ jobs:
       github.repository == 'makeplane/plane' &&
       needs.branch_build_setup.outputs.build_type == 'Release'
     name: Build Release
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     needs:
       [
@@ -418,6 +424,7 @@ jobs:
         with:
           tag_name: ${{ env.REL_VERSION }}
           name: ${{ env.REL_VERSION }}
+          target_commitish: ${{ github.sha }}
           draft: false
           prerelease: ${{ env.IS_PRERELEASE }}
           generate_release_notes: true

@@ -4,25 +4,51 @@
 
 # Python imports
 import io
+import json
+import os
 import zipfile
-from typing import List
-import boto3
-from botocore.client import Config
+from typing import Any, List
 from uuid import UUID
 
 # Third party imports
 from celery import shared_task
 
 # Django imports
-from django.conf import settings
 from django.utils import timezone
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch
 
 # Module imports
-from plane.db.models import ExporterHistory, Issue, IssueComment, IssueRelation, IssueSubscriber
+from plane.db.models import ExporterHistory, Issue, IssueComment, IssueRelation, IssueSubscriber, Project
+from plane.settings.storage import S3Storage
 from plane.utils.exception_logger import log_exception
 from plane.utils.porters.exporter import DataExporter
 from plane.utils.porters.serializers.issue import IssueExportSerializer
+from plane.utils.porters.serializers.project import ProjectExportSerializer
+
+
+def get_plane_version() -> str:
+    return os.environ.get("APP_RELEASE_VERSION") or os.environ.get("APP_VERSION") or "unknown"
+
+
+def build_export_manifest(
+    slug: str,
+    provider: str,
+    project_ids: List[str],
+    files_metadata: List[dict[str, Any]],
+) -> dict[str, Any]:
+    projects = (
+        Project.objects.filter(id__in=project_ids, archived_at__isnull=True)
+        .annotate(state_count=Count("project_state", distinct=True))
+        .order_by("identifier")
+    )
+    return {
+        "workspace_slug": slug,
+        "exported_at": timezone.now().isoformat(),
+        "plane_version": get_plane_version(),
+        "format": provider,
+        "projects": ProjectExportSerializer(projects, many=True).data,
+        "files": files_metadata,
+    }
 
 
 def create_zip_file(files: List[tuple[str, str | bytes]]) -> io.BytesIO:
@@ -38,78 +64,14 @@ def create_zip_file(files: List[tuple[str, str | bytes]]) -> io.BytesIO:
     return zip_buffer
 
 
-# TODO: Change the upload_to_s3 function to use the new storage method with entry in file asset table
 def upload_to_s3(zip_file: io.BytesIO, workspace_id: UUID, token_id: str, slug: str) -> None:
     """
-    Upload a ZIP file to S3 and generate a presigned URL.
+    Upload a ZIP file to S3/MinIO and generate a presigned URL for download.
     """
     file_name = f"{workspace_id}/export-{slug}-{token_id[:6]}-{str(timezone.now().date())}.zip"
     expires_in = 7 * 24 * 60 * 60
-
-    if settings.USE_MINIO:
-        upload_s3 = boto3.client(
-            "s3",
-            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            config=Config(signature_version="s3v4"),
-        )
-        upload_s3.upload_fileobj(
-            zip_file,
-            settings.AWS_STORAGE_BUCKET_NAME,
-            file_name,
-            ExtraArgs={"ACL": "public-read", "ContentType": "application/zip"},
-        )
-
-        # Generate presigned url for the uploaded file with different base
-        presign_s3 = boto3.client(
-            "s3",
-            endpoint_url=(
-                f"{settings.AWS_S3_URL_PROTOCOL}//{str(settings.AWS_S3_CUSTOM_DOMAIN).replace('/uploads', '')}/"
-            ),
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            config=Config(signature_version="s3v4"),
-        )
-
-        presigned_url = presign_s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": settings.AWS_STORAGE_BUCKET_NAME, "Key": file_name},
-            ExpiresIn=expires_in,
-        )
-    else:
-        # If endpoint url is present, use it
-        if settings.AWS_S3_ENDPOINT_URL:
-            s3 = boto3.client(
-                "s3",
-                endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                config=Config(signature_version="s3v4"),
-            )
-        else:
-            s3 = boto3.client(
-                "s3",
-                region_name=settings.AWS_REGION,
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                config=Config(signature_version="s3v4"),
-            )
-
-        # Upload the file to S3
-        s3.upload_fileobj(
-            zip_file,
-            settings.AWS_STORAGE_BUCKET_NAME,
-            file_name,
-            ExtraArgs={"ContentType": "application/zip"},
-        )
-
-        # Generate presigned url for the uploaded file
-        presigned_url = s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": settings.AWS_STORAGE_BUCKET_NAME, "Key": file_name},
-            ExpiresIn=expires_in,
-        )
+    storage = S3Storage(request=None)
+    presigned_url = storage.upload_export_zip(zip_file, file_name, expiration=expires_in)
 
     exporter_instance = ExporterHistory.objects.get(token=token_id)
 
@@ -200,19 +162,39 @@ def issue_export_task(
             exporter_instance.save(update_fields=["status", "reason"])
             return
 
-        files = []
+        files: List[tuple[str, str | bytes]] = []
+        files_metadata: List[dict[str, Any]] = []
         if multiple:
             # Export each project separately with its own queryset
             for project_id in project_ids:
                 project_issues = workspace_issues.filter(project_id=project_id)
+                issue_count = project_issues.count()
                 export_filename = f"{slug}-{project_id}"
                 filename, content = exporter.export(export_filename, project_issues)
                 files.append((filename, content))
+                files_metadata.append(
+                    {
+                        "project_id": str(project_id),
+                        "path": filename,
+                        "issue_count": issue_count,
+                    }
+                )
         else:
             # Export all issues in a single file
+            issue_count = workspace_issues.count()
             export_filename = f"{slug}-{workspace_id}"
             filename, content = exporter.export(export_filename, workspace_issues)
             files.append((filename, content))
+            files_metadata.append(
+                {
+                    "project_id": None,
+                    "path": filename,
+                    "issue_count": issue_count,
+                }
+            )
+
+        manifest = build_export_manifest(slug, provider, project_ids, files_metadata)
+        files.insert(0, ("manifest.json", json.dumps(manifest, indent=2, default=str)))
 
         zip_buffer = create_zip_file(files)
         upload_to_s3(zip_buffer, workspace_id, token_id, slug)

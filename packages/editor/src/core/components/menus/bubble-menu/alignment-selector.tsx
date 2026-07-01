@@ -5,7 +5,8 @@
  */
 
 import type { Editor } from "@tiptap/core";
-import type { LucideIcon } from "lucide-react";
+import type { TEditorIcon } from "@/helpers/react-compat";
+import { EditorIcon } from "@/helpers/react-compat";
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
 // plane utils
 import { cn } from "@plane/utils";
@@ -27,7 +28,7 @@ export function TextAlignmentSelector(props: Props) {
   const textAlignmentOptions: {
     itemKey: TEditorCommands;
     renderKey: string;
-    icon: LucideIcon;
+    icon: TEditorIcon;
     command: () => void;
     isActive: () => boolean;
   }[] = [
@@ -81,7 +82,7 @@ export function TextAlignmentSelector(props: Props) {
             }
           )}
         >
-          <item.icon className="size-4" />
+          <EditorIcon icon={item.icon} className="size-4" />
         </button>
       ))}
     </div>

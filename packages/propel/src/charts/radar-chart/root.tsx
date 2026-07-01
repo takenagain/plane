@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- Recharts render-prop APIs */
 import { useMemo, useState } from "react";
 import {
   PolarGrid,
@@ -58,7 +59,7 @@ function RadarChart<T extends string, K extends string>(props: TRadarChartProps<
                 <CustomTooltip
                   active={active}
                   activeKey={activeLegend}
-                  label={label}
+                  label={typeof label === "string" ? label : String(label ?? "")}
                   payload={payload}
                   itemKeys={itemKeys}
                   itemLabels={itemLabels}
@@ -68,10 +69,8 @@ function RadarChart<T extends string, K extends string>(props: TRadarChartProps<
             />
           )}
           {legend && (
-            // @ts-expect-error recharts types are not up to date
             <Legend
-              onMouseEnter={(payload) => {
-                // @ts-expect-error recharts types are not up to date
+              onMouseEnter={(payload: { payload?: { key?: string } }) => {
                 const key: string | undefined = payload.payload?.key;
                 if (!key) return;
                 setActiveLegend(key);

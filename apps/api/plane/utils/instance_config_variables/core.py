@@ -56,6 +56,39 @@ google_config_variables = [
     },
 ]
 
+sentry_config_variables = [
+    {
+        "key": "SENTRY_CLIENT_ID",
+        "value": os.environ.get("SENTRY_CLIENT_ID"),
+        "category": "SENTRY",
+        "is_encrypted": False,
+    },
+    {
+        "key": "SENTRY_CLIENT_SECRET",
+        "value": os.environ.get("SENTRY_CLIENT_SECRET"),
+        "category": "SENTRY",
+        "is_encrypted": True,
+    },
+    {
+        "key": "ENABLE_SENTRY_SYNC",
+        "value": os.environ.get("ENABLE_SENTRY_SYNC", "0"),
+        "category": "SENTRY",
+        "is_encrypted": False,
+    },
+    {
+        "key": "SENTRY_WEBHOOK_SECRET",
+        "value": os.environ.get("SENTRY_WEBHOOK_SECRET"),
+        "category": "SENTRY",
+        "is_encrypted": True,
+    },
+    {
+        "key": "SENTRY_API_BASE_URL",
+        "value": os.environ.get("SENTRY_API_BASE_URL", "https://sentry.io"),
+        "category": "SENTRY",
+        "is_encrypted": False,
+    },
+]
+
 github_config_variables = [
     {
         "key": "GITHUB_CLIENT_ID",
@@ -80,6 +113,24 @@ github_config_variables = [
         "value": os.environ.get("ENABLE_GITHUB_SYNC", "0"),
         "category": "GITHUB",
         "is_encrypted": False,
+    },
+    {
+        "key": "GITHUB_APP_ID",
+        "value": os.environ.get("GITHUB_APP_ID"),
+        "category": "GITHUB",
+        "is_encrypted": False,
+    },
+    {
+        "key": "GITHUB_PRIVATE_KEY",
+        "value": os.environ.get("GITHUB_PRIVATE_KEY"),
+        "category": "GITHUB",
+        "is_encrypted": True,
+    },
+    {
+        "key": "GITHUB_WEBHOOK_SECRET",
+        "value": os.environ.get("GITHUB_WEBHOOK_SECRET"),
+        "category": "GITHUB",
+        "is_encrypted": True,
     },
 ]
 
@@ -210,7 +261,7 @@ llm_config_variables = [
     },
     {
         "key": "LLM_MODEL",
-        "value": os.environ.get("LLM_MODEL", "gpt-4o-mini"),
+        "value": os.environ.get("LLM_MODEL", "gpt-5.5"),
         "category": "AI",
         "is_encrypted": False,
     },
@@ -232,30 +283,15 @@ unsplash_config_variables = [
     },
 ]
 
-intercom_config_variables = [
-    {
-        "key": "IS_INTERCOM_ENABLED",
-        "value": os.environ.get("IS_INTERCOM_ENABLED", "1"),
-        "category": "INTERCOM",
-        "is_encrypted": False,
-    },
-    {
-        "key": "INTERCOM_APP_ID",
-        "value": os.environ.get("INTERCOM_APP_ID", ""),
-        "category": "INTERCOM",
-        "is_encrypted": False,
-    },
-]
-
 core_config_variables = [
     *authentication_config_variables,
     *workspace_management_config_variables,
     *google_config_variables,
+    *sentry_config_variables,
     *github_config_variables,
     *gitlab_config_variables,
     *gitea_config_variables,
     *smtp_config_variables,
     *llm_config_variables,
     *unsplash_config_variables,
-    *intercom_config_variables,
 ]

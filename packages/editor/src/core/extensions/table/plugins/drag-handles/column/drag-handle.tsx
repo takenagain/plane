@@ -13,7 +13,6 @@ import {
   autoUpdate,
   useClick,
   useRole,
-  FloatingOverlay,
   FloatingPortal,
 } from "@floating-ui/react";
 import type { Editor } from "@tiptap/core";
@@ -44,6 +43,7 @@ import {
 } from "../marker-utils";
 import { showCellContent } from "../utils";
 import { ColumnOptionsDropdown } from "./dropdown";
+import { EditorFloatingOverlay, EditorIcon, editorFloatingStyle } from "@/helpers/react-compat";
 import { calculateColumnDropIndex, constructColumnDragPreview, getTableColumnNodesInfo } from "./utils";
 
 export type ColumnDragHandleProps = {
@@ -235,13 +235,13 @@ export function ColumnDragHandle(props: ColumnDragHandleProps) {
             "hover:bg-layer-1-hover": !isDropdownOpen,
           })}
         >
-          <Ellipsis className="size-4 text-primary" />
+          <EditorIcon icon={Ellipsis} className="size-4 text-primary" />
         </button>
       </div>
       {isDropdownOpen && (
         <FloatingPortal>
           {/* Backdrop */}
-          <FloatingOverlay
+          <EditorFloatingOverlay
             style={{
               zIndex: 99,
             }}
@@ -251,10 +251,7 @@ export function ColumnDragHandle(props: ColumnDragHandleProps) {
             className="max-h-[90vh] w-[12rem] overflow-y-auto rounded-md border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 shadow-raised-200"
             ref={refs.setFloating}
             {...getFloatingProps()}
-            style={{
-              ...floatingStyles,
-              zIndex: 100,
-            }}
+            style={editorFloatingStyle({ ...floatingStyles, zIndex: 100 })}
           >
             <ColumnOptionsDropdown editor={editor} onClose={() => context.onOpenChange(false)} />
           </div>

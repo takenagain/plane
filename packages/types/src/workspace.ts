@@ -258,6 +258,7 @@ export enum EOnboardingSteps {
   USE_CASE_SETUP = "USE_CASE_SETUP",
   WORKSPACE_CREATE_OR_JOIN = "WORKSPACE_CREATE_OR_JOIN",
   INVITE_MEMBERS = "INVITE_MEMBERS",
+  MFA_SETUP = "MFA_SETUP",
 }
 
 export type TOnboardingStep = EOnboardingSteps;

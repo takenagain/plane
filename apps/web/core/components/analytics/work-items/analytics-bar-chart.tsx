@@ -32,6 +32,7 @@ import { ChartLoader } from "../loaders";
 import { generateBarColor } from "./utils";
 
 declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     export: {
       key: string;
@@ -46,6 +47,12 @@ interface Props {
   y_axis: ChartYAxisMetric;
   group_by?: ChartXAxisProperty;
   x_axis_date_grouping?: ChartXAxisDateGrouping;
+  /** When set, chart data is loaded via this callback instead of workspace analytics store/API. */
+  fetchChart?: () => Promise<TChart>;
+  /** Custom CSV export handler (e.g. profile user-time-analytics export). */
+  onExportCsv?: () => Promise<void>;
+  /** Override SWR cache key when using fetchChart. */
+  swrKey?: string;
 }
 
 const analyticsService = new AnalyticsService();
@@ -60,23 +67,26 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
   const params = useParams();
   const workspaceSlug = params.workspaceSlug.toString();
 
-  const { data: priorityChartData, isLoading: priorityChartLoading } = useSWR(
-    `customized-insights-chart-${workspaceSlug}-${selectedDuration}-
-    ${selectedProjects}-${selectedCycle}-${selectedModule}-${props.x_axis}-${props.y_axis}-${props.group_by}-${isPeekView}-${isEpic}`,
-    () =>
-      analyticsService.getAdvanceAnalyticsCharts<TChart>(
-        workspaceSlug,
-        "custom-work-items",
-        {
-          // date_filter: selectedDuration,
-          ...(selectedProjects?.length > 0 && { project_ids: selectedProjects?.join(",") }),
-          ...(selectedCycle ? { cycle_id: selectedCycle } : {}),
-          ...(selectedModule ? { module_id: selectedModule } : {}),
-          ...(isEpic ? { epic: true } : {}),
-          ...props,
-        },
-        isPeekView
-      )
+  const defaultSwrKey = `customized-insights-chart-${workspaceSlug}-${selectedDuration}-
+    ${selectedProjects}-${selectedCycle}-${selectedModule}-${props.x_axis}-${props.y_axis}-${props.group_by}-${isPeekView}-${isEpic}`;
+
+  const { data: priorityChartData, isLoading: priorityChartLoading } = useSWR(props.swrKey ?? defaultSwrKey, () =>
+    props.fetchChart
+      ? props.fetchChart()
+      : analyticsService.getAdvanceAnalyticsCharts<TChart>(
+          workspaceSlug,
+          "custom-work-items",
+          {
+            ...(selectedProjects?.length > 0 && { project_ids: selectedProjects?.join(",") }),
+            ...(selectedCycle ? { cycle_id: selectedCycle } : {}),
+            ...(selectedModule ? { module_id: selectedModule } : {}),
+            ...(isEpic ? { epic: true } : {}),
+            x_axis: props.x_axis,
+            y_axis: props.y_axis,
+            group_by: props.group_by,
+          },
+          isPeekView
+        )
   );
   const parsedData = useMemo(
     () =>
@@ -242,6 +252,14 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
                 variant="secondary"
                 prependIcon={<Download className="h-3.5 w-3.5" />}
                 onClick={async () => {
+                  if (props.onExportCsv) {
+                    try {
+                      await props.onExportCsv();
+                    } catch (e) {
+                      console.error(e);
+                    }
+                    return;
+                  }
                   if (props.y_axis === ChartYAxisMetric.HOURS_LOGGED) {
                     const params = {
                       project_ids: selectedProjects?.join(","),

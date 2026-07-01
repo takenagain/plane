@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   sidebar: {
     projects: "プロジェクト",
@@ -395,7 +389,6 @@ export default {
   time_tracking_description: "作業項目やプロジェクトに費やした時間を記録します。",
   work_management_description: "作業とプロジェクトを簡単に管理します。",
   documentation: "ドキュメント",
-  message_support: "サポートにメッセージ",
   contact_sales: "営業に問い合わせ",
   hyper_mode: "Hyper Mode",
   keyboard_shortcuts: "キーボードショートカット",

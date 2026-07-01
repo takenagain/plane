@@ -1,0 +1,28 @@
+name: Authorize PR
+description: Require maintainer approval before running CI for untrusted pull request authors
+
+runs:
+  using: composite
+  steps:
+    - name: Check pull request author trust
+      uses: actions/github-script@v7
+      with:
+        script: |
+          if (context.eventName !== "pull_request") {
+            core.info("Not a pull_request event — authorized.");
+            return;
+          }
+
+          const pr = context.payload.pull_request;
+          const trusted = new Set(["OWNER", "MEMBER", "COLLABORATOR", "MAINTAINER"]);
+          const hasApprovalLabel = pr.labels.some((label) => label.name === "ci-approved");
+
+          if (trusted.has(pr.author_association) || hasApprovalLabel) {
+            core.info(`CI authorized for @${pr.user.login} (${pr.author_association}).`);
+            return;
+          }
+
+          core.setFailed(
+            `CI is paused for @${pr.user.login} (${pr.author_association}). ` +
+              "A maintainer must add the `ci-approved` label to run workflows."
+          );

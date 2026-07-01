@@ -7,16 +7,16 @@
 import { autoUpdate, flip, hide, shift, useDismiss, useFloating, useInteractions } from "@floating-ui/react";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
-import type { FC } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // components
 import type { LinkViewProps } from "@/components/links";
 import { LinkView } from "@/components/links";
+import { editorFloatingStyle } from "@/helpers/react-compat";
 
 type Props = {
   editor: Editor;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
 export function LinkViewContainer({ editor, containerRef }: Props) {
@@ -197,12 +197,12 @@ export function LinkViewContainer({ editor, containerRef }: Props) {
       {isOpen && linkViewProps && virtualElement && (
         <div
           ref={refs.setFloating}
-          style={{ ...floatingStyles, zIndex: 100 }}
+          style={editorFloatingStyle({ ...floatingStyles, zIndex: 100 })}
           {...getFloatingProps()}
           onMouseEnter={handleFloatingMouseEnter}
           onMouseLeave={handleFloatingMouseLeave}
         >
-          <LinkView {...linkViewProps} style={floatingStyles} />
+          <LinkView {...linkViewProps} style={editorFloatingStyle(floatingStyles as Record<string, unknown>)} />
         </div>
       )}
     </>

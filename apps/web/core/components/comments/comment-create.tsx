@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { useForm, Controller } from "react-hook-form";
@@ -119,7 +118,7 @@ export const CommentCreate = observer(function CommentCreate(props: TCommentCrea
                 editable
                 workspaceId={workspaceId}
                 id={"add_comment_" + entityId}
-                value={"<p></p>"}
+                value={null}
                 workspaceSlug={workspaceSlug}
                 projectId={projectId}
                 onEnterKeyPress={(e) => {

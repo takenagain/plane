@@ -70,6 +70,7 @@ from .module import (
     ModuleUserPropertiesSerializer,
     ModuleWriteSerializer,
 )
+from .mfa import MFADeviceSerializer, UserMFASerializer
 from .notification import NotificationSerializer, UserNotificationPreferenceSerializer
 from .page import (
     PageBinaryUpdateSerializer,
@@ -114,6 +115,7 @@ from .workspace import (
     WorkspaceLiteSerializer,
     WorkspaceMemberAdminSerializer,
     WorkSpaceMemberInviteSerializer,
+    WorkSpaceMemberInvitePublicSerializer,
     WorkspaceMemberMeSerializer,
     WorkSpaceMemberSerializer,
     WorkspaceRecentVisitSerializer,

@@ -74,7 +74,8 @@ function ComboboxRoot({
   children,
 }: ComboboxProps) {
   const handleValueChange = React.useCallback(
-    (newValue: string | string[]) => {
+    (newValue: string | string[] | null) => {
+      if (newValue === null) return;
       onValueChange?.(newValue);
     },
     [onValueChange]
@@ -153,7 +154,7 @@ function ComboboxOptions({
       const getTextContent = (node: React.ReactNode): string => {
         if (typeof node === "string") return node;
         if (typeof node === "number") return String(node);
-        if (React.isValidElement(node) && node.props.children) {
+        if (React.isValidElement<{ children?: React.ReactNode }>(node) && node.props.children) {
           return getTextContent(node.props.children);
         }
         if (Array.isArray(node)) {
@@ -162,8 +163,9 @@ function ComboboxOptions({
         return "";
       };
 
-      const textContent = getTextContent(child.props.children);
-      const value = child.props.value || "";
+      const optionProps = child.props as { children?: React.ReactNode; value?: string };
+      const textContent = getTextContent(optionProps.children);
+      const value = optionProps.value || "";
 
       const searchLower = searchQuery.toLowerCase();
       return textContent.toLowerCase().includes(searchLower) || String(value).toLowerCase().includes(searchLower);
@@ -183,6 +185,7 @@ function ComboboxOptions({
                 <SearchIcon className="absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-placeholder" />
                 <input
                   type="text"
+                  aria-label={searchPlaceholder}
                   placeholder={searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

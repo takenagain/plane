@@ -25,7 +25,6 @@ class ExportIssuesEndpoint(BaseAPIView):
         workspace = Workspace.objects.get(slug=slug)
 
         provider = request.data.get("provider", False)
-        multiple = request.data.get("multiple", False)
         project_ids = request.data.get("project", [])
 
         if provider in ["csv", "xlsx", "json"]:
@@ -37,6 +36,12 @@ class ExportIssuesEndpoint(BaseAPIView):
                     archived_at__isnull=True,
                 ).values_list("id", flat=True)
                 project_ids = [str(project_id) for project_id in project_ids]
+
+            multiple = request.data.get("multiple")
+            if multiple is None:
+                multiple = len(project_ids) > 1
+            else:
+                multiple = bool(multiple)
 
             exporter = ExporterHistory.objects.create(
                 workspace=workspace,

@@ -36,6 +36,8 @@ export type CollaborationState = {
   stage: CollabStage;
   isServerSynced: boolean;
   isServerDisconnected: boolean;
+  hasCachedContent: boolean;
+  isCacheReady: boolean;
 };
 
 export type TServerHandler = {

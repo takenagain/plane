@@ -6,7 +6,6 @@
 
 import type { Editor } from "@tiptap/core";
 
-import type { FC } from "react";
 import { useCallback, useRef, useState } from "react";
 import { LinkIcon, TrashIcon, CheckIcon } from "@plane/propel/icons";
 // plane imports
@@ -17,6 +16,7 @@ import { CORE_EXTENSIONS } from "@/constants/extension";
 import { isValidHttpUrl } from "@/helpers/common";
 import { setLinkEditor, unsetLinkEditor } from "@/helpers/editor-commands";
 import { FloatingMenuRoot } from "../floating-menu/root";
+import { EditorIcon } from "@/helpers/react-compat";
 import { useFloatingMenu } from "../floating-menu/use-floating-menu";
 
 type Props = {
@@ -65,7 +65,7 @@ export function BubbleMenuLinkSelector(props: Props) {
       menuButton={
         <>
           Link
-          <LinkIcon className="size-3 shrink-0" />
+          <EditorIcon icon={LinkIcon} className="size-3 shrink-0" />
         </>
       }
       options={options}
@@ -103,7 +103,7 @@ export function BubbleMenuLinkSelector(props: Props) {
                 context.onOpenChange(false);
               }}
             >
-              <TrashIcon className="size-4" />
+              <EditorIcon icon={TrashIcon} className="size-4" />
             </button>
           ) : (
             <button
@@ -114,7 +114,7 @@ export function BubbleMenuLinkSelector(props: Props) {
                 handleLinkSubmit();
               }}
             >
-              <CheckIcon className="size-4" />
+              <EditorIcon icon={CheckIcon} className="size-4" />
             </button>
           )}
         </div>

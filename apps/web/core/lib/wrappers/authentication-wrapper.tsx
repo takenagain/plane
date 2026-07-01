@@ -37,7 +37,7 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
   // props
   const { children, pageType = EPageTypes.AUTHENTICATED } = props;
   // hooks
-  const { isLoading: isUserLoading, data: currentUser, fetchCurrentUser } = useUser();
+  const { isLoading: isUserLoading, data: currentUser, fetchCurrentUser, mfa } = useUser();
   const { data: currentUserProfile } = useUserProfile();
   const { data: currentUserSettings } = useUserSettings();
   const { loader: workspacesLoader, workspaces } = useWorkspace();
@@ -54,6 +54,13 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
       currentUserProfile?.onboarding_step?.workspace_invite &&
       currentUserProfile?.onboarding_step?.workspace_join) ||
     false;
+
+  // Forced-2FA gate. Source of truth is the backend (403 MFA_SETUP_REQUIRED); the SPA mirrors it
+  // via the `users/me` flag and the MfaStore flag set by the axios interceptor (R6).
+  // Only the server-authoritative `users/me` flag and the 403-interceptor flag gate the app shell,
+  // so instances with MFA disabled/non-enforced are never blocked.
+  const MFA_SETUP_ROUTE = "/accounts/setup-2fa";
+  const mfaSetupRequired = Boolean(currentUser?.mfa_setup_required) || mfa.forcedSetupRequired;
 
   const getWorkspaceRedirectionUrl = (): string => {
     let redirectionRoute = "/create-workspace";
@@ -127,10 +134,34 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
     }
   }
 
+  if (pageType === EPageTypes.MFA_SETUP) {
+    if (!currentUser?.id) {
+      router.push(`/${pathname ? `?next_path=${pathname}` : ``}`);
+      return <></>;
+    }
+    // ForcedTwoFactorSetup owns navigation once the user finishes the wizard (recovery
+    // codes + Done). Only bounce away on entry when setup is already satisfied.
+    if (!mfaSetupRequired && !mfa.status?.is_enabled) {
+      if (currentUserProfile?.id && isUserOnboard) {
+        router.replace(getWorkspaceRedirectionUrl());
+        return <></>;
+      }
+      router.replace(`/onboarding`);
+      return <></>;
+    }
+    return <>{children}</>;
+  }
+
   if (pageType === EPageTypes.AUTHENTICATED) {
     if (currentUser?.id) {
-      if (currentUserProfile && currentUserProfile?.id && isUserOnboard) return <>{children}</>;
-      else {
+      if (currentUserProfile && currentUserProfile?.id && isUserOnboard) {
+        // Forced-2FA: block the app shell until a factor is confirmed.
+        if (mfaSetupRequired && pathname !== MFA_SETUP_ROUTE) {
+          router.push(MFA_SETUP_ROUTE);
+          return <></>;
+        }
+        return <>{children}</>;
+      } else {
         router.push(`/onboarding`);
         return <></>;
       }

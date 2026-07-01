@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import { FloatingOverlay } from "@floating-ui/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 // plane imports
@@ -15,6 +14,7 @@ import { DROPDOWN_NAVIGATION_KEYS, getNextValidIndex } from "@/helpers/tippy";
 import type { ISlashCommandItem } from "@/types";
 // components
 import type { TSlashCommandSection } from "./command-items-list";
+import { EditorFloatingOverlay } from "@/helpers/react-compat";
 import { CommandMenuItem } from "./command-menu-item";
 
 export type SlashCommandsMenuProps = SuggestionProps<TSlashCommandSection, ISlashCommandItem> & {
@@ -128,7 +128,7 @@ export const SlashCommandsMenu = forwardRef(function SlashCommandsMenu(props: Sl
   return (
     <>
       {/* Backdrop */}
-      <FloatingOverlay
+      <EditorFloatingOverlay
         style={{
           zIndex: 99,
         }}

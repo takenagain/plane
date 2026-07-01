@@ -7,7 +7,7 @@
 import React, { useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { createPortal } from "react-dom";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { CalendarDays } from "lucide-react";
 import { Combobox } from "@headlessui/react";
 // ui
@@ -80,7 +80,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
   const startOfWeek = data?.start_of_the_week;
   // popper-js refs
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
   // popper-js init
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     placement: placement ?? "bottom-start",
@@ -181,15 +181,19 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
     >
       {isOpen &&
         createPortal(
-          <Combobox.Options data-prevent-outside-click static>
+          <Combobox.Options
+            ref={setPopperElement}
+            style={styles.popper}
+            {...attributes.popper}
+            data-prevent-outside-click
+            static
+            modal={false}
+          >
             <div
               className={cn(
                 "z-30 my-1 overflow-hidden rounded-md border-[0.5px] border-strong bg-surface-1 shadow-raised-200",
                 optionsClassName
               )}
-              ref={setPopperElement}
-              style={styles.popper}
-              {...attributes.popper}
             >
               <Calendar
                 className="rounded-md border border-subtle p-3"
@@ -200,7 +204,6 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
                   dropdownOnChange(date ?? null);
                 }}
                 showOutsideDays
-                initialFocus
                 disabled={disabledDays}
                 mode="single"
                 fixedWeeks

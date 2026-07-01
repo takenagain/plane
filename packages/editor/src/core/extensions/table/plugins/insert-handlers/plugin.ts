@@ -82,7 +82,17 @@ export const TableInsertPlugin = (editor: Editor): Plugin => {
     key: TABLE_INSERT_PLUGIN_KEY,
 
     view() {
-      setTimeout(updateAllTables, 0);
+      // `editor.view` is not assigned yet while ProseMirror is constructing the
+      // EditorView (this `view()` runs mid-construction), so defer the first
+      // scan to the next tick. Track the timer so it can be cancelled on
+      // teardown — otherwise, if the view is destroyed/remounted before it
+      // fires (e.g. a React re-render), the callback would hit TipTap 3's
+      // throwing `view` getter ("editor view is not available").
+      const initialScanTimeout = setTimeout(() => {
+        if (!editor.isDestroyed) {
+          updateAllTables();
+        }
+      }, 0);
 
       return {
         update(view, prevState) {
@@ -92,6 +102,7 @@ export const TableInsertPlugin = (editor: Editor): Plugin => {
           }
         },
         destroy() {
+          clearTimeout(initialScanTimeout);
           // Clean up all tables
           tableMap.forEach((_, tableElement) => {
             cleanupTable(tableElement);

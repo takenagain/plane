@@ -17,6 +17,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 import { cn } from "@plane/utils";
 // types
 import type { TCodeBlockAttributes } from "./types";
+import { EditorIcon } from "@/helpers/react-compat";
 import { ECodeBlockAttributeNames } from "./types";
 
 // we just have ts support for now
@@ -58,15 +59,15 @@ export function CodeBlockComponent({ node }: Props) {
           onClick={(e) => void copyToClipboard(e)}
         >
           {copied ? (
-            <CheckIcon className="h-3 w-3 text-success-primary" strokeWidth={3} />
+            <EditorIcon icon={CheckIcon} className="h-3 w-3 text-success-primary" strokeWidth={3} />
           ) : (
-            <CopyIcon className="h-3 w-3 text-tertiary group-hover/button:text-primary" />
+            <EditorIcon icon={CopyIcon} className="h-3 w-3 text-tertiary group-hover/button:text-primary" />
           )}
         </button>
       </Tooltip>
 
       <pre className="my-2 rounded-lg bg-layer-3 p-4 text-primary">
-        <NodeViewContent as="code" className="whitespace-pre-wrap" />
+        <NodeViewContent className="font-mono whitespace-pre-wrap" />
       </pre>
     </NodeViewWrapper>
   );

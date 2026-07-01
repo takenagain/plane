@@ -60,65 +60,6 @@ services:
       - .env
     environment:
       PGDATA: /var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  # web:
-  #   build:
-  #     context: .
-  #     dockerfile: ./web/Dockerfile.dev
-  #   restart: unless-stopped
-  #   networks:
-  #     - dev_env
-  #   volumes:
-  #     - ./web:/app/web
-  #   env_file:
-  #     - ./web/.env
-  #   depends_on:
-  #     - api
-  #     - worker
-
-  # space:
-  #   build:
-  #     context: .
-  #     dockerfile: ./space/Dockerfile.dev
-  #   restart: unless-stopped
-  #   networks:
-  #     - dev_env
-  #   volumes:
-  #     - ./space:/app/space
-  #   depends_on:
-  #     - api
-  #     - worker
-  #     - web
-
-  # admin:
-  #   build:
-  #     context: .
-  #     dockerfile: ./admin/Dockerfile.dev
-  #   restart: unless-stopped
-  #   networks:
-  #     - dev_env
-  #   volumes:
-  #     - ./admin:/app/admin
-  #   depends_on:
-  #     - api
-  #     - worker
-  #     - web
-
-  # live:
-  #   build:
-  #     context: .
-  #     dockerfile: ./live/Dockerfile.dev
-  #   restart: unless-stopped
-  #   networks:
-  #     - dev_env
-  #   volumes:
-  #     - ./live:/app/live
-  #   depends_on:
-  #     - api
-  #     - worker
-  #     - web
 
   api:
     build:
@@ -138,8 +79,9 @@ services:
       - plane-db
       - plane-redis
       - plane-mq
+      - plane-minio
     ports:
-      - "8000:8000"
+      - "8010:8000"
 
   worker:
     build:
@@ -159,6 +101,8 @@ services:
       - api
       - plane-db
       - plane-redis
+      - plane-mq
+      - plane-minio
 
   beat-worker:
     build:
@@ -196,27 +140,6 @@ services:
     depends_on:
       - plane-db
       - plane-redis
-
-  # proxy:
-  #   build:
-  #     context: ./apps/proxy
-  #     dockerfile: Dockerfile.ce
-  #   restart: unless-stopped
-  #   networks:
-  #     - dev_env
-  #   ports:
-  #     - ${LISTEN_HTTP_PORT:-8081}:8081
-  #     - ${LISTEN_HTTPS_PORT}:443
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     FILE_SIZE_LIMIT: ${FILE_SIZE_LIMIT:-5242880}
-  #     BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-uploads}
-  #   depends_on:
-  #     - api
-  #     - web
-  #     - space
-  #     - admin
 
 volumes:
   redisdata:

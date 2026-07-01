@@ -9,7 +9,6 @@ import { observer } from "mobx-react";
 import { MoreHorizontal } from "lucide-react";
 // plane imports
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
-import { useTranslation } from "@plane/i18n";
 import { IconButton } from "@plane/propel/icon-button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TContextMenuItem } from "@plane/ui";
@@ -17,14 +16,19 @@ import { ContextMenu, CustomMenu } from "@plane/ui";
 import { copyUrlToClipboard, cn } from "@plane/utils";
 // components
 import { useModuleMenuItems } from "@/components/common/quick-actions-helper";
-import { ArchiveModuleModal, CreateUpdateModuleModal, DeleteModuleModal } from "@/components/modules";
+import {
+  ArchiveModuleModal,
+  CreateUpdateModuleModal,
+  DeleteModuleModal,
+  TransferModuleModal,
+} from "@/components/modules";
 // hooks
 import { useModule } from "@/hooks/store/use-module";
 import { useUserPermissions } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 
 type Props = {
-  parentRef: React.RefObject<HTMLDivElement>;
+  parentRef: React.RefObject<HTMLElement | null>;
   moduleId: string;
   projectId: string;
   workspaceSlug: string;
@@ -39,12 +43,12 @@ export const ModuleQuickActions = observer(function ModuleQuickActions(props: Pr
   const [editModal, setEditModal] = useState(false);
   const [archiveModuleModal, setArchiveModuleModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [transferModal, setTransferModal] = useState(false);
   // store hooks
   const { allowPermissions } = useUserPermissions();
 
   const { getModuleById, restoreModule } = useModule();
 
-  const { t } = useTranslation();
   // derived values
   const moduleDetails = getModuleById(moduleId);
   // auth
@@ -97,6 +101,7 @@ export const ModuleQuickActions = observer(function ModuleQuickActions(props: Pr
     handleDelete: () => setDeleteModal(true),
     handleCopyLink: handleCopyText,
     handleOpenInNewTab,
+    handleTransfer: () => setTransferModal(true),
   });
 
   // Handle both CE (array) and EE (object) return types
@@ -132,6 +137,13 @@ export const ModuleQuickActions = observer(function ModuleQuickActions(props: Pr
             handleClose={() => setArchiveModuleModal(false)}
           />
           <DeleteModuleModal data={moduleDetails} isOpen={deleteModal} onClose={() => setDeleteModal(false)} />
+          <TransferModuleModal
+            isOpen={transferModal}
+            onClose={() => setTransferModal(false)}
+            moduleId={moduleId}
+            projectId={projectId}
+            workspaceSlug={workspaceSlug}
+          />
           {additionalModals}
         </div>
       )}

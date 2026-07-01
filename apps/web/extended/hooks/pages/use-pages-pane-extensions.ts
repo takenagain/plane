@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 import { useCallback, useMemo } from "react";
 import type { RefObject } from "react";
 import { useSearchParams } from "next/navigation";
@@ -21,7 +15,7 @@ import type { TPageInstance } from "@/store/pages/base-page";
 
 export type TPageExtensionHookParams = {
   page: TPageInstance;
-  editorRef: RefObject<EditorRefApi>;
+  editorRef: RefObject<EditorRefApi | null>;
 };
 
 export const usePagesPaneExtensions = (_params: TPageExtensionHookParams) => {

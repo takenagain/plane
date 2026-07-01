@@ -8,6 +8,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Palette } from "lucide-react";
 // editor
 import type { EditorRefApi } from "@plane/editor";
+import { EditorIcon } from "@plane/editor";
 // ui
 import { useOutsideClickDetector } from "@plane/hooks";
 import { TrashIcon } from "@plane/propel/icons";
@@ -15,9 +16,8 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { TSticky } from "@plane/types";
 // constants
 import { cn } from "@plane/utils";
-import type { ToolbarMenuItem } from "@/constants/editor";
-import { TOOLBAR_ITEMS } from "@/constants/editor";
-// helpers
+import type { ToolbarMenuItem } from "@plane/editor";
+import { TOOLBAR_ITEMS } from "@plane/editor";
 import { ColorPalette } from "./color-palette";
 
 type Props = {
@@ -27,7 +27,10 @@ type Props = {
   handleDelete: () => void;
 };
 
-const toolbarItems = TOOLBAR_ITEMS.sticky;
+const toolbarItems: Record<string, ToolbarMenuItem[]> = {
+  basic: TOOLBAR_ITEMS.lite.basic.filter((item) => ["bold", "italic"].includes(item.itemKey)),
+  list: TOOLBAR_ITEMS.lite.list.filter((item) => item.itemKey === "to-do-list"),
+};
 
 export function StickyEditorToolbar(props: Props) {
   const { executeCommand, editorRef, handleColorChange, handleDelete } = props;
@@ -102,7 +105,8 @@ export function StickyEditorToolbar(props: Props) {
                         onClick={() => executeCommand(item)}
                         className={cn("grid aspect-square place-items-center rounded-xs p-0.5 text-primary/50", {})}
                       >
-                        <item.icon
+                        <EditorIcon
+                          icon={item.icon}
                           className={cn("h-3.5 w-3.5", {
                             "font-heavy": isItemActive,
                           })}

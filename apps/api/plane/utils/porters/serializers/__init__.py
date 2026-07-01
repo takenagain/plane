@@ -3,8 +3,10 @@
 # See the LICENSE file for details.
 
 from .issue import IssueExportSerializer
+from .project import ProjectExportSerializer
 
 __all__ = [
     # Export Serializers
     "IssueExportSerializer",
+    "ProjectExportSerializer",
 ]

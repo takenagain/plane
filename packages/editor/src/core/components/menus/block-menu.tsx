@@ -15,10 +15,10 @@ import {
   FloatingPortal,
 } from "@floating-ui/react";
 import type { Editor } from "@tiptap/react";
-import type { LucideIcon } from "lucide-react";
+import type { TEditorIcon } from "@/helpers/react-compat";
+import { EditorIcon, editorFloatingStyle } from "@/helpers/react-compat";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CopyIcon, TrashIcon } from "@plane/propel/icons";
-import type { ISvgIcons } from "@plane/propel/icons";
 import { cn } from "@plane/utils";
 // constants
 import { CORE_EXTENSIONS } from "@/constants/extension";
@@ -34,7 +34,7 @@ type Props = {
   workItemIdentifier?: IEditorProps["workItemIdentifier"];
 };
 export type BlockMenuOption = {
-  icon: LucideIcon | React.FC<ISvgIcons>;
+  icon: TEditorIcon;
   key: string;
   label: string;
   onClick: (e: React.MouseEvent) => void;
@@ -42,7 +42,7 @@ export type BlockMenuOption = {
 };
 
 export function BlockMenu(props: Props) {
-  const { editor, workItemIdentifier } = props;
+  const { editor } = props;
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimatedIn, setIsAnimatedIn] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -215,12 +215,12 @@ export function BlockMenu(props: Props) {
           refs.setFloating(node);
           menuRef.current = node;
         }}
-        style={{
+        style={editorFloatingStyle({
           ...floatingStyles,
           animationFillMode: "forwards",
           transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)", // Expo ease out
           zIndex: 100,
-        }}
+        })}
         className={cn(
           "max-h-60 min-w-[7rem] overflow-y-scroll rounded-lg border border-subtle bg-surface-1 p-1.5 shadow-raised-200",
           "origin-top-right transform transition-all duration-300",
@@ -244,7 +244,7 @@ export function BlockMenu(props: Props) {
               }}
               disabled={item.isDisabled}
             >
-              <item.icon className="h-3 w-3" />
+              <EditorIcon icon={item.icon} className="h-3 w-3" />
               {item.label}
             </button>
           );

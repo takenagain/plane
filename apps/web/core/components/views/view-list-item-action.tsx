@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import React, { useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
@@ -31,7 +30,7 @@ import { CreateUpdateProjectViewModal } from "./modal";
 import { ViewQuickActions } from "./quick-actions";
 
 type Props = {
-  parentRef: React.RefObject<HTMLElement>;
+  parentRef: React.RefObject<HTMLElement | null>;
   view: IProjectView;
 };
 

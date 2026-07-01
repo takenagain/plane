@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 // plane imports
 import { Tooltip } from "@plane/propel/tooltip";
 // local imports
+import { EditorIcon } from "@/helpers/react-compat";
 import { ImageFullScreenModal } from "./modal";
 
 type Props = {
@@ -56,7 +57,7 @@ export function ImageFullScreenActionRoot(props: Props) {
           className="grid h-full flex-shrink-0 place-items-center text-on-color/60 transition-colors hover:text-on-color"
           aria-label="View image in full screen"
         >
-          <Maximize className="size-3" />
+          <EditorIcon icon={Maximize} className="size-3" />
         </button>
       </Tooltip>
     </>

@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   sidebar: {
     projects: "Projek",
@@ -398,7 +392,6 @@ export default {
   time_tracking_description: "Catat waktu yang dihabiskan untuk item kerja dan proyek.",
   work_management_description: "Kelola pekerjaan dan proyek Anda dengan mudah.",
   documentation: "Dokumentasi",
-  message_support: "Pesan dukungan",
   contact_sales: "Hubungi penjualan",
   hyper_mode: "Mode Hyper",
   keyboard_shortcuts: "Pintasan keyboard",

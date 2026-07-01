@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   sidebar: {
     projects: "Projets",
@@ -402,7 +396,6 @@ export default {
   time_tracking_description: "Enregistrez le temps passé sur les éléments de travail et les projets.",
   work_management_description: "Gérez votre travail et vos projets facilement.",
   documentation: "Documentation",
-  message_support: "Contacter le support",
   contact_sales: "Contacter les ventes",
   hyper_mode: "Mode Hyper",
   keyboard_shortcuts: "Raccourcis clavier",

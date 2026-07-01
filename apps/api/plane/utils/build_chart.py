@@ -157,6 +157,7 @@ def build_time_logged_chart(
     x_axis: str,
     group_by: Optional[str] = None,
     date_filter: Optional[Tuple[str, str]] = None,
+    actor_id: Optional[str] = None,
 ) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, str]]]:
     """Return hours-logged chart data (hours rather than counts).
 
@@ -171,6 +172,8 @@ def build_time_logged_chart(
     """
     # build base worklog queryset constrained to the issues of interest
     worklogs = Worklog.objects.filter(issue__in=queryset, deleted_at__isnull=True)
+    if actor_id:
+        worklogs = worklogs.filter(actor_id=actor_id)
     if date_filter:
         start, end = date_filter
         worklogs = worklogs.filter(logged_at__gte=start, logged_at__lte=end)

@@ -24,9 +24,8 @@ import { useUserPermissions } from "@/hooks/store/user";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { useIssuesActions } from "@/hooks/use-issues-actions";
 import { useTimeLineChart } from "@/hooks/use-timeline-chart";
-// plane web hooks
-import { useBulkOperationStatus } from "@/plane-web/hooks/use-bulk-operation-status";
-
+import { useBulkOperationStatus } from "@/hooks/use-bulk-operation-status";
+// local imports
 import { IssueLayoutHOC } from "../issue-layout-HOC";
 import { GanttQuickAddIssueButton, QuickAddIssueRoot } from "../quick-add";
 import { IssueGanttBlock } from "./blocks";
@@ -124,6 +123,14 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
       />
     ) : undefined;
 
+  const blockToRender = useCallback((data: TIssue) => <IssueGanttBlock issueId={data.id} isEpic={isEpic} />, [isEpic]);
+  const sidebarToRender = useCallback(
+    (props: React.ComponentProps<typeof IssueGanttSidebar>) => (
+      <IssueGanttSidebar {...props} showAllBlocks isEpic={isEpic} />
+    ),
+    [isEpic]
+  );
+
   return (
     <IssueLayoutHOC layout={EIssueLayoutTypes.GANTT}>
       <TimeLineTypeContext.Provider value={GANTT_TIMELINE_TYPE.ISSUE}>
@@ -134,8 +141,8 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
             loaderTitle={isEpic ? t("epic.label", { count: 2 }) : t("issue.label", { count: 2 })}
             blockIds={issuesIds}
             blockUpdateHandler={updateIssueBlockStructure}
-            blockToRender={(data: TIssue) => <IssueGanttBlock issueId={data.id} isEpic={isEpic} />}
-            sidebarToRender={(props) => <IssueGanttSidebar {...props} showAllBlocks isEpic={isEpic} />}
+            blockToRender={blockToRender}
+            sidebarToRender={sidebarToRender}
             enableBlockLeftResize={isAllowed}
             enableBlockRightResize={isAllowed}
             enableBlockMove={isAllowed}

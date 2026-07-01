@@ -28,7 +28,7 @@ export const CyclePeekOverview = observer(function CyclePeekOverview(props: Prop
   const searchParams = useSearchParams();
   const peekCycle = searchParams.get("peekCycle");
   // refs
-  const ref = React.useRef(null);
+  const ref = React.useRef<HTMLDivElement>(null);
   // store hooks
   const { getCycleById, fetchCycleDetails, fetchArchivedCycleDetails } = useCycle();
   // derived values

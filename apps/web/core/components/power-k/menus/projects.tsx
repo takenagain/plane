@@ -8,7 +8,7 @@ import React from "react";
 // components
 import { Logo } from "@plane/propel/emoji-icon-picker";
 // plane imports
-import type { TPartialProject } from "@/plane-web/types";
+import type { TPartialProject } from "@plane/types";
 // local imports
 import { PowerKMenuBuilder } from "./builder";
 
@@ -17,16 +17,20 @@ type Props = {
   onSelect: (project: TPartialProject) => void;
 };
 
+function getProjectIconNode(project: TPartialProject) {
+  return (
+    <span className="shrink-0">
+      <Logo logo={project.logo_props} size={14} />
+    </span>
+  );
+}
+
 export function PowerKProjectsMenu({ projects, onSelect }: Props) {
   return (
     <PowerKMenuBuilder
       items={projects}
       getKey={(project) => project.id}
-      getIconNode={(project) => (
-        <span className="shrink-0">
-          <Logo logo={project.logo_props} size={14} />
-        </span>
-      )}
+      getIconNode={getProjectIconNode}
       getValue={(project) => project.name}
       getLabel={(project) => project.name}
       onSelect={onSelect}

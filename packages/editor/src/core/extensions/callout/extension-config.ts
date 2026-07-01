@@ -5,13 +5,13 @@
  */
 
 import { Node, mergeAttributes } from "@tiptap/core";
-import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 // constants
 import { CORE_EXTENSIONS } from "@/constants/extension";
 // types
 import { ECalloutAttributeNames } from "./types";
-import type { CustomCalloutExtensionType, TCalloutBlockAttributes } from "./types";
+import type { TCalloutBlockAttributes } from "./types";
 // utils
 import { DEFAULT_CALLOUT_BLOCK_ATTRIBUTES } from "./utils";
 
@@ -23,24 +23,21 @@ declare module "@tiptap/core" {
   }
 }
 
-export const CustomCalloutExtensionConfig: CustomCalloutExtensionType = Node.create({
+export const CustomCalloutExtensionConfig = Node.create({
   name: CORE_EXTENSIONS.CALLOUT,
   group: "block",
   content: "block+",
 
   addAttributes() {
-    const attributes = {
-      // Reduce instead of map to accumulate the attributes directly into an object
-      ...Object.values(ECalloutAttributeNames).reduce(
-        (acc, value) => {
-          acc[value] = {
-            default: DEFAULT_CALLOUT_BLOCK_ATTRIBUTES[value],
-          };
-          return acc;
-        },
-        {} as Record<ECalloutAttributeNames, { default: TCalloutBlockAttributes[ECalloutAttributeNames] }>
-      ),
-    };
+    const attributes = Object.values(ECalloutAttributeNames).reduce(
+      (acc, value) => {
+        acc[value] = {
+          default: DEFAULT_CALLOUT_BLOCK_ATTRIBUTES[value],
+        };
+        return acc;
+      },
+      {} as Record<ECalloutAttributeNames, { default: TCalloutBlockAttributes[ECalloutAttributeNames] }>
+    );
 
     return attributes;
   },

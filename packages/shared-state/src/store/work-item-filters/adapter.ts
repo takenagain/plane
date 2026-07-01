@@ -17,8 +17,13 @@ import type {
   TWorkItemFilterExpressionData,
   TWorkItemFilterProperty,
 } from "@plane/types";
-import { LOGICAL_OPERATOR, MULTI_VALUE_OPERATORS, WORK_ITEM_FILTER_PROPERTY_KEYS } from "@plane/types";
-import { createConditionNode, createAndGroupNode, isAndGroupNode, isConditionNode } from "@plane/utils";
+import {
+  FILTER_NODE_TYPE,
+  LOGICAL_OPERATOR,
+  MULTI_VALUE_OPERATORS,
+  WORK_ITEM_FILTER_PROPERTY_KEYS,
+} from "@plane/types";
+import { createConditionNode, createAndGroupNode } from "@plane/utils";
 // local imports
 import { FilterAdapter } from "../rich-filters/adapter";
 
@@ -110,13 +115,11 @@ class WorkItemFiltersAdapter extends FilterAdapter<TWorkItemFilterProperty, TWor
   private _convertExpressionToExternal(
     expression: TFilterExpression<TWorkItemFilterProperty>
   ): TWorkItemFilterExpressionData {
-    if (isConditionNode(expression)) {
+    if (expression.type === FILTER_NODE_TYPE.CONDITION) {
       return this._createWorkItemFilterConditionData(expression.property, expression.operator, expression.value);
     }
 
-    // It's a group node
-
-    if (isAndGroupNode(expression)) {
+    if (expression.type === FILTER_NODE_TYPE.GROUP && expression.logicalOperator === LOGICAL_OPERATOR.AND) {
       return {
         [LOGICAL_OPERATOR.AND]: expression.children.map((child) => this._convertExpressionToExternal(child)),
       } as TWorkItemFilterExpressionData;

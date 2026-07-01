@@ -5,11 +5,12 @@
 # Python imports
 import os
 import uuid
+from typing import IO
 
 # Third party imports
 import boto3
 from botocore.exceptions import ClientError
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 # Module imports
 from plane.utils.exception_logger import log_exception
@@ -203,3 +204,63 @@ class S3Storage(S3Boto3Storage):
         except ClientError as e:
             log_exception(e)
             return False
+
+    def _build_s3_client(self, endpoint_url: str | None):
+        client_kwargs = {
+            "aws_access_key_id": self.aws_access_key_id,
+            "aws_secret_access_key": self.aws_secret_access_key,
+            "config": boto3.session.Config(signature_version="s3v4"),
+        }
+        if endpoint_url:
+            client_kwargs["endpoint_url"] = endpoint_url
+        elif self.aws_region:
+            client_kwargs["region_name"] = self.aws_region
+        return boto3.client("s3", **client_kwargs)
+
+    def _get_export_upload_endpoint_url(self) -> str | None:
+        """Internal S3/MinIO endpoint used by background workers for uploads."""
+        return self.aws_s3_endpoint_url
+
+    def _get_export_download_endpoint_url(self) -> str | None:
+        """
+        Endpoint used to sign browser-downloadable URLs.
+        With MinIO behind the proxy, uploads use the internal host while downloads use WEB_URL.
+        """
+        if os.environ.get("USE_MINIO") != "1":
+            return self.aws_s3_endpoint_url
+
+        parsed = urlparse(os.environ.get("WEB_URL", "http://localhost"))
+        if not parsed.netloc:
+            return self.aws_s3_endpoint_url
+        scheme = parsed.scheme or "http"
+        return f"{scheme}://{parsed.netloc}/"
+
+    def upload_export_zip(self, zip_file: IO[bytes], object_name: str, expiration: int = 604800) -> str | None:
+        """
+        Upload an export archive and return a presigned download URL.
+        Does not set object ACLs (MinIO and many S3-compatible stores reject ACL headers).
+        """
+        upload_client = self._build_s3_client(self._get_export_upload_endpoint_url())
+        download_client = self._build_s3_client(self._get_export_download_endpoint_url())
+
+        zip_file.seek(0)
+        try:
+            upload_client.upload_fileobj(
+                zip_file,
+                self.aws_storage_bucket_name,
+                object_name,
+                ExtraArgs={"ContentType": "application/zip"},
+            )
+        except ClientError as e:
+            log_exception(e)
+            return None
+
+        try:
+            return download_client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": self.aws_storage_bucket_name, "Key": object_name},
+                ExpiresIn=expiration,
+            )
+        except ClientError as e:
+            log_exception(e)
+            return None

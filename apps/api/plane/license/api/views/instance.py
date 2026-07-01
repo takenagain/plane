@@ -59,12 +59,16 @@ class InstanceEndpoint(BaseAPIView):
             ENABLE_MAGIC_LINK_LOGIN,
             ENABLE_EMAIL_PASSWORD,
             SLACK_CLIENT_ID,
+            ENABLE_SENTRY_SYNC,
+            SENTRY_CLIENT_ID,
             POSTHOG_API_KEY,
             POSTHOG_HOST,
             UNSPLASH_ACCESS_KEY,
             LLM_API_KEY,
-            IS_INTERCOM_ENABLED,
-            INTERCOM_APP_ID,
+            MFA_ENABLED,
+            MFA_ENFORCED,
+            MFA_ALLOW_TOTP,
+            MFA_ALLOW_WEBAUTHN,
         ) = get_configuration_value(
             [
                 {
@@ -109,6 +113,14 @@ class InstanceEndpoint(BaseAPIView):
                     "default": os.environ.get("SLACK_CLIENT_ID", None),
                 },
                 {
+                    "key": "ENABLE_SENTRY_SYNC",
+                    "default": os.environ.get("ENABLE_SENTRY_SYNC", "0"),
+                },
+                {
+                    "key": "SENTRY_CLIENT_ID",
+                    "default": os.environ.get("SENTRY_CLIENT_ID", None),
+                },
+                {
                     "key": "POSTHOG_API_KEY",
                     "default": os.environ.get("POSTHOG_API_KEY", None),
                 },
@@ -124,14 +136,21 @@ class InstanceEndpoint(BaseAPIView):
                     "key": "LLM_API_KEY",
                     "default": os.environ.get("LLM_API_KEY", ""),
                 },
-                # Intercom settings
                 {
-                    "key": "IS_INTERCOM_ENABLED",
-                    "default": os.environ.get("IS_INTERCOM_ENABLED", "1"),
+                    "key": "MFA_ENABLED",
+                    "default": os.environ.get("MFA_ENABLED", "1"),
                 },
                 {
-                    "key": "INTERCOM_APP_ID",
-                    "default": os.environ.get("INTERCOM_APP_ID", ""),
+                    "key": "MFA_ENFORCED",
+                    "default": os.environ.get("MFA_ENFORCED", "1"),
+                },
+                {
+                    "key": "MFA_ALLOW_TOTP",
+                    "default": os.environ.get("MFA_ALLOW_TOTP", "1"),
+                },
+                {
+                    "key": "MFA_ALLOW_WEBAUTHN",
+                    "default": os.environ.get("MFA_ALLOW_WEBAUTHN", "1"),
                 },
             ]
         )
@@ -147,11 +166,21 @@ class InstanceEndpoint(BaseAPIView):
         data["is_magic_login_enabled"] = ENABLE_MAGIC_LINK_LOGIN == "1"
         data["is_email_password_enabled"] = ENABLE_EMAIL_PASSWORD == "1"
 
+        # MFA / 2FA
+        data["is_mfa_enabled"] = MFA_ENABLED == "1"
+        data["is_mfa_enforced"] = MFA_ENABLED == "1" and MFA_ENFORCED == "1"
+        data["is_mfa_totp_enabled"] = MFA_ALLOW_TOTP == "1"
+        data["is_mfa_webauthn_enabled"] = MFA_ALLOW_WEBAUTHN == "1"
+
         # Github app name
         data["github_app_name"] = str(GITHUB_APP_NAME)
 
         # Slack client
         data["slack_client_id"] = SLACK_CLIENT_ID
+
+        # Sentry
+        data["is_sentry_enabled"] = ENABLE_SENTRY_SYNC == "1" and bool(SENTRY_CLIENT_ID)
+        data["sentry_client_id"] = SENTRY_CLIENT_ID
 
         # Posthog
         data["posthog_api_key"] = POSTHOG_API_KEY
@@ -168,10 +197,6 @@ class InstanceEndpoint(BaseAPIView):
 
         # is smtp configured
         data["is_smtp_configured"] = bool(EMAIL_HOST)
-
-        # Intercom settings
-        data["is_intercom_enabled"] = IS_INTERCOM_ENABLED == "1"
-        data["intercom_app_id"] = INTERCOM_APP_ID
 
         # Base URL
         data["admin_base_url"] = settings.ADMIN_BASE_URL

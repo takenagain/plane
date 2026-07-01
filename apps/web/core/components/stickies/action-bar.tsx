@@ -32,7 +32,7 @@ export const StickyActionBar = observer(function StickyActionBar() {
   // navigation
   const { workspaceSlug } = useParams();
   // refs
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   // store hooks
   const { stickies, activeStickyId, recentStickyId, updateActiveStickyId, fetchRecentSticky, toggleShowNewSticky } =
     useSticky();

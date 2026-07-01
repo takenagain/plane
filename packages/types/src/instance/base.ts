@@ -55,6 +55,8 @@ export interface IInstanceConfig {
   is_email_password_enabled: boolean;
   github_app_name: string | undefined;
   slack_client_id: string | undefined;
+  is_sentry_enabled: boolean;
+  sentry_client_id: string | undefined;
   posthog_api_key: string | undefined;
   posthog_host: string | undefined;
   has_unsplash_configured: boolean;
@@ -65,10 +67,10 @@ export interface IInstanceConfig {
   space_base_url: string | undefined;
   admin_base_url: string | undefined;
   is_self_managed: boolean;
-  // intercom
-  is_intercom_enabled: boolean;
-  intercom_app_id: string | undefined;
   instance_changelog_url?: string;
+  /** 2FA availability/enforcement flags surfaced by the backend `InstanceEndpoint` (R18). */
+  is_mfa_enabled?: boolean;
+  is_mfa_enforced?: boolean;
 }
 
 export interface IInstanceAdmin {
@@ -83,14 +85,11 @@ export interface IInstanceAdmin {
   user_detail: IUserLite;
 }
 
-export type TInstanceIntercomConfigurationKeys = "IS_INTERCOM_ENABLED" | "INTERCOM_APP_ID";
-
 export type TInstanceConfigurationKeys =
   | TInstanceAIConfigurationKeys
   | TInstanceEmailConfigurationKeys
   | TInstanceImageConfigurationKeys
   | TInstanceAuthenticationKeys
-  | TInstanceIntercomConfigurationKeys
   | TInstanceWorkspaceConfigurationKeys;
 
 export interface IInstanceConfiguration {

@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useEffect } from "react";
 import { observer } from "mobx-react";
 // plane imports
@@ -26,7 +25,7 @@ import useReloadConfirmations from "@/hooks/use-reload-confirmation";
 import { DeDupeIssuePopoverRoot } from "@/plane-web/components/de-dupe/duplicate-popover";
 import { IssueTypeSwitcher } from "@/plane-web/components/issues/issue-details/issue-type-switcher";
 // plane web hooks
-import { useDebouncedDuplicateIssues } from "@/plane-web/hooks/use-debounced-duplicate-issues";
+import { useDebouncedDuplicateIssues } from "@/hooks/use-debounced-duplicate-issues";
 // services
 import { WorkItemVersionService } from "@/services/issue";
 // local components
@@ -38,7 +37,7 @@ import { IssueTitleInput } from "../title-input";
 const workItemVersionService = new WorkItemVersionService();
 
 type Props = {
-  editorRef: React.RefObject<EditorRefApi>;
+  editorRef: React.RefObject<EditorRefApi | null>;
   workspaceSlug: string;
   projectId: string;
   issueId: string;
@@ -63,14 +62,14 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
   const { setShowAlert } = useReloadConfirmations(isSubmitting === "submitting");
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     if (isSubmitting === "submitted") {
       setShowAlert(false);
-      setTimeout(async () => {
-        setIsSubmitting("saved");
-      }, 2000);
+      timer = setTimeout(() => setIsSubmitting("saved"), 2000);
     } else if (isSubmitting === "submitting") {
       setShowAlert(true);
     }
+    return () => clearTimeout(timer);
   }, [isSubmitting, setShowAlert, setIsSubmitting]);
 
   // derived values

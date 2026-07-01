@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   sidebar: {
     projects: "Proiecte",
@@ -399,7 +393,6 @@ export default {
   time_tracking_description: "Înregistrează timpul petrecut pe activități și proiecte.",
   work_management_description: "Gestionează-ți munca și proiectele cu ușurință.",
   documentation: "Documentație",
-  message_support: "Trimite mesaj la suport",
   contact_sales: "Contactează vânzările",
   hyper_mode: "Mod Hyper",
   keyboard_shortcuts: "Scurtături tastatură",

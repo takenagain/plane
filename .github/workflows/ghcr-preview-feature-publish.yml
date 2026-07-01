@@ -1,77 +1,83 @@
 name: Publish Docker Image to GHCR
 
 on:
-  push:
-    branches:
-      - preview
-      - staging
+    push:
+        branches:
+            - preview
+            - staging
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: "Branch to build from"
+                required: false
+                default: "staging"
 
 permissions:
-  contents: read
-  packages: write
+    contents: read
+    packages: write
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image_name: plane-frontend
-            dockerfile: ./apps/web/Dockerfile.web
-            context: .
-          - image_name: plane-space
-            dockerfile: ./apps/space/Dockerfile.space
-            context: .
-          - image_name: plane-admin
-            dockerfile: ./apps/admin/Dockerfile.admin
-            context: .
-          - image_name: plane-live
-            dockerfile: ./apps/live/Dockerfile.live
-            context: .
-          - image_name: plane-backend
-            dockerfile: ./apps/api/Dockerfile.api
-            context: ./apps/api
-          - image_name: plane-proxy
-            dockerfile: ./apps/proxy/Dockerfile.ce
-            context: ./apps/proxy
+    build-and-push:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - image_name: plane-frontend
+                      dockerfile: ./apps/web/Dockerfile.web
+                      context: .
+                    - image_name: plane-space
+                      dockerfile: ./apps/space/Dockerfile.space
+                      context: .
+                    - image_name: plane-admin
+                      dockerfile: ./apps/admin/Dockerfile.admin
+                      context: .
+                    - image_name: plane-live
+                      dockerfile: ./apps/live/Dockerfile.live
+                      context: .
+                    - image_name: plane-backend
+                      dockerfile: ./apps/api/Dockerfile.api
+                      context: ./apps/api
+                    - image_name: plane-proxy
+                      dockerfile: ./apps/proxy/Dockerfile.ce
+                      context: ./apps/proxy
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Set image name
-        id: image
-        run: |
-          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
-          repo="$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')"
-          echo "name=ghcr.io/${owner}/${repo}/${{ matrix.image_name }}" >> "$GITHUB_OUTPUT"
+            - name: Set image name
+              id: image
+              run: |
+                  owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+                  repo="$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')"
+                  echo "name=ghcr.io/${owner}/${repo}/${{ matrix.image_name }}" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Log in to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.image.outputs.name }}
-          tags: |
-            type=ref,event=branch
-            type=sha,format=short
+            - name: Docker metadata
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ steps.image.outputs.name }}
+                  tags: |
+                      type=ref,event=branch
+                      type=sha,format=short
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                  context: ${{ matrix.context }}
+                  file: ${{ matrix.dockerfile }}
+                  push: true
+                  platforms: linux/amd64
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}

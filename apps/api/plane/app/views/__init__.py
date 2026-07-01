@@ -22,7 +22,7 @@ from .analytic.project_analytics import (
     ProjectAdvanceAnalyticsEndpoint,
     ProjectAdvanceAnalyticsStatsEndpoint,
 )
-from .api import ApiTokenEndpoint, ServiceApiTokenEndpoint
+from .api import ApiTokenEndpoint
 from .asset.base import FileAssetEndpoint, FileAssetViewSet, UserAssetsEndpoint
 from .asset.v2 import (
     AssetCheckEndpoint,
@@ -97,6 +97,7 @@ from .module.archive import ModuleArchiveUnarchiveEndpoint
 from .module.base import (
     ModuleFavoriteViewSet,
     ModuleLinkViewSet,
+    ModuleTransferEndpoint,
     ModuleUserPropertiesEndpoint,
     ModuleViewSet,
 )
@@ -114,6 +115,7 @@ from .page.base import (
     PageViewSet,
 )
 from .page.version import PageVersionEndpoint
+from .page.wiki import WikiPageViewSet, WikiPagesDescriptionViewSet
 from .project.base import (
     DeployBoardViewSet,
     ProjectArchiveUnarchiveEndpoint,
@@ -145,6 +147,18 @@ from .user.base import (
     UserActivityEndpoint,
     UserEndpoint,
     UserSessionEndpoint,
+)
+from .user.mfa import (
+    MFADeviceDetailEndpoint,
+    MFADeviceListEndpoint,
+    MFALockdownEndpoint,
+    MFARecoveryCodesRegenerateEndpoint,
+    MFAStepUpEndpoint,
+    MFATOTPSetupEndpoint,
+    MFATOTPVerifyEndpoint,
+    MFAWebAuthnRegisterBeginEndpoint,
+    MFAWebAuthnRegisterCompleteEndpoint,
+    UserMFAEndpoint,
 )
 from .view.base import (
     IssueViewFavoriteViewSet,
@@ -199,5 +213,13 @@ from .workspace.user import (
     WorkspaceUserProfileIssuesEndpoint,
     WorkspaceUserProfileStatsEndpoint,
     WorkspaceUserPropertiesEndpoint,
+)
+from .workspace.user_time_analytics import (
+    UserTimeAnalyticsChartsEndpoint,
+    UserTimeAnalyticsCommentSignalsEndpoint,
+    UserTimeAnalyticsExportEndpoint,
+    UserTimeAnalyticsRankingsEndpoint,
+    UserTimeAnalyticsSummaryEndpoint,
+    UserTimeAnalyticsWorklogsEndpoint,
 )
 from .workspace.user_preference import WorkspaceUserPreferenceViewSet

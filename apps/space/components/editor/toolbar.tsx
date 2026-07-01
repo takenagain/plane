@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, createElement, type ElementType } from "react";
 // plane imports
 import { TOOLBAR_ITEMS } from "@plane/editor";
 import type { ToolbarMenuItem, EditorRefApi } from "@plane/editor";
@@ -87,12 +87,12 @@ export function IssueCommentToolbar(props: Props) {
                         }
                       )}
                     >
-                      <item.icon
-                        className={cn("h-3.5 w-3.5", {
+                      {createElement(item.icon as ElementType, {
+                        className: cn("h-3.5 w-3.5", {
                           "text-primary": isItemActive,
-                        })}
-                        strokeWidth={2.5}
-                      />
+                        }),
+                        strokeWidth: 2.5,
+                      })}
                     </button>
                   </Tooltip>
                 );

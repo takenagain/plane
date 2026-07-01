@@ -116,3 +116,11 @@ build/
 .react-router/
 temp/
 scripts/
+!packages/i18n/scripts/
+!e2e/scripts/
+
+# i18n auto-generated types (regenerated on every build)
+packages/i18n/src/types/keys.generated.ts
+
+# Local security notes (not for version control)
+/security/

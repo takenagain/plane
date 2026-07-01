@@ -89,7 +89,7 @@ export const useTitleEditor = (props: TUseTitleEditorProps) => {
         .run();
     },
     setEditorValue: (content: string) => {
-      editor?.commands.setContent(content, false);
+      editor?.commands.setContent(content, { emitUpdate: false });
     },
   }));
 

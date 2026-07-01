@@ -66,7 +66,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
   const { workspaceProjectIds, getProjectById } = useProject();
   const { t } = useTranslation();
   // form
-  const { handleSubmit, control } = useForm<FormData>({
+  const { handleSubmit, control, setValue, getValues } = useForm<FormData>({
     defaultValues: {
       provider: EXPORTERS_LIST[0],
       project: [],
@@ -97,13 +97,19 @@ export const ExportForm = observer(function ExportForm(props: Props) {
   });
 
   // handlers
+  async function handleExportAllProjects() {
+    setValue("project", []);
+    setValue("multiple", true);
+    await ExportCSVToMail({ ...getValues(), project: [], multiple: true });
+  }
+
   async function ExportCSVToMail(formData: FormData) {
     setExportLoading(true);
     if (workspaceSlug && user) {
       const payload = {
         provider: formData.provider.provider,
         project: formData.project,
-        multiple: formData.project.length > 1,
+        multiple: formData.multiple || formData.project.length > 1,
         rich_filters: formData.filters,
       };
       try {
@@ -124,7 +130,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
                     : "",
           }),
         });
-      } catch (error) {
+      } catch (_error) {
         setExportLoading(false);
         setToast({
           type: TOAST_TYPE.ERROR,
@@ -169,7 +175,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
                             return projectDetails?.identifier;
                           })
                           .join(", ")
-                      : "All projects"
+                      : t("workspace_settings.settings.exports.all_projects")
                   }
                   optionsClassName="max-w-48 sm:max-w-[532px]"
                   placement="bottom-end"
@@ -207,9 +213,20 @@ export const ExportForm = observer(function ExportForm(props: Props) {
             />
           }
         />
-        <div className="px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3">
           <Button variant="primary" size="lg" type="submit" loading={exportLoading}>
             {exportLoading ? `${t("workspace_settings.settings.exports.exporting")}...` : t("export")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            type="button"
+            loading={exportLoading}
+            onClick={() => {
+              void handleExportAllProjects();
+            }}
+          >
+            {t("workspace_settings.settings.exports.export_all_projects")}
           </Button>
         </div>
       </div>

@@ -1,10 +1,4 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
-/**
  * Local alias for the recurrence pattern union so this helper module has no
  * external package dependencies and can be tested without a built @plane/types.
  * Keep this in sync with TIssueRecurrencePattern in @plane/types.

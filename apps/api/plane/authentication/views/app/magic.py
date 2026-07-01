@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 # Module imports
 from plane.authentication.provider.credentials.magic_code import MagicCodeProvider
 from plane.authentication.utils.login import user_login
+from plane.authentication.utils.mfa import mfa_login_gate
 from plane.authentication.utils.redirection_path import get_redirection_path
 from plane.authentication.utils.user_auth_workflow import post_user_auth_workflow
 from plane.bgtasks.magic_link_code_task import magic_link
@@ -26,7 +27,10 @@ from plane.authentication.adapter.error import (
     AuthenticationException,
     AUTHENTICATION_ERROR_CODES,
 )
-from plane.authentication.rate_limit import AuthenticationThrottle
+from plane.authentication.rate_limit import (
+    AuthenticationThrottle,
+    authentication_throttle_allows,
+)
 from plane.utils.path_validator import get_safe_redirect_url
 
 
@@ -64,6 +68,18 @@ class MagicSignInEndpoint(View):
         code = request.POST.get("code", "").strip()
         email = request.POST.get("email", "").strip().lower()
         next_path = request.POST.get("next_path")
+
+        if not authentication_throttle_allows(request):
+            exc = AuthenticationException(
+                error_code=AUTHENTICATION_ERROR_CODES["RATE_LIMIT_EXCEEDED"],
+                error_message="RATE_LIMIT_EXCEEDED",
+            )
+            url = get_safe_redirect_url(
+                base_url=base_host(request=request, is_app=True),
+                next_path=next_path,
+                params=exc.get_error_dict(),
+            )
+            return HttpResponseRedirect(url)
 
         if code == "" or email == "":
             exc = AuthenticationException(
@@ -103,6 +119,10 @@ class MagicSignInEndpoint(View):
             )
             user = provider.authenticate()
             profile, _ = Profile.objects.get_or_create(user=user)
+            # 2FA gate: redirect to challenge if MFA is enabled for this user.
+            mfa_redirect = mfa_login_gate(request=request, user=user, next_path=next_path)
+            if mfa_redirect is not None:
+                return mfa_redirect
             # Login the user and record his device info
             user_login(request=request, user=user, is_app=True)
             if next_path:
@@ -137,6 +157,18 @@ class MagicSignUpEndpoint(View):
         code = request.POST.get("code", "").strip()
         email = request.POST.get("email", "").strip().lower()
         next_path = request.POST.get("next_path")
+
+        if not authentication_throttle_allows(request):
+            exc = AuthenticationException(
+                error_code=AUTHENTICATION_ERROR_CODES["RATE_LIMIT_EXCEEDED"],
+                error_message="RATE_LIMIT_EXCEEDED",
+            )
+            url = get_safe_redirect_url(
+                base_url=base_host(request=request, is_app=True),
+                next_path=next_path,
+                params=exc.get_error_dict(),
+            )
+            return HttpResponseRedirect(url)
 
         if code == "" or email == "":
             exc = AuthenticationException(

@@ -467,7 +467,9 @@ describe("PDF Rendering Integration", () => {
 
       expect(portraitText).toContain("Landscape content here");
       expect(landscapeText).toContain("Landscape content here");
-      expect(portraitBuffer.length).not.toBe(landscapeBuffer.length);
+      // Portrait and landscape have the same page dimensions in different order (A4: 595.28 × 841.89 vs 841.89 × 595.28),
+      // so they have the same byte length but different raw bytes — verify the PDFs differ
+      expect(portraitBuffer.equals(landscapeBuffer)).toBe(false);
     });
 
     it("should include author metadata in PDF", async () => {

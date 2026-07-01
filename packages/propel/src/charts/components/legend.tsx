@@ -10,6 +10,20 @@ import type { LegendProps } from "recharts";
 import type { TChartLegend } from "@plane/types";
 import { cn } from "../../utils/classname";
 
+type LegendPayloadItem = {
+  value?: string;
+  color?: string;
+  payload?: { name?: string; key?: string };
+};
+
+type CustomLegendProps = TChartLegend & {
+  payload?: readonly LegendPayloadItem[];
+  formatter?: LegendProps["formatter"];
+  onClick?: LegendProps["onClick"];
+  onMouseEnter?: LegendProps["onMouseEnter"];
+  onMouseLeave?: LegendProps["onMouseLeave"];
+};
+
 export const getLegendProps = (args: TChartLegend): LegendProps => {
   const { align, layout, verticalAlign } = args;
   return {
@@ -33,14 +47,21 @@ export const getLegendProps = (args: TChartLegend): LegendProps => {
           }),
       ...args.wrapperStyles,
     },
-    content: <CustomLegend {...args} />,
+    content: (legendProps) => (
+      <CustomLegend
+        {...args}
+        payload={legendProps.payload}
+        formatter={legendProps.formatter}
+        onClick={legendProps.onClick}
+        onMouseEnter={legendProps.onMouseEnter}
+        onMouseLeave={legendProps.onMouseLeave}
+      />
+    ),
   };
 };
 
 const CustomLegend = React.forwardRef(function CustomLegend(
-  props: React.ComponentProps<"div"> &
-    Pick<LegendProps, "payload" | "formatter" | "onClick" | "onMouseEnter" | "onMouseLeave"> &
-    TChartLegend,
+  props: CustomLegendProps,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
   const { formatter, layout, onClick, onMouseEnter, onMouseLeave, payload } = props;
@@ -56,7 +77,7 @@ const CustomLegend = React.forwardRef(function CustomLegend(
     >
       {payload.map((item, index) => (
         <div
-          key={item.value}
+          key={String(item.value ?? index)}
           className={cn("flex items-center gap-1.5 text-13 font-medium whitespace-nowrap text-tertiary", {
             "px-2": layout === "horizontal",
             "py-2": layout === "vertical",
@@ -64,9 +85,13 @@ const CustomLegend = React.forwardRef(function CustomLegend(
             "pr-0 pb-0": index === payload.length - 1,
             "cursor-pointer": !!props.onClick,
           })}
-          onClick={(e) => onClick?.(item, index, e)}
-          onMouseEnter={(e) => onMouseEnter?.(item, index, e)}
-          onMouseLeave={(e) => onMouseLeave?.(item, index, e)}
+          onClick={(e) => onClick?.(item as Parameters<NonNullable<LegendProps["onClick"]>>[0], index, e)}
+          onMouseEnter={(e) =>
+            onMouseEnter?.(item as Parameters<NonNullable<LegendProps["onMouseEnter"]>>[0], index, e)
+          }
+          onMouseLeave={(e) =>
+            onMouseLeave?.(item as Parameters<NonNullable<LegendProps["onMouseLeave"]>>[0], index, e)
+          }
         >
           <div
             className="size-2 flex-shrink-0 rounded-xs"
@@ -74,7 +99,6 @@ const CustomLegend = React.forwardRef(function CustomLegend(
               backgroundColor: item.color,
             }}
           />
-          {/* @ts-expect-error recharts types are not up to date */}
           {formatter?.(item.value, { value: item.value }, index) ?? item.payload?.name}
         </div>
       ))}

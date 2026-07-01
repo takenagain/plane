@@ -18,6 +18,8 @@ import { AuthService } from "@/services/auth.service";
 import { UserService } from "@/services/user.service";
 // stores
 import type { IAccountStore } from "@/store/user/account.store";
+import type { IMfaStore } from "@/store/user/mfa.store";
+import { MfaStore } from "@/store/user/mfa.store";
 import type { IUserProfileStore } from "@/store/user/profile.store";
 import { ProfileStore } from "@/store/user/profile.store";
 // local imports
@@ -39,6 +41,7 @@ export interface IUserStore {
   userProfile: IUserProfileStore;
   userSettings: IUserSettingsStore;
   accounts: Record<string, IAccountStore>;
+  mfa: IMfaStore;
   permission: IUserPermissionStore;
   // actions
   fetchCurrentUser: () => Promise<IUser | undefined>;
@@ -66,6 +69,7 @@ export class UserStore implements IUserStore {
   userProfile: IUserProfileStore;
   userSettings: IUserSettingsStore;
   accounts: Record<string, IAccountStore> = {};
+  mfa: IMfaStore;
   permission: IUserPermissionStore;
   // service
   userService: UserService;
@@ -75,6 +79,7 @@ export class UserStore implements IUserStore {
     // stores
     this.userProfile = new ProfileStore(store);
     this.userSettings = new UserSettingsStore();
+    this.mfa = new MfaStore();
     this.permission = new UserPermissionStore(store);
     // service
     this.userService = new UserService();
@@ -90,6 +95,7 @@ export class UserStore implements IUserStore {
       userProfile: observable,
       userSettings: observable,
       accounts: observable,
+      mfa: observable,
       permission: observable,
       // actions
       fetchCurrentUser: action,
@@ -117,11 +123,19 @@ export class UserStore implements IUserStore {
       });
       const user = await this.userService.currentUser();
       if (user && user?.id) {
-        await Promise.all([
+        if (user.mfa_setup_required) {
+          this.mfa.setForcedSetupRequired(true);
+        }
+        // Workspace APIs are blocked by MFA enforcement middleware until setup completes;
+        // skip that fetch so the partial session still hydrates and the setup gate can render.
+        const bootstrapFetches: Promise<unknown>[] = [
           this.userProfile.fetchUserProfile(),
           this.userSettings.fetchCurrentUserSettings(),
-          this.store.workspaceRoot.fetchWorkspaces(),
-        ]);
+        ];
+        if (!user.mfa_setup_required) {
+          bootstrapFetches.push(this.store.workspaceRoot.fetchWorkspaces());
+        }
+        await Promise.all(bootstrapFetches);
         runInAction(() => {
           this.data = user;
           this.isLoading = false;
@@ -244,6 +258,7 @@ export class UserStore implements IUserStore {
       this.data = undefined;
       this.userProfile = new ProfileStore(this.store);
       this.userSettings = new UserSettingsStore();
+      this.mfa.reset();
       this.permission = new UserPermissionStore(this.store);
     });
   };

@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 // components
 import type { IBlockUpdateData, IGanttBlock } from "@plane/types";
 import RenderIfVisible from "@/components/core/render-if-visible-HOC";
@@ -20,7 +14,7 @@ export type GanttChartBlocksProps = {
   enableAddBlock: boolean | ((blockId: string) => boolean);
   showAllBlocks: boolean;
   selectionHelpers: TSelectionHelper;
-  ganttContainerRef: React.RefObject<HTMLDivElement>;
+  ganttContainerRef: React.RefObject<HTMLDivElement | null>;
 };
 
 export function GanttChartRowList(props: GanttChartBlocksProps) {

@@ -131,10 +131,10 @@ export function EmojiPicker(props: TCustomEmojiPicker) {
               <Tabs.Tab
                 key={tab.key}
                 value={tab.key}
-                className={({ selected }) =>
+                className={({ active }) =>
                   cn("rounded-sm border border-subtle bg-layer-1 py-1 text-13", {
-                    "bg-surface-1 text-primary": selected,
-                    "text-placeholder hover:bg-layer-1/60 hover:text-tertiary": !selected,
+                    "bg-surface-1 text-primary": active,
+                    "text-placeholder hover:bg-layer-1/60 hover:text-tertiary": !active,
                   })
                 }
               >

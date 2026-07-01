@@ -16,8 +16,8 @@ import { BlockItemAction } from "@/components/pages/list/block-item-action";
 // hooks
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web hooks
-import type { EPageStoreType } from "@/plane-web/hooks/store";
-import { usePage } from "@/plane-web/hooks/store";
+import type { EPageStoreType } from "@/hooks/store";
+import { usePage } from "@/hooks/store";
 
 type TPageListBlock = {
   pageId: string;
@@ -27,7 +27,7 @@ type TPageListBlock = {
 export const PageListBlock = observer(function PageListBlock(props: TPageListBlock) {
   const { pageId, storeType } = props;
   // refs
-  const parentRef = useRef(null);
+  const parentRef = useRef<HTMLDivElement>(null);
   // hooks
   const page = usePage({
     pageId,

@@ -11,27 +11,6 @@
 - `pnpm turbo run <command> --filter=<package>` - Target specific package/app
 - `pnpm --filter=@plane/ui storybook` - Start Storybook on port 6006
 
-## Validation Workflow
-
-- Frontend checks must follow `.github/workflows/pull-request-build-lint-web-apps.yml` exactly and in this order:
-- `pnpm turbo run check:format --affected`
-- `pnpm turbo run build --affected`
-- `pnpm turbo run check:lint --affected`
-- `pnpm turbo run check:types --affected`
-- Backend Python lint/format must include Ruff:
-- `apps/api/.venv/bin/ruff format apps/api`
-- `apps/api/.venv/bin/ruff check --fix apps/api`
-- Backend changes can be validated locally with `pytest` from `apps/api`
-- Full GitHub workflow runs can be exercised locally with `act` (`netkos/act` is installed on this system)
-
-## Container Runtime
-
-- Check whether `podman`/`podman-compose` or `docker`/`docker compose` are available before running container commands
-- Prefer `podman` and `podman-compose` even if both Podman and Docker are installed
-- On this system (CachyOS), use `podman` and `podman-compose` for local stack startup and E2E prerequisites
-- You can start the full local stack with `podman-compose up -d`
-- Use non-privileged HTTP ports for compose/e2e (default `8081`) and never bind HTTP to port `80`
-
 ## Code Style
 
 - **Imports**: Use `workspace:*` for internal packages, `catalog:` for external deps
@@ -43,4 +22,23 @@
 - **State Management**: MobX stores in `packages/shared-state`, reactive patterns
 - **Testing**: All features require unit tests, use existing test framework per package
 - **Components**: Build in `@plane/ui` with Storybook for isolated development
-- Before committing and pushing to remote, ensure there are no lint errors in frontend or backend
+
+## Dependency management
+
+- **Pin versions**: Always pin production dependencies to explicit versions — no floating ranges (e.g. `^`, `~`, `>=`).
+- **Bump to latest stable**: When updating dependencies, target the latest stable release at bump time (not the minimum patched version) to maximize security posture while avoiding supply-chain drift from unpinned ranges.
+- **Monorepo enforcement**: Use pnpm `catalog:` entries in `pnpm-workspace.yaml` and `pnpm.overrides` in the root `package.json` to enforce pins consistently across the monorepo.
+- **After security bumps**: Run `pnpm install`, verify the lockfile, then run `pnpm check`.
+- **Python**: Pin with `==` in requirements files.
+
+## Backend tests (Docker)
+
+The Django/pytest suite for `apps/api` runs in an isolated stack defined by `docker-compose-test.yml` at the repo root.
+
+Prereq (once): `./setup.sh` — generates `apps/api/.env` from `.env.example`.
+
+- Full suite: `docker compose -f docker-compose-test.yml up --build --abort-on-container-exit --exit-code-from api-tests`
+- Subset: `docker compose -f docker-compose-test.yml run --rm api-tests pytest -m unit`
+- Teardown: `docker compose -f docker-compose-test.yml down -v`
+
+See `apps/api/tests/RUNNING_TESTS.md` for the full walkthrough and troubleshooting; see `apps/api/tests/TESTING_GUIDE.md` for test conventions and fixtures.

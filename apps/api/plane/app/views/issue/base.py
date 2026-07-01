@@ -100,6 +100,7 @@ class IssueListEndpoint(BaseAPIView):
         # Apply legacy filters
         filters = issue_filters(request.query_params, "GET")
         issue_queryset = queryset.filter(**filters)
+        issue_queryset = issue_queryset.filter(state__deleted_at__isnull=True)
 
         # Add select_related, prefetch_related if fields or expand is not None
         if self.fields or self.expand:
@@ -765,10 +766,10 @@ class BulkDeleteIssuesEndpoint(BaseAPIView):
         total_issues = len(issues)
 
         # First, delete all related cycle issues
-        CycleIssue.objects.filter(issue_id__in=issue_ids).delete()
+        CycleIssue.objects.filter(issue__in=issues).delete()
 
         # Then, delete all related module issues
-        ModuleIssue.objects.filter(issue_id__in=issue_ids).delete()
+        ModuleIssue.objects.filter(issue__in=issues).delete()
 
         # Finally, delete the issues themselves
         issues.delete()
@@ -1114,7 +1115,7 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
         epoch = int(timezone.now().timestamp())
 
         # Fetch all relevant issues in a single query
-        issues = list(Issue.objects.filter(id__in=issue_ids))
+        issues = list(Issue.objects.filter(id__in=issue_ids, workspace__slug=slug, project_id=project_id))
         issues_dict = {str(issue.id): issue for issue in issues}
         issues_to_update = []
 

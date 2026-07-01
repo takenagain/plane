@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import type { Control } from "react-hook-form";
 import { Controller } from "react-hook-form";
@@ -86,6 +86,27 @@ export const IssueDescriptionEditor = observer(function IssueDescriptionEditor(p
   const { isMobile } = usePlatformOS();
 
   const { getIndex } = getTabIndex(ETabIndices.ISSUE_FORM, isMobile);
+
+  // Stabilize the props that feed the editor's resolvedExtensions memo. This
+  // component lives inside a react-hook-form <Controller> render prop that
+  // re-runs on every keystroke, so inline `placeholder`/`searchMentionCallback`
+  // literals changed identity each render and made @tiptap/react destroy and
+  // recreate the ProseMirror view (cursor/focus loss). `t` is held in a ref so
+  // a fresh translation function per render doesn't bust the memo.
+  const tRef = useRef(t);
+  tRef.current = t;
+  const resolvedPlaceholder = useMemo(
+    () => (isFocused: boolean, value: string) => tRef.current(getDescriptionPlaceholderI18n(isFocused, value)),
+    []
+  );
+  const searchMentionCallback = useCallback(
+    async (payload: Parameters<typeof workspaceService.searchEntity>[1]) =>
+      await workspaceService.searchEntity(workspaceSlug?.toString() ?? "", {
+        ...payload,
+        project_id: projectId?.toString() ?? "",
+      }),
+    [workspaceSlug, projectId]
+  );
 
   useEffect(() => {
     if (descriptionHtmlData) handleDescriptionHTMLDataChange(descriptionHtmlData);
@@ -196,13 +217,8 @@ export const IssueDescriptionEditor = observer(function IssueDescriptionEditor(p
                 onEnterKeyPress={() => submitBtnRef?.current?.click()}
                 ref={editorRef}
                 tabIndex={getIndex("description_html")}
-                placeholder={(isFocused, description) => t(getDescriptionPlaceholderI18n(isFocused, description))}
-                searchMentionCallback={async (payload) =>
-                  await workspaceService.searchEntity(workspaceSlug?.toString() ?? "", {
-                    ...payload,
-                    project_id: projectId?.toString() ?? "",
-                  })
-                }
+                placeholder={resolvedPlaceholder}
+                searchMentionCallback={searchMentionCallback}
                 containerClassName="pt-3 min-h-[120px]"
                 uploadFile={async (blockId, file) => {
                   try {
@@ -222,7 +238,7 @@ export const IssueDescriptionEditor = observer(function IssueDescriptionEditor(p
                     return asset_id;
                   } catch (error) {
                     console.log("Error in uploading issue asset:", error);
-                    throw new Error("Asset upload failed. Please try again later.");
+                    throw new Error("Asset upload failed. Please try again later.", { cause: error });
                   }
                 }}
                 duplicateFile={async (assetId: string) => {

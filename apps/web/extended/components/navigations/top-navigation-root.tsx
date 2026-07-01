@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 // components
 import { observer } from "mobx-react";
 import { useParams, usePathname } from "next/navigation";
@@ -12,6 +6,7 @@ import { TopNavPowerK } from "@/components/navigation";
 import { HelpMenuRoot } from "@/components/workspace/sidebar/help-section/root";
 import { UserMenuRoot } from "@/components/workspace/sidebar/user-menu-root";
 import { WorkspaceMenuRoot } from "@/components/workspace/sidebar/workspace-menu-root";
+import { WorkspaceAppSwitcher } from "@/plane-web/components/workspace/app-switcher";
 import { useAppRailPreferences } from "@/hooks/use-navigation-preferences";
 import { Tooltip } from "@plane/propel/tooltip";
 import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
@@ -51,8 +46,9 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
       })}
     >
       {/* Workspace Menu */}
-      <div className="flex-1 shrink-0">
+      <div className="flex flex-1 shrink-0 items-center gap-3">
         <WorkspaceMenuRoot variant="top-navigation" />
+        <WorkspaceAppSwitcher />
       </div>
       {/* Power K Search */}
       <div className="shrink-0">

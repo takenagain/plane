@@ -61,7 +61,9 @@ export const TrackFileDeletionPlugin = (editor: Editor, deleteHandler: TFileHand
         const nodeFileSetDetails = NODE_FILE_MAP[nodeType];
         if (!nodeFileSetDetails || !src) return;
         try {
-          editor.storage[nodeType]?.[nodeFileSetDetails.fileSetName]?.set(src, true);
+          (editor.storage as unknown as Record<string, Record<string, Map<string, boolean>> | undefined>)[nodeType]?.[
+            nodeFileSetDetails.fileSetName
+          ]?.set(src, true);
           // update assets list storage value
           editor.commands.updateAssetsList?.({
             idToRemove: node.attrs.id,

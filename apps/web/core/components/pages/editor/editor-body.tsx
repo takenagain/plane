@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  */
+/* oxlint-disable react/no-unstable-nested-components -- Editor overlay render props */
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { LIVE_BASE_PATH, LIVE_BASE_URL } from "@plane/constants";
@@ -36,16 +37,15 @@ import { useParseEditorContent } from "@/hooks/use-parse-editor-content";
 import type { TCustomEventHandlers } from "@/hooks/use-realtime-page-events";
 import { useRealtimePageEvents } from "@/hooks/use-realtime-page-events";
 import { EditorAIMenu } from "@/plane-web/components/pages";
-import type { TExtendedEditorExtensionsConfig } from "@/plane-web/hooks/pages";
-import type { EPageStoreType } from "@/plane-web/hooks/store";
-import { useEditorFlagging } from "@/plane-web/hooks/use-editor-flagging";
+import type { TExtendedEditorExtensionsConfig } from "@/hooks/pages";
+import type { EPageStoreType } from "@/hooks/store";
+import { useEditorFlagging } from "@/hooks/use-editor-flagging";
 // store
 import type { TPageInstance } from "@/store/pages/base-page";
 // local imports
 import { PageContentLoader } from "../loaders/page-content-loader";
 import { PageEditorHeaderRoot } from "./header";
 import { PageContentBrowser } from "./summary";
-import { PageEditorTitle } from "./title";
 
 export type TEditorBodyConfig = {
   fileHandler: TFileHandler;
@@ -59,7 +59,7 @@ export type TEditorBodyHandlers = {
 type Props = {
   config: TEditorBodyConfig;
   editorReady: boolean;
-  editorForwardRef: React.RefObject<EditorRefApi>;
+  editorForwardRef: React.RefObject<EditorRefApi | null>;
   handleEditorReady: (status: boolean) => void;
   handleOpenNavigationPane: () => void;
   handlers: TEditorBodyHandlers;
@@ -94,6 +94,11 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   } = props;
   // refs
   const titleEditorRef = useRef<EditorTitleRefApi>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   // store hooks
   const { data: currentUser } = useUser();
   const { getWorkspaceBySlug } = useWorkspace();
@@ -151,6 +156,8 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
       stage: { kind: "connecting" },
       isServerSynced: false,
       isServerDisconnected: false,
+      hasCachedContent: false,
+      isCacheReady: false,
     });
   }, [pageId, setSyncingStatus, onCollaborationStateChange]);
 
@@ -166,6 +173,21 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
     ),
     [editorRef, workspaceId, workspaceSlug]
   );
+
+  const mentionHandler = useMemo(
+    () => ({
+      searchCallback: async (query: string) => {
+        const res = await fetchMentions(query);
+        if (!res) throw new Error("Failed in fetching mentions");
+        return res;
+      },
+      renderComponent: EditorMentionsRoot,
+      getMentionedEntityDetails: (id: string) => ({ display_name: getUserDetails(id)?.display_name ?? "" }),
+    }),
+    [fetchMentions, getUserDetails]
+  );
+
+  const aiHandler = useMemo(() => ({ menu: getAIMenu }), [getAIMenu]);
 
   const serverHandler: TServerHandler = useMemo(
     () => ({
@@ -191,6 +213,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   const realtimeConfig: TRealtimeConfig | undefined = useMemo(() => {
     // Construct the WebSocket Collaboration URL
     try {
+      if (typeof window === "undefined") return undefined;
       const LIVE_SERVER_BASE_URL = LIVE_BASE_URL?.trim() || window.location.origin;
       const WS_LIVE_URL = new URL(LIVE_SERVER_BASE_URL);
       const isSecureEnvironment = window.location.protocol === "https:";
@@ -230,7 +253,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
     }
   );
 
-  const isPageLoading = pageId === undefined || !realtimeConfig;
+  const isPageLoading = pageId === undefined || !realtimeConfig || !hasMounted;
 
   if (isPageLoading) return <PageContentLoader className={blockWidthClassName} />;
 
@@ -248,6 +271,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
                 <div
                   className="max-h-[50vh] !cursor-pointer overflow-hidden"
                   role="button"
+                  tabIndex={0}
                   aria-label={t("page_navigation_pane.outline_floating_button")}
                   onClick={handleOpenNavigationPane}
                 >
@@ -276,24 +300,14 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
             containerClassName="h-full p-0 pb-64"
             displayConfig={displayConfig}
             getEditorMetaData={getEditorMetaData}
-            mentionHandler={{
-              searchCallback: async (query) => {
-                const res = await fetchMentions(query);
-                if (!res) throw new Error("Failed in fetching mentions");
-                return res;
-              },
-              renderComponent: (props) => <EditorMentionsRoot {...props} />,
-              getMentionedEntityDetails: (id: string) => ({ display_name: getUserDetails(id)?.display_name ?? "" }),
-            }}
+            mentionHandler={mentionHandler}
             updatePageProperties={updatePageProperties}
             realtimeConfig={realtimeConfig}
             serverHandler={serverHandler}
             user={userConfig}
             disabledExtensions={documentEditorExtensions.disabled}
             flaggedExtensions={documentEditorExtensions.flagged}
-            aiHandler={{
-              menu: getAIMenu,
-            }}
+            aiHandler={aiHandler}
             onAssetChange={updateAssetsList}
             extendedEditorProps={extendedEditorProps}
             isFetchingFallbackBinary={isFetchingFallbackBinary}

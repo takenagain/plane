@@ -4,17 +4,25 @@
  * See the LICENSE file for details.
  */
 
-import { memo, useMemo } from "react";
+import { createContext, memo, useContext, useMemo } from "react";
 import { Popover as BasePopover } from "@base-ui-components/react/popover";
 import type { TPlacement, TSide, TAlign } from "../utils/placement";
 import { convertPlacementToSideAndAlign } from "../utils/placement";
+
+type PopoverRootProps = React.ComponentProps<typeof BasePopover.Root> & {
+  openOnHover?: boolean;
+  delay?: number;
+  closeDelay?: number;
+};
+
+const PopoverTriggerContext = createContext<Pick<PopoverRootProps, "openOnHover" | "delay" | "closeDelay">>({});
 
 export interface PopoverContentProps extends React.ComponentProps<typeof BasePopover.Popup> {
   placement?: TPlacement;
   align?: TAlign;
   sideOffset?: BasePopover.Positioner.Props["sideOffset"];
   side?: TSide;
-  containerRef?: React.RefObject<HTMLElement>;
+  containerRef?: React.RefObject<HTMLElement | null>;
   positionerClassName?: string;
 }
 
@@ -52,7 +60,16 @@ const PopoverContent = memo(function PopoverContent({
 
 // wrapper components
 const PopoverTrigger = memo(function PopoverTrigger(props: React.ComponentProps<typeof BasePopover.Trigger>) {
-  return <BasePopover.Trigger data-slot="popover-trigger" {...props} />;
+  const { openOnHover, delay, closeDelay } = useContext(PopoverTriggerContext);
+  return (
+    <BasePopover.Trigger
+      data-slot="popover-trigger"
+      openOnHover={openOnHover}
+      delay={delay}
+      closeDelay={closeDelay}
+      {...props}
+    />
+  );
 });
 
 const PopoverPortal = memo(function PopoverPortal(props: React.ComponentProps<typeof BasePopover.Portal>) {
@@ -65,8 +82,13 @@ const PopoverPositioner = memo(function PopoverPositioner(props: React.Component
 
 // compound components
 const Popover = Object.assign(
-  memo(function Popover(props: React.ComponentProps<typeof BasePopover.Root>) {
-    return <BasePopover.Root data-slot="popover" {...props} />;
+  memo(function Popover({ openOnHover, delay, closeDelay, ...props }: PopoverRootProps) {
+    const triggerContext = useMemo(() => ({ openOnHover, delay, closeDelay }), [openOnHover, delay, closeDelay]);
+    return (
+      <PopoverTriggerContext.Provider value={triggerContext}>
+        <BasePopover.Root data-slot="popover" {...props} />
+      </PopoverTriggerContext.Provider>
+    );
   }),
   {
     Button: PopoverTrigger,

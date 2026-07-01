@@ -11,6 +11,7 @@ from django.views import View
 # Module imports
 from plane.authentication.provider.credentials.email import EmailProvider
 from plane.authentication.utils.login import user_login
+from plane.authentication.utils.mfa import mfa_login_gate
 from plane.license.models import Instance
 from plane.authentication.utils.host import base_host
 from plane.authentication.utils.redirection_path import get_redirection_path
@@ -107,6 +108,11 @@ class SignInAuthEndpoint(View):
                 callback=post_user_auth_workflow,
             )
             user = provider.authenticate()
+            # 2FA gate: if the user has MFA enabled, set partial-auth state and
+            # redirect to the challenge instead of finalizing the session.
+            mfa_redirect = mfa_login_gate(request=request, user=user, next_path=next_path)
+            if mfa_redirect is not None:
+                return mfa_redirect
             # Login the user and record his device info
             user_login(request=request, user=user, is_app=True)
             # Get the redirection path

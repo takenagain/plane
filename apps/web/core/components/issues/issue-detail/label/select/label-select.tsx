@@ -4,9 +4,9 @@
  * See the LICENSE file for details.
  */
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { observer } from "mobx-react";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Loader } from "lucide-react";
 import { Combobox } from "@headlessui/react";
 // plane imports
@@ -41,7 +41,7 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
   const { allowPermissions } = useUserPermissions();
   // states
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [query, setQuery] = useState("");
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -126,25 +126,27 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
         onChange={(value) => onSelect(value)}
         multiple
       >
-        <Combobox.Button as={Fragment}>
-          <Button
-            ref={setReferenceElement}
-            type="button"
-            variant="tertiary"
-            size="sm"
-            prependIcon={<PlusIcon />}
-            onClick={() => !projectLabels && fetchLabels()}
-          >
-            {label}
-          </Button>
+        <Combobox.Button
+          as={Button}
+          ref={setReferenceElement}
+          type="button"
+          variant="tertiary"
+          size="sm"
+          prependIcon={<PlusIcon />}
+          onClick={() => !projectLabels && fetchLabels()}
+        >
+          {label}
         </Combobox.Button>
 
-        <Combobox.Options className="fixed z-10">
+        <Combobox.Options
+          ref={setPopperElement}
+          style={styles.popper}
+          {...attributes.popper}
+          className="fixed z-10"
+          modal={false}
+        >
           <div
             className={`z-10 my-1 w-48 rounded-sm border border-strong bg-surface-1 py-2.5 text-11 whitespace-nowrap shadow-raised-200 focus:outline-none`}
-            ref={setPopperElement}
-            style={styles.popper}
-            {...attributes.popper}
           >
             <div className="px-2">
               <div className="flex w-full items-center justify-start rounded-sm border border-subtle bg-surface-2 px-2">

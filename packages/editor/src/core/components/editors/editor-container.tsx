@@ -6,7 +6,7 @@
 
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import type { Editor } from "@tiptap/react";
-import type { FC, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef } from "react";
 // plane utils
 import { cn } from "@plane/utils";
@@ -35,7 +35,7 @@ type Props = {
 export function EditorContainer(props: Props) {
   const { children, displayConfig, editor, editorContainerClassName, id, isTouchDevice, provider, state } = props;
   // refs
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const hasScrolledOnce = useRef(false);
   const scrollToNode = useCallback(
     (nodeId: string) => {
@@ -60,6 +60,11 @@ export function EditorContainer(props: Props) {
       editor.view.dispatch(tr);
 
       requestAnimationFrame(() => {
+        // TipTap 3's `editor.view` getter returns a stub Proxy once the view is torn
+        // down, and `nodeDOM` is NOT one of its stubbed methods — accessing it throws
+        // "editor view is not available". Between scheduling and firing this rAF the
+        // editor can be destroyed (React re-render / navigation), so guard first.
+        if (editor.isDestroyed) return;
         const domNode = editor.view.nodeDOM(nodePosition);
         if (domNode instanceof HTMLElement) {
           domNode.scrollIntoView({ behavior: "instant", block: "center" });

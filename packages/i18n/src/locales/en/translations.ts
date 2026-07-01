@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   submit: "Submit",
   cancel: "Cancel",
@@ -229,7 +223,6 @@ export default {
   time_tracking_description: "Log time spent on work items and projects.",
   work_management_description: "Manage your work and projects with ease.",
   documentation: "Documentation",
-  message_support: "Message support",
   contact_sales: "Contact sales",
   hyper_mode: "Hyper Mode",
   keyboard_shortcuts: "Keyboard shortcuts",
@@ -1662,6 +1655,43 @@ export default {
       created: "Created",
       subscribed: "Subscribed",
       activity: "Activity",
+      time: "Hours logged",
+    },
+    time_analytics: {
+      title: "Hours logged",
+      filters: {
+        duration: "Duration",
+        all_projects: "All projects",
+        projects_count: "{{count}} projects",
+      },
+      kpis: {
+        total_hours: "Total hours",
+        avg_per_day: "Avg hours / day",
+        worklogs: "Worklogs",
+        active_timers: "Active timers",
+        vs_previous: "{{delta}} vs prior period",
+      },
+      rankings: {
+        projects: "Top projects",
+        modules: "Top modules",
+        cycles: "Top cycles",
+      },
+      top_work_items: "Top work items",
+      table: {
+        work_item: "Work item",
+        hours: "Hours",
+      },
+      trend_title: "Hours over time",
+      trend_x: "Period",
+      recent_worklogs: "Recent worklogs",
+      active: "Active",
+      comment_signals: "Discussion signals",
+      comment_signals_hint: "Recent comments on items you logged time on (heuristic keyword highlights).",
+      attention: "Possible attention",
+      empty: {
+        title: "No time logged yet",
+        description: "Log time on work items to see analytics here.",
+      },
     },
     empty_state: {
       activity: {
@@ -2698,7 +2728,6 @@ export default {
       open_plane_documentation: "Open Plane documentation",
       join_forum: "Join our Forum",
       report_bug: "Report a bug",
-      chat_with_us: "Chat with us",
     },
     page_placeholders: {
       default: "Type a command or search",

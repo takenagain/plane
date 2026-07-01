@@ -8,7 +8,7 @@ import { Fragment, useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { Link } from "react-router";
 import { usePathname, useSearchParams } from "next/navigation";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { LogOut } from "lucide-react";
 import { Popover, Transition } from "@headlessui/react";
 // plane imports
@@ -38,7 +38,7 @@ export const UserAvatar = observer(function UserAvatar() {
   // states
   const [csrfToken, setCsrfToken] = useState<string | undefined>(undefined);
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (csrfToken === undefined)
@@ -65,22 +65,24 @@ export const UserAvatar = observer(function UserAvatar() {
       {currentUser?.id ? (
         <div>
           <Popover as="div">
-            <Popover.Button as={Fragment}>
-              <button ref={setReferenceElement} className="flex items-center gap-2 rounded-sm border border-subtle p-2">
-                <Avatar
-                  name={currentUser?.display_name}
-                  src={getFileURL(currentUser?.avatar_url)}
-                  shape="square"
-                  size="sm"
-                  showTooltip={false}
-                />
-                <h6 className="text-11 font-medium text-secondary">
-                  {currentUser?.display_name ||
-                    `${currentUser?.first_name} ${currentUser?.first_name}` ||
-                    currentUser?.email ||
-                    "User"}
-                </h6>
-              </button>
+            <Popover.Button
+              as="button"
+              ref={setReferenceElement}
+              className="flex items-center gap-2 rounded-sm border border-subtle p-2"
+            >
+              <Avatar
+                name={currentUser?.display_name}
+                src={getFileURL(currentUser?.avatar_url)}
+                shape="square"
+                size="sm"
+                showTooltip={false}
+              />
+              <h6 className="text-11 font-medium text-secondary">
+                {currentUser?.display_name ||
+                  `${currentUser?.first_name} ${currentUser?.first_name}` ||
+                  currentUser?.email ||
+                  "User"}
+              </h6>
             </Popover.Button>
             <Transition
               as={Fragment}
@@ -91,13 +93,8 @@ export const UserAvatar = observer(function UserAvatar() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 translate-y-1"
             >
-              <Popover.Panel>
-                <div
-                  className="z-10 overflow-hidden rounded-sm border border-subtle bg-surface-1 p-1 shadow-raised-200"
-                  ref={setPopperElement}
-                  style={styles.popper}
-                  {...attributes.popper}
-                >
+              <Popover.Panel ref={setPopperElement} style={styles.popper} {...attributes.popper}>
+                <div className="z-10 overflow-hidden rounded-sm border border-subtle bg-surface-1 p-1 shadow-raised-200">
                   {csrfToken && (
                     <form method="POST" action={`${API_BASE_URL}/auth/spaces/sign-out/`} onSubmit={signOut}>
                       <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />

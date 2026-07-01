@@ -93,16 +93,27 @@ function registerWebSocketController(
     if (method === "ws" && route) {
       const handler = instance[methodName] as unknown;
 
-      if (typeof handler === "function" && "ws" in router && typeof router.ws === "function") {
-        router.ws(`${baseRoute}${route}`, (ws: WebSocket, req: Request) => {
-          try {
-            handler.call(instance, ws, req);
-          } catch (error) {
-            console.error(`WebSocket error in ${Controller.name}.${methodName}`, error);
-            ws.close(1011, error instanceof Error ? error.message : "Internal server error");
-          }
-        });
+      if (typeof handler !== "function") return;
+
+      if (!("ws" in router) || typeof router.ws !== "function") {
+        // express-ws must have been applied to this router (via `expressWs(app)`
+        // for the Router prototype, or `wsInstance.applyTo(router)` for a specific
+        // instance) before controllers are registered. Without it the route is
+        // dropped and the endpoint 404s every upgrade — fail loudly instead.
+        throw new Error(
+          `${Controller.name}.${methodName}: cannot register WebSocket route "${baseRoute}${route}" — ` +
+            `router.ws() is unavailable. Ensure express-ws is applied to this router before registering controllers.`
+        );
       }
+
+      router.ws(`${baseRoute}${route}`, (ws: WebSocket, req: Request) => {
+        try {
+          handler.call(instance, ws, req);
+        } catch (error) {
+          console.error(`WebSocket error in ${Controller.name}.${methodName}`, error);
+          ws.close(1011, error instanceof Error ? error.message : "Internal server error");
+        }
+      });
     }
   });
 }

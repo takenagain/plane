@@ -8,6 +8,9 @@ on:
         required: false
         default: 'preview'
 
+permissions:
+  contents: read
+
 env:
   TARGET_BRANCH: ${{ github.ref_name }}
 

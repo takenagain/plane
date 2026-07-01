@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useContext } from "react";
-import { usePopper } from "react-popper";
+import { usePopper } from "../../hooks/use-popper";
 import { ChevronRightIcon } from "@plane/propel/icons";
 // helpers
 import { cn } from "../../utils";
@@ -26,7 +26,7 @@ export function ContextMenuItem(props: ContextMenuItemProps) {
   // Nested menu state
   const [isNestedOpen, setIsNestedOpen] = useState(false);
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
   const [activeNestedIndex, setActiveNestedIndex] = useState<number>(0);
   const nestedMenuRef = useRef<HTMLDivElement | null>(null);
 

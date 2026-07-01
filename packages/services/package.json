@@ -1,22 +1,17 @@
 {
   "name": "@plane/services",
-  "version": "1.2.0",
+  "version": "1.3.1",
   "private": true,
   "license": "AGPL-3.0",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index-BliaS-AT.d.ts",
-      "import": "./dist/index.js"
-    },
+    ".": "./dist/index.js",
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsdown",
-    "dev": "tsdown --watch",
+    "dev": "tsdown --watch --no-clean",
     "check:lint": "oxlint --max-warnings=6 .",
     "check:types": "tsc --noEmit",
     "check:format": "oxfmt --check .",
@@ -25,13 +20,13 @@
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
-    "@plane/constants": "workspace:*",
-    "@plane/types": "workspace:*",
+    "@plane/constants": "workspace:^1.3.1",
+    "@plane/types": "workspace:^1.3.1",
     "axios": "catalog:",
-    "file-type": "^21.3.2"
+    "file-type": "catalog:"
   },
   "devDependencies": {
-    "@plane/typescript-config": "workspace:*",
+    "@plane/typescript-config": "workspace:^1.3.1",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   }

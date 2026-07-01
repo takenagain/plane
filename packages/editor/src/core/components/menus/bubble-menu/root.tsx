@@ -6,12 +6,13 @@
 
 import { isNodeSelection } from "@tiptap/core";
 import type { Editor } from "@tiptap/core";
-import { BubbleMenu, useEditorState } from "@tiptap/react";
-import type { BubbleMenuProps } from "@tiptap/react";
-import type { FC } from "react";
+import { useEditorState } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import type { BubbleMenuProps } from "@tiptap/react/menus";
 import { useEffect, useState, useRef } from "react";
 // plane utils
 import { cn } from "@plane/utils";
+import { EditorIcon } from "@/helpers/react-compat";
 // components
 import type { EditorMenuItem } from "@/components/menus";
 import {
@@ -113,15 +114,15 @@ export function EditorBubbleMenu(props: Props) {
 
   const bubbleMenuProps: EditorBubbleMenuProps = {
     editor,
-    shouldShow: ({ state, editor }) => {
+    shouldShow: ({ state, editor: currentEditor }) => {
       const { selection } = state;
       const { empty } = selection;
 
       if (
         empty ||
-        !editor.isEditable ||
-        editor.isActive(CORE_EXTENSIONS.IMAGE) ||
-        editor.isActive(CORE_EXTENSIONS.CUSTOM_IMAGE) ||
+        !currentEditor.isEditable ||
+        currentEditor.isActive(CORE_EXTENSIONS.IMAGE) ||
+        currentEditor.isActive(CORE_EXTENSIONS.CUSTOM_IMAGE) ||
         isNodeSelection(selection) ||
         isCellSelection(selection) ||
         isSelecting
@@ -130,29 +131,26 @@ export function EditorBubbleMenu(props: Props) {
       }
       return true;
     },
-    tippyOptions: {
-      moveTransition: "transform 0.15s ease-out",
-      duration: [300, 0],
-      zIndex: 9,
+    options: {
+      placement: "top",
       onShow: () => {
+        // The floating menu can fire `onShow` from a debounced/async update after the
+        // editor view has been torn down (navigation, unmount). A destroyed TipTap
+        // editor nulls its `commandManager`, so `editor.commands` throws
+        // "Cannot read properties of null (reading 'commands')". Bail out defensively.
+        if (editor.isDestroyed) return;
         if (editor.storage.link) {
           editor.storage.link.isBubbleMenuOpen = true;
         }
         editor.commands.addActiveDropbarExtension("bubble-menu");
       },
       onHide: () => {
+        if (editor.isDestroyed) return;
         if (editor.storage.link) {
           editor.storage.link.isBubbleMenuOpen = false;
         }
         setTimeout(() => {
-          editor.commands.removeActiveDropbarExtension("bubble-menu");
-        }, 0);
-      },
-      onHidden: () => {
-        if (editor.storage.link) {
-          editor.storage.link.isBubbleMenuOpen = false;
-        }
-        setTimeout(() => {
+          if (editor.isDestroyed) return;
           editor.commands.removeActiveDropbarExtension("bubble-menu");
         }, 0);
       },
@@ -212,6 +210,7 @@ export function EditorBubbleMenu(props: Props) {
               <button
                 key={item.key}
                 type="button"
+                aria-label={item.key}
                 onClick={(e) => {
                   item.command();
                   e.stopPropagation();
@@ -223,7 +222,7 @@ export function EditorBubbleMenu(props: Props) {
                   }
                 )}
               >
-                <item.icon className="size-4" />
+                <EditorIcon icon={item.icon} className="size-4" />
               </button>
             ))}
           </div>

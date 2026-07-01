@@ -47,7 +47,7 @@ interface Props {
   portalElement: React.MutableRefObject<HTMLDivElement | null>;
   nestingLevel: number;
   issueId: string;
-  isScrolled: MutableRefObject<boolean>;
+  isScrolled: MutableRefObject<boolean | null>;
   containerRef: MutableRefObject<HTMLTableElement | null>;
   spreadsheetColumnsList: (keyof IIssueDisplayProperties)[];
   spacingLeft?: number;
@@ -81,9 +81,12 @@ export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: 
   const { issueMap } = useIssues();
 
   // derived values
+  const issue = issueMap[issueId];
   const subIssues = subIssuesStore.subIssuesByIssueId(issueId);
   const isIssueSelected = selectionHelpers.getIsEntitySelected(issueId);
   const isIssueActive = selectionHelpers.getIsEntityActive(issueId);
+
+  if (!issue) return null;
 
   return (
     <>
@@ -94,6 +97,7 @@ export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: 
         placeholderChildren={
           <td
             colSpan={100}
+            aria-label="Loading issue row"
             className="border-[0.5px] border-transparent border-b-subtle-1"
             style={{ height: "calc(2.75rem - 1px)" }}
           />
@@ -104,7 +108,7 @@ export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: 
         })}
         verticalOffset={100}
         shouldRecordHeights={false}
-        defaultValue={shouldRenderByDefault || isIssueNew(issueMap[issueId])}
+        defaultValue={shouldRenderByDefault || isIssueNew(issue)}
       >
         <IssueRowDetails
           issueId={issueId}
@@ -159,7 +163,7 @@ interface IssueRowDetailsProps {
   portalElement: React.MutableRefObject<HTMLDivElement | null>;
   nestingLevel: number;
   issueId: string;
-  isScrolled: MutableRefObject<boolean>;
+  isScrolled: MutableRefObject<boolean | null>;
   isExpanded: boolean;
   setExpanded: Dispatch<SetStateAction<boolean>>;
   spreadsheetColumnsList: (keyof IIssueDisplayProperties)[];
@@ -189,7 +193,7 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
   // states
   const [isMenuActive, setIsMenuActive] = useState(false);
   // refs
-  const cellRef = useRef(null);
+  const cellRef = useRef<HTMLTableCellElement>(null);
   const menuActionRef = useRef<HTMLDivElement | null>(null);
   // router
   const { workspaceSlug, projectId } = useParams();
@@ -261,6 +265,7 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
         id={`issue-${issueId}`}
         ref={cellRef}
         tabIndex={0}
+        aria-label={`Issue ${issueId}`}
         className="group/list-block relative left-0 z-10 max-w-lg bg-surface-1 md:sticky"
       >
         <ControlLink

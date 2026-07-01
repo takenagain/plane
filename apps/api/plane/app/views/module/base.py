@@ -8,26 +8,27 @@ import json
 # Django Imports
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db import models, transaction
 from django.db.models import (
+    Case,
     Count,
     Exists,
     F,
+    FloatField,
     Func,
     IntegerField,
+    Max,
     OuterRef,
     Prefetch,
     Q,
     Subquery,
+    Sum,
     UUIDField,
     Value,
-    Sum,
-    FloatField,
-    Case,
     When,
 )
-from django.db import models
-from django.db.models.functions import Coalesce, Cast, Concat
-from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models.functions import Cast, Coalesce, Concat
 from django.utils import timezone
 
 # Third party imports
@@ -36,12 +37,11 @@ from rest_framework.response import Response
 
 # Module imports
 from plane.app.permissions import (
+    ROLE,
     ProjectEntityPermission,
     ProjectLitePermission,
     allow_permission,
-    ROLE,
 )
-
 from plane.app.serializers import (
     ModuleDetailSerializer,
     ModuleLinkSerializer,
@@ -50,22 +50,36 @@ from plane.app.serializers import (
     ModuleWriteSerializer,
 )
 from plane.bgtasks.issue_activities_task import issue_activity
+from plane.bgtasks.recent_visited_task import recent_visited_task
+from plane.bgtasks.webhook_task import model_activity
 from plane.db.models import (
+    CycleIssue,
+    FileAsset,
     Issue,
+    IssueActivity,
+    IssueAssignee,
+    IssueComment,
+    IssueLabel,
+    IssueLink,
+    IssueSequence,
+    IssueSubscriber,
     Module,
-    UserFavorite,
     ModuleIssue,
     ModuleLink,
+    ModuleMember,
     ModuleUserProperties,
     Project,
+    ProjectMember,
+    State,
+    UserFavorite,
     UserRecentVisit,
 )
+from plane.db.models.issue import IssueAttachment
 from plane.utils.analytics_plot import burndown_plot
-from plane.utils.timezone_converter import user_timezone_converter
-from plane.bgtasks.webhook_task import model_activity
-from .. import BaseAPIView, BaseViewSet
-from plane.bgtasks.recent_visited_task import recent_visited_task
 from plane.utils.host import base_host
+from plane.utils.timezone_converter import user_timezone_converter
+
+from .. import BaseAPIView, BaseViewSet
 
 
 class ModuleViewSet(BaseViewSet):
@@ -392,7 +406,7 @@ class ModuleViewSet(BaseViewSet):
             modules = user_timezone_converter(modules, datetime_fields, request.user.user_timezone)
         return Response(modules, status=status.HTTP_200_OK)
 
-    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def retrieve(self, request, slug, project_id, pk):
         queryset = (
             self.get_queryset()
@@ -445,8 +459,9 @@ class ModuleViewSet(BaseViewSet):
                             assignees__avatar_asset__isnull=False,
                             then=Concat(
                                 Value("/api/assets/v2/static/"),
-                                "assignees__avatar_asset",  # Assuming avatar_asset has an id or relevant field
+                                Cast("assignees__avatar_asset", output_field=models.CharField()),
                                 Value("/"),
+                                output_field=models.CharField(),
                             ),
                         ),
                         # If `avatar_asset` is None, fall back to using `avatar` field directly
@@ -553,8 +568,9 @@ class ModuleViewSet(BaseViewSet):
                         assignees__avatar_asset__isnull=False,
                         then=Concat(
                             Value("/api/assets/v2/static/"),
-                            "assignees__avatar_asset",  # Assuming avatar_asset has an id or relevant field
+                            Cast("assignees__avatar_asset", output_field=models.CharField()),
                             Value("/"),
+                            output_field=models.CharField(),
                         ),
                     ),
                     # If `avatar_asset` is None, fall back to using `avatar` field directly
@@ -853,3 +869,157 @@ class ModuleUserPropertiesEndpoint(BaseAPIView):
         )
         serializer = ModuleUserPropertiesSerializer(module_properties)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ModuleTransferEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def post(self, request, slug, project_id, module_id):
+        target_project_id = request.data.get("target_project_id")
+        if not target_project_id:
+            return Response(
+                {"error": "target_project_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate target project exists in the same workspace
+        target_project = Project.objects.filter(
+            pk=target_project_id,
+            workspace__slug=slug,
+        ).first()
+
+        if not target_project:
+            return Response(
+                {"error": "Target project not found in this workspace"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Validate user has ADMIN or MEMBER role in the target project
+        if not ProjectMember.objects.filter(
+            project_id=target_project_id,
+            member=request.user,
+            role__in=[ROLE.ADMIN.value, ROLE.MEMBER.value],
+            is_active=True,
+        ).exists():
+            return Response(
+                {"error": "You do not have permission to transfer to the target project"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Validate the module exists in the source project
+        module = Module.objects.filter(
+            pk=module_id,
+            project_id=project_id,
+            workspace__slug=slug,
+        ).first()
+
+        if not module:
+            return Response(
+                {"error": "Module not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        with transaction.atomic():
+            # Collect all issue IDs linked to this module
+            issue_ids = list(
+                ModuleIssue.objects.filter(
+                    module_id=module_id,
+                    deleted_at__isnull=True,
+                ).values_list("issue_id", flat=True)
+            )
+
+            if issue_ids:
+                # Resolve the default state in the target project
+                default_state = (
+                    State.objects.filter(project_id=target_project_id, group="backlog").first()
+                    or State.objects.filter(project_id=target_project_id).first()
+                )
+                default_state_id = default_state.id if default_state else None
+
+                # Determine the next available sequence block in the target project
+                max_seq = (
+                    Issue.objects.filter(project_id=target_project_id).aggregate(max_seq=Max("sequence_id"))["max_seq"]
+                    or 0
+                )
+
+                # Re-assign each issue to the target project with a new sequence ID
+                issues = list(Issue.objects.filter(id__in=issue_ids))
+                issue_sequence_records = []
+                for i, issue in enumerate(issues):
+                    new_seq = max_seq + i + 1
+                    issue.project_id = target_project_id
+                    issue.workspace_id = target_project.workspace_id
+                    issue.state_id = default_state_id
+                    issue.estimate_point_id = None
+                    issue.type_id = None
+                    issue.parent_id = None
+                    issue.sequence_id = new_seq
+                    issue_sequence_records.append(
+                        IssueSequence(
+                            issue=issue,
+                            sequence=new_seq,
+                            project_id=target_project_id,
+                            workspace_id=target_project.workspace_id,
+                        )
+                    )
+
+                Issue.objects.bulk_update(
+                    issues,
+                    [
+                        "project",
+                        "workspace",
+                        "state",
+                        "estimate_point",
+                        "type",
+                        "parent",
+                        "sequence_id",
+                    ],
+                )
+                # Register the new sequence numbers so future issues continue from here
+                IssueSequence.objects.bulk_create(issue_sequence_records)
+
+                # Update all Issue child records to point at the target project
+                IssueAssignee.objects.filter(issue_id__in=issue_ids).update(
+                    project_id=target_project_id,
+                    workspace=target_project.workspace,
+                )
+                IssueLabel.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+                IssueActivity.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+                IssueComment.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+                IssueSubscriber.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+                IssueLink.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+                # Legacy attachment model
+                IssueAttachment.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+                # Modern file-asset attachments
+                FileAsset.objects.filter(issue_id__in=issue_ids).update(project_id=target_project_id)
+
+                # Detach issues from any cycles in the source project
+                CycleIssue.objects.filter(issue_id__in=issue_ids).delete()
+
+            # Move all module-level relation records to the target project
+            ModuleIssue.objects.filter(module_id=module_id).update(project_id=target_project_id)
+            ModuleMember.objects.filter(module_id=module_id).update(project_id=target_project_id)
+            ModuleLink.objects.filter(module_id=module_id).update(project_id=target_project_id)
+
+            # Drop user-specific view properties; they will be recreated on first access
+            ModuleUserProperties.objects.filter(module_id=module_id).delete()
+
+            # Rename if a module with the same name already exists in the target project
+            if Module.objects.filter(
+                name=module.name,
+                project_id=target_project_id,
+                deleted_at__isnull=True,
+            ).exists():
+                module.name = f"{module.name} (transferred)"
+
+            # Reparent the module itself
+            module.project = target_project
+            module.workspace = target_project.workspace
+            module.save(update_fields=["name", "project", "workspace", "updated_at"])
+
+        return Response(
+            {
+                "message": "Module transferred successfully",
+                "module_id": str(module.id),
+            },
+            status=status.HTTP_200_OK,
+        )

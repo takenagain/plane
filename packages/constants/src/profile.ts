@@ -41,6 +41,12 @@ export const PROFILE_ADMINS_TAB = [
     i18n_label: "profile.tabs.activity",
     selected: "/activity/",
   },
+  {
+    key: "time",
+    route: "time",
+    i18n_label: "profile.tabs.time",
+    selected: "/time/",
+  },
 ];
 
 export const PREFERENCE_OPTIONS: {
@@ -60,6 +66,17 @@ export const PREFERENCE_OPTIONS: {
  * @type {Array<{value: EStartOfTheWeek, label: string}>}
  * @constant
  */
+export const PROFILE_TIME_ATTENTION_KEYWORDS = [
+  "blocked",
+  "blocker",
+  "bug",
+  "regression",
+  "urgent",
+  "help",
+  "stuck",
+  "waiting",
+] as const;
+
 export const START_OF_THE_WEEK_OPTIONS = [
   {
     value: EStartOfTheWeek.SUNDAY,

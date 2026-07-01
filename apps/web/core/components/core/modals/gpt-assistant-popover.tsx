@@ -5,10 +5,10 @@
  */
 
 import type { Ref } from "react";
-import React, { useEffect, useState, useRef, Fragment } from "react";
-import type { Placement } from "@popperjs/core";
+import React, { useEffect, useState, useRef } from "react";
+import type { Placement } from "@floating-ui/react-dom";
 import { Controller, useForm } from "react-hook-form"; // services
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { AlertCircle } from "lucide-react";
 import { Popover, Transition } from "@headlessui/react";
 // plane imports
@@ -59,13 +59,13 @@ export function GptAssistantPopover(props: Props) {
   const [response, setResponse] = useState("");
   const [invalidResponse, setInvalidResponse] = useState(false);
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
   // refs
   const editorRef = useRef<EditorRefApi>(null);
   const responseRef = useRef<EditorRefApi>(null);
   // popper
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: placement ?? "auto",
+    placement: placement ?? "bottom-start",
   });
   // form
   const {
@@ -197,10 +197,8 @@ export function GptAssistantPopover(props: Props) {
 
   return (
     <Popover as="div" className={`relative w-min text-left`}>
-      <Popover.Button as={Fragment}>
-        <button ref={setReferenceElement} className="flex items-center" tabIndex={-1}>
-          {button}
-        </button>
+      <Popover.Button as="button" ref={setReferenceElement} className="flex items-center" tabIndex={-1}>
+        {button}
       </Popover.Button>
       <Transition
         show={isOpen}

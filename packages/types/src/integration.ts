@@ -58,6 +58,26 @@ export interface ISlackIntegration {
   workspace_integration: string;
 }
 
+export interface ISentryConnection {
+  connected: boolean;
+  id?: string;
+  sentry_org_slug?: string;
+  metadata?: Record<string, unknown>;
+  webhook_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ISentryProjectMapping {
+  id: string;
+  sentry_project_slug: string;
+  project: string;
+  unresolved_state: string;
+  resolved_state: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ISlackIntegrationData {
   ok: boolean;
   team: {

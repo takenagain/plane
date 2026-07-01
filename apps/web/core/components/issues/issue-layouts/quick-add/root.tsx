@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  */
+/* oxlint-disable react/no-unstable-nested-components -- Headless UI render-prop APIs */
 
 import type { FC } from "react";
 import { useEffect, useState } from "react";
@@ -22,7 +23,7 @@ import { QuickAddIssueFormRoot } from "@/plane-web/components/issues/quick-add";
 import { CreateIssueToastActionItems } from "../../create-issue-toast-action-items";
 
 export type TQuickAddIssueForm = {
-  ref: React.RefObject<HTMLFormElement>;
+  ref: React.RefObject<HTMLFormElement | null>;
   isOpen: boolean;
   projectDetail: IProject;
   hasError: boolean;
@@ -103,7 +104,7 @@ export const QuickAddIssueRoot = observer(function QuickAddIssueRoot(props: TQui
     reset({ ...defaultValues });
 
     const payload = createIssuePayload(projectId.toString(), {
-      ...(prePopulatedData ?? {}),
+      ...prePopulatedData,
       ...formData,
     });
 

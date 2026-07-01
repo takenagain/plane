@@ -4,10 +4,10 @@
  * See the LICENSE file for details.
  */
 
-import { useState, Fragment, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { TwitterPicker } from "react-color";
 import { Controller, useForm } from "react-hook-form";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { Loader } from "lucide-react";
 import { Popover } from "@headlessui/react";
 import { PlusIcon, CloseIcon } from "@plane/propel/icons";
@@ -38,7 +38,7 @@ export function LabelCreate(props: ILabelCreate) {
   const [isCreateToggle, setIsCreateToggle] = useState(false);
   const handleIsCreateToggle = () => setIsCreateToggle(!isCreateToggle);
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
   // react hook form
   const {
     handleSubmit,
@@ -100,25 +100,28 @@ export function LabelCreate(props: ILabelCreate) {
               render={({ field: { value, onChange } }) => (
                 <Popover>
                   <>
-                    <Popover.Button as={Fragment}>
-                      <button type="button" ref={setReferenceElement} className="grid place-items-center outline-none">
-                        {value && value?.trim() !== "" && (
-                          <span
-                            className="h-5 w-5 rounded-sm"
-                            style={{
-                              backgroundColor: value ?? "black",
-                            }}
-                          />
-                        )}
-                      </button>
+                    <Popover.Button
+                      as="button"
+                      type="button"
+                      ref={setReferenceElement}
+                      className="grid place-items-center outline-none"
+                    >
+                      {value && value?.trim() !== "" && (
+                        <span
+                          className="h-5 w-5 rounded-sm"
+                          style={{
+                            backgroundColor: value ?? "black",
+                          }}
+                        />
+                      )}
                     </Popover.Button>
-                    <Popover.Panel className="fixed z-10">
-                      <div
-                        className="max-w-xs p-2 sm:px-0"
-                        ref={setPopperElement}
-                        style={styles.popper}
-                        {...attributes.popper}
-                      >
+                    <Popover.Panel
+                      ref={setPopperElement}
+                      style={styles.popper}
+                      {...attributes.popper}
+                      className="fixed z-10"
+                    >
+                      <div className="max-w-xs p-2 sm:px-0">
                         <TwitterPicker triangle={"hide"} color={value} onChange={(value) => onChange(value.hex)} />
                       </div>
                     </Popover.Panel>

@@ -9,7 +9,11 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
 import type { EIssuesStoreType, TIssue } from "@plane/types";
+import { EIssuesStoreType as EStoreType } from "@plane/types";
 // plane web imports
+import { extractIssueDefaultsFromRichFilters } from "@/helpers/work-item-defaults";
+import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
+import { useIssues } from "@/hooks/store/use-issues";
 import { IssueModalProvider } from "@/plane-web/components/issues/issue-modal/provider";
 import { CreateUpdateIssueModalBase } from "./base";
 
@@ -38,11 +42,24 @@ export interface IssuesModalProps {
 export const CreateUpdateIssueModal = observer(function CreateUpdateIssueModal(props: IssuesModalProps) {
   // router params
   const { cycleId, moduleId } = useParams();
-  // derived values
-  const dataForPreload = {
+  // resolve effective store type (mirrors the logic in base.tsx)
+  const issueStoreType = useIssueStoreType();
+  let resolvedStoreType = props.storeType ?? issueStoreType;
+  // EPIC issues share the PROJECT filter context
+  if (resolvedStoreType === EStoreType.EPIC) resolvedStoreType = EStoreType.PROJECT;
+  const { issuesFilter } = useIssues(resolvedStoreType);
+  // derive defaults from any currently active rich-filter expression so that
+  // newly created work items remain visible in the filtered view
+  const filterDefaults = extractIssueDefaultsFromRichFilters(issuesFilter.issueFilters?.richFilters ?? {});
+  // derived values – priority order (highest → lowest):
+  //   1. explicit props.data values
+  //   2. URL-param cycle/module (you are on that cycle/module page)
+  //   3. active filter defaults
+  const dataForPreload: Partial<TIssue> = {
+    ...filterDefaults,
     ...props.data,
-    cycle_id: props.data?.cycle_id ? props.data?.cycle_id : cycleId ? cycleId.toString() : null,
-    module_ids: props.data?.module_ids ? props.data?.module_ids : moduleId ? [moduleId.toString()] : null,
+    cycle_id: props.data?.cycle_id ?? (cycleId ? cycleId.toString() : (filterDefaults.cycle_id ?? null)),
+    module_ids: props.data?.module_ids ?? (moduleId ? [moduleId.toString()] : (filterDefaults.module_ids ?? null)),
   };
 
   if (!props.isOpen) return null;

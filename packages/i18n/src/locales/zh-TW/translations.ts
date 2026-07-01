@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
- * SPDX-License-Identifier: AGPL-3.0-only
- * See the LICENSE file for details.
- */
-
 export default {
   sidebar: {
     projects: "專案",
@@ -384,7 +378,6 @@ export default {
   time_tracking_description: "記錄在工作事項和專案上花費的時間。",
   work_management_description: "輕鬆管理您的工作和專案。",
   documentation: "文件",
-  message_support: "聯絡支援",
   contact_sales: "聯絡業務",
   hyper_mode: "極速模式",
   keyboard_shortcuts: "鍵盤快速鍵",

@@ -28,7 +28,7 @@ import {
   Palette,
   AlignCenter,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { TEditorIcon } from "@/helpers/react-compat";
 import { LinkIcon } from "@plane/propel/icons";
 // constants
 import { CORE_EXTENSIONS } from "@/constants/extension";
@@ -56,7 +56,6 @@ import {
 } from "@/helpers/editor-commands";
 // types
 import type { TCommandWithProps, TEditorCommands } from "@/types";
-import type { ISvgIcons } from "@plane/propel/icons";
 type isActiveFunction<T extends TEditorCommands> = (params?: TCommandWithProps<T>) => boolean;
 type commandFunction<T extends TEditorCommands> = (params?: TCommandWithProps<T>) => void;
 
@@ -64,7 +63,7 @@ export type EditorMenuItem<T extends TEditorCommands> = {
   key: T;
   name: string;
   command: commandFunction<T>;
-  icon: LucideIcon | React.FC<ISvgIcons>;
+  icon: TEditorIcon;
   isActive: isActiveFunction<T>;
 };
 
@@ -83,7 +82,7 @@ const HeadingItem = <T extends SupportedHeadingLevels>(
   level: 1 | 2 | 3 | 4 | 5 | 6,
   key: T,
   name: string,
-  icon: LucideIcon
+  icon: TEditorIcon
 ): EditorMenuItem<T> => ({
   key,
   name,

@@ -51,14 +51,14 @@ export function SelectedOptionsDisplay<V extends TFilterValue>(props: TSelectedO
       ))}
       {remainingCount > 0 && (
         <Transition
+          as="div"
           show
           appear
           enter="transition-opacity duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          className="ml-1 whitespace-nowrap text-tertiary"
         >
-          +{remainingCount} more
+          <span className="ml-1 whitespace-nowrap text-tertiary">+{remainingCount} more</span>
         </Transition>
       )}
     </div>

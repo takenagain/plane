@@ -5,7 +5,7 @@
  */
 
 // plane imports
-import type { IncomingHttpHeaders } from "http";
+import type { onAuthenticatePayload } from "@hocuspocus/server";
 import type { TUserDetails } from "@plane/editor";
 import { logger } from "@plane/logger";
 import { AppError } from "@/lib/errors";
@@ -26,12 +26,7 @@ export const onAuthenticate = async ({
   requestParameters,
   context,
   token,
-}: {
-  requestHeaders: IncomingHttpHeaders;
-  context: HocusPocusServerContext;
-  requestParameters: URLSearchParams;
-  token: string;
-}) => {
+}: onAuthenticatePayload<HocusPocusServerContext>) => {
   let cookie: string | undefined = undefined;
   let userId: string | undefined = undefined;
 
@@ -49,7 +44,7 @@ export const onAuthenticate = async ({
   } finally {
     // If cookie is still not found, fallback to request headers
     if (!cookie) {
-      cookie = requestHeaders.cookie?.toString();
+      cookie = requestHeaders.get("cookie") ?? undefined;
     }
   }
 

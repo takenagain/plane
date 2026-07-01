@@ -89,9 +89,15 @@ export class FilterConfig<P extends TFilterProperty> implements IFilterConfig<P>
    * @returns All supported operators.
    */
   get allEnabledSupportedOperators(): IFilterConfig<P>["allEnabledSupportedOperators"] {
-    return Array.from(this.supportedOperatorConfigsMap.entries())
-      .filter(([, operatorConfig]) => operatorConfig.isOperatorEnabled)
-      .map(([operator]) => operator);
+    const operators: TSupportedOperators[] = [];
+
+    for (const [operator, operatorConfig] of this.supportedOperatorConfigsMap) {
+      if (operatorConfig.isOperatorEnabled) {
+        operators.push(operator);
+      }
+    }
+
+    return operators;
   }
 
   /**

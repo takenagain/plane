@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { usePopper } from "react-popper";
+import { usePopper } from "@/hooks/use-popper";
 import { MoreVerticalIcon } from "lucide-react";
 import { Popover, Transition } from "@headlessui/react";
 // hooks
@@ -21,10 +21,9 @@ import type { TCalendarLayouts, TSupportedFilterForUpdate } from "@plane/types";
 import { ToggleSwitch } from "@plane/ui";
 // types
 // constants
-import { CALENDAR_LAYOUTS } from "@/constants/calendar";
+import { CALENDAR_LAYOUTS } from "@plane/constants";
 import { useCalendarView } from "@/hooks/store/use-calendar-view";
 import useSize from "@/hooks/use-window-size";
-import type { IProjectEpicsFilter } from "@/plane-web/store/issue/epic";
 import type { ICycleIssuesFilter } from "@/store/issue/cycle";
 import type { IModuleIssuesFilter } from "@/store/issue/module";
 import type { IProjectIssuesFilter } from "@/store/issue/project";
@@ -50,10 +49,10 @@ export const CalendarOptionsDropdown = observer(function CalendarOptionsDropdown
   const [windowWidth] = useSize();
 
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLElement | null>(null);
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    placement: "auto",
+    placement: "bottom-start",
     modifiers: [
       {
         name: "preventOverflow",
@@ -102,24 +101,22 @@ export const CalendarOptionsDropdown = observer(function CalendarOptionsDropdown
     <Popover className="relative flex items-center">
       {({ open, close: closePopover }) => (
         <>
-          <Popover.Button as={React.Fragment}>
-            <button type="button" ref={setReferenceElement}>
+          <Popover.Button as="button" type="button" ref={setReferenceElement}>
+            <div
+              className={`hidden items-center gap-1.5 rounded-sm bg-layer-1 px-2.5 py-1 text-11 outline-none hover:bg-layer-1 md:flex ${
+                open ? "text-primary" : "text-secondary"
+              }`}
+            >
+              <div className="font-medium">{t("common.options")}</div>
               <div
-                className={`hidden items-center gap-1.5 rounded-sm bg-layer-1 px-2.5 py-1 text-11 outline-none hover:bg-layer-1 md:flex ${
-                  open ? "text-primary" : "text-secondary"
-                }`}
+                className={`flex h-3.5 w-3.5 items-center justify-center transition-all ${open ? "" : "rotate-180"}`}
               >
-                <div className="font-medium">{t("common.options")}</div>
-                <div
-                  className={`flex h-3.5 w-3.5 items-center justify-center transition-all ${open ? "" : "rotate-180"}`}
-                >
-                  <ChevronUpIcon width={12} strokeWidth={2} />
-                </div>
+                <ChevronUpIcon width={12} strokeWidth={2} />
               </div>
-              <div className="md:hidden">
-                <MoreVerticalIcon className="h-4 text-secondary" strokeWidth={2} />
-              </div>
-            </button>
+            </div>
+            <div className="md:hidden">
+              <MoreVerticalIcon className="h-4 text-secondary" strokeWidth={2} />
+            </div>
           </Popover.Button>
           <Transition
             as={React.Fragment}
@@ -130,13 +127,8 @@ export const CalendarOptionsDropdown = observer(function CalendarOptionsDropdown
             leaveFrom="opacity-100 translate-y-0"
             leaveTo="opacity-0 translate-y-1"
           >
-            <Popover.Panel className="fixed z-50">
-              <div
-                ref={setPopperElement}
-                style={styles.popper}
-                {...attributes.popper}
-                className="absolute right-0 z-10 mt-1 min-w-[12rem] overflow-hidden rounded-sm border border-subtle bg-surface-1 p-1 shadow-raised-200"
-              >
+            <Popover.Panel ref={setPopperElement} style={styles.popper} {...attributes.popper} className="fixed z-50">
+              <div className="absolute right-0 z-10 mt-1 min-w-[12rem] overflow-hidden rounded-sm border border-subtle bg-surface-1 p-1 shadow-raised-200">
                 <div>
                   {Object.entries(CALENDAR_LAYOUTS).map(([layout, layoutDetails]) => (
                     <button
