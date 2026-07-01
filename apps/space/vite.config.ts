@@ -4,7 +4,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { joinUrlPath } from "@plane/utils";
-import { sharedAppResolveAliases } from "../../config/vite/app-resolve-aliases";
+import { sharedAppResolveAliases } from "../../packages/utils/vite/app-resolve-aliases";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
