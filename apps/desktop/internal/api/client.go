@@ -159,8 +159,10 @@ func (c *Client) GetMyIssues(workspaceSlug string, filters models.IssueFilters) 
 func (c *Client) SearchIssues(workspaceSlug, query string) ([]models.Issue, error) {
 	params := url.Values{}
 	params.Add("search", query)
+	params.Add("workspace_search", "true")
+	params.Add("limit", "20")
 
-	path := fmt.Sprintf("/api/workspaces/%s/search/issues/?%s", workspaceSlug, params.Encode())
+	path := fmt.Sprintf("/api/workspaces/%s/issues/search/?%s", workspaceSlug, params.Encode())
 
 	resp, err := c.doRequest("GET", path, nil)
 	if err != nil {
@@ -173,13 +175,13 @@ func (c *Client) SearchIssues(workspaceSlug, query string) ([]models.Issue, erro
 	}
 
 	var result struct {
-		Results []models.Issue `json:"results"`
+		Issues []models.Issue `json:"issues"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode search results: %w", err)
 	}
 
-	return result.Results, nil
+	return result.Issues, nil
 }
 
 // StartTimeTracking starts time tracking for an issue

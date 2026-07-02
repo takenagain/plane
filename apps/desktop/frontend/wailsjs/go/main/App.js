@@ -22,12 +22,20 @@ export function GetWorkspaces() {
   return window["go"]["main"]["App"]["GetWorkspaces"]();
 }
 
+export function GetCurrentWorkspace() {
+  return window["go"]["main"]["App"]["GetCurrentWorkspace"]();
+}
+
 export function SearchIssues(arg1) {
   return window["go"]["main"]["App"]["SearchIssues"](arg1);
 }
 
 export function StartTracking(arg1, arg2) {
   return window["go"]["main"]["App"]["StartTracking"](arg1, arg2);
+}
+
+export function StartTrackingIssue(arg1) {
+  return window["go"]["main"]["App"]["StartTrackingIssue"](arg1);
 }
 
 export function StopTracking() {

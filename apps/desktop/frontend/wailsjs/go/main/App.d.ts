@@ -11,9 +11,13 @@ export function GetCurrentUser(): Promise<models.User>;
 
 export function GetWorkspaces(): Promise<Array<models.Workspace>>;
 
+export function GetCurrentWorkspace(): Promise<models.Workspace>;
+
 export function SearchIssues(arg1: string): Promise<Array<models.Issue>>;
 
 export function StartTracking(arg1: string, arg2: string): Promise<void>;
+
+export function StartTrackingIssue(arg1: models.Issue): Promise<void>;
 
 export function StopTracking(): Promise<void>;
 
@@ -64,5 +68,15 @@ export namespace models {
     sequence_id: number;
     state: string;
     priority: string;
+    project__identifier: string;
+    workspace__slug: string;
+    state_detail?: State;
+  }
+
+  export class State {
+    id: string;
+    name: string;
+    color: string;
+    group: string;
   }
 }

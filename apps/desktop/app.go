@@ -14,6 +14,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const eventOpenIssueSelection = "open-issue-selection"
+
 // App struct
 type App struct {
 	ctx           context.Context
@@ -164,34 +166,58 @@ func (a *App) handleStopTracking() {
 
 // handleStartTracking handles starting time tracking
 func (a *App) handleStartTracking(issue *models.Issue) {
-	// TODO: Show issue selection dialog if issue is nil
 	if issue == nil {
-		log.Println("Issue selection not yet implemented")
+		a.openIssueSelectionDialog()
 		return
 	}
 
-	// Start on backend
-	if a.currentWorkspace != nil {
-		worklog, err := a.apiClient.StartTimeTracking(
-			a.currentWorkspace.Slug,
-			issue.ProjectID,
-			issue.ID,
-		)
-		if err != nil {
-			log.Printf("Failed to start tracking: %v", err)
-			// TODO: Show error notification
-			return
-		}
-
-		// Start timer locally
-		if err := a.timerMgr.Start(worklog, issue.Name, issue.ProjectID); err != nil {
-			log.Printf("Failed to start local timer: %v", err)
-			return
-		}
-
-		// TODO: Show success notification
-		log.Printf("Started tracking: %s", issue.Name)
+	if err := a.startTrackingForIssue(issue); err != nil {
+		log.Printf("Failed to start tracking: %v", err)
 	}
+}
+
+func (a *App) openIssueSelectionDialog() {
+	if a.ctx == nil {
+		return
+	}
+
+	runtime.WindowShow(a.ctx)
+	runtime.EventsEmit(a.ctx, eventOpenIssueSelection)
+}
+
+func (a *App) startTrackingForIssue(issue *models.Issue) error {
+	if issue == nil {
+		return fmt.Errorf("issue is required")
+	}
+
+	if a.apiClient == nil || a.timerMgr == nil {
+		return fmt.Errorf("app not initialized")
+	}
+
+	if a.currentWorkspace == nil {
+		return fmt.Errorf("not authenticated")
+	}
+
+	worklog, err := a.apiClient.StartTimeTracking(
+		a.currentWorkspace.Slug,
+		issue.ProjectID,
+		issue.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to start tracking on backend: %w", err)
+	}
+
+	issueTitle := issue.Name
+	if issueTitle == "" {
+		issueTitle = issue.DisplayIdentifier()
+	}
+
+	if err := a.timerMgr.Start(worklog, issueTitle, issue.ProjectID); err != nil {
+		return fmt.Errorf("failed to start local timer: %w", err)
+	}
+
+	log.Printf("Started tracking: %s", issueTitle)
+	return nil
 }
 
 // handleShowWindow shows the main application window
@@ -264,6 +290,11 @@ func (a *App) GetWorkspaces() ([]models.Workspace, error) {
 	return a.apiClient.GetWorkspaces()
 }
 
+// GetCurrentWorkspace returns the active workspace
+func (a *App) GetCurrentWorkspace() *models.Workspace {
+	return a.currentWorkspace
+}
+
 // SearchIssues searches for issues
 func (a *App) SearchIssues(query string) ([]models.Issue, error) {
 	if a.apiClient == nil || a.currentWorkspace == nil {
@@ -273,25 +304,18 @@ func (a *App) SearchIssues(query string) ([]models.Issue, error) {
 	return a.apiClient.SearchIssues(a.currentWorkspace.Slug, query)
 }
 
-// StartTracking starts tracking an issue
+// StartTracking starts tracking an issue by project and issue ID
 func (a *App) StartTracking(projectID, issueID string) error {
-	if a.apiClient == nil || a.currentWorkspace == nil {
-		return fmt.Errorf("not authenticated")
-	}
+	return a.StartTrackingIssue(models.Issue{
+		ID:        issueID,
+		ProjectID: projectID,
+		Name:      fmt.Sprintf("Issue %s", issueID),
+	})
+}
 
-	worklog, err := a.apiClient.StartTimeTracking(
-		a.currentWorkspace.Slug,
-		projectID,
-		issueID,
-	)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Fetch issue details for title
-	issueTitle := fmt.Sprintf("Issue %s", issueID)
-
-	return a.timerMgr.Start(worklog, issueTitle, projectID)
+// StartTrackingIssue starts tracking a selected issue with full metadata
+func (a *App) StartTrackingIssue(issue models.Issue) error {
+	return a.startTrackingForIssue(&issue)
 }
 
 // StopTracking stops the current tracking

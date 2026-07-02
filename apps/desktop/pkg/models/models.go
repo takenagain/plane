@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // User represents a Plane user
 type User struct {
@@ -32,21 +35,29 @@ type Project struct {
 
 // Issue represents a Plane work item/issue
 type Issue struct {
-	ID          string    `json:"id"`
-	ProjectID   string    `json:"project"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	SequenceID  int       `json:"sequence_id"`
-	Priority    string    `json:"priority"`
-	State       string    `json:"state"`
-	StateDetail *State    `json:"state_detail"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                string    `json:"id"`
+	ProjectID         string    `json:"project_id"`
+	Name              string    `json:"name"`
+	Description       string    `json:"description"`
+	SequenceID        int       `json:"sequence_id"`
+	Priority          string    `json:"priority"`
+	State             string    `json:"state"`
+	StateDetail       *State    `json:"state_detail"`
+	ProjectIdentifier string    `json:"project__identifier"`
+	WorkspaceSlug     string    `json:"workspace__slug"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
-// IssueIdentifier returns the human-readable issue identifier (e.g., "PROJ-123")
-func (i *Issue) IssueIdentifier(projectIdentifier string) string {
-	return projectIdentifier + "-" + string(rune(i.SequenceID))
+// DisplayIdentifier returns the human-readable issue identifier (e.g., "PROJ-123")
+func (i *Issue) DisplayIdentifier() string {
+	if i.ProjectIdentifier != "" && i.SequenceID > 0 {
+		return fmt.Sprintf("%s-%d", i.ProjectIdentifier, i.SequenceID)
+	}
+	if i.Name != "" {
+		return i.Name
+	}
+	return i.ID
 }
 
 // State represents an issue state

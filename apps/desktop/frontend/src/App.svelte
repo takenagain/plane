@@ -1,24 +1,69 @@
 <script>
+  import { onMount } from "svelte";
   import logo from "./assets/images/logo-universal.png";
-  import { GetConfig, GetTimerState, GetCurrentUser } from "../wailsjs/go/main/App.js";
+  import IssueSelectionDialog from "./components/IssueSelectionDialog.svelte";
+  import {
+    GetConfig,
+    GetTimerState,
+    GetCurrentUser,
+    GetCurrentWorkspace,
+  } from "../wailsjs/go/main/App.js";
+  import { EventsOn } from "../wailsjs/runtime/runtime.js";
 
   let config = { plane_url: "" };
   let timerState = { is_active: false, issue_title: "", elapsed_secs: 0 };
   let user = null;
+  let workspace = null;
   let loadError = "";
+  let issueDialogOpen = false;
+  let timerRefreshInterval = null;
 
   async function refresh() {
     try {
       config = await GetConfig();
       timerState = await GetTimerState();
       user = await GetCurrentUser();
+      workspace = await GetCurrentWorkspace();
       loadError = "";
     } catch (err) {
       loadError = String(err);
     }
   }
 
-  refresh();
+  function openIssueDialog() {
+    issueDialogOpen = true;
+  }
+
+  function closeIssueDialog() {
+    issueDialogOpen = false;
+  }
+
+  async function handleIssueSelected() {
+    await refresh();
+  }
+
+  onMount(() => {
+    refresh();
+
+    const unsubscribe = EventsOn("open-issue-selection", () => {
+      openIssueDialog();
+    });
+
+    timerRefreshInterval = setInterval(async () => {
+      try {
+        timerState = await GetTimerState();
+      } catch {
+        // Ignore transient timer refresh errors.
+      }
+    }, 1000);
+
+    return () => {
+      unsubscribe?.();
+      if (timerRefreshInterval) {
+        clearInterval(timerRefreshInterval);
+      }
+    };
+  });
 </script>
 
 <main>
@@ -38,8 +83,11 @@
     <h2>Authentication</h2>
     {#if user}
       <p>Signed in as {user.display_name || user.email}</p>
+      {#if workspace}
+        <p>Workspace: {workspace.name}</p>
+      {/if}
     {:else}
-      <p>Not authenticated — webview login is not yet implemented.</p>
+      <p>Not authenticated — sign in via Plane web or configure cookies for testing.</p>
     {/if}
   </section>
 
@@ -47,14 +95,27 @@
     <h2>Time Tracking</h2>
     {#if timerState?.is_active}
       <p>Tracking: {timerState.issue_title}</p>
-      <p>Elapsed: {Math.floor((timerState.elapsed_seconds || 0) / 60)}m {(timerState.elapsed_seconds || 0) % 60}s</p>
+      <p>
+        Elapsed: {Math.floor((timerState.elapsed_seconds || 0) / 60)}m
+        {(timerState.elapsed_seconds || 0) % 60}s
+      </p>
     {:else}
       <p>No active tracking session.</p>
     {/if}
+    <button class="btn secondary" type="button" onclick={openIssueDialog}>
+      Start tracking
+    </button>
   </section>
 
-  <button class="btn" onclick={refresh}>Refresh</button>
+  <button class="btn" type="button" onclick={refresh}>Refresh</button>
 </main>
+
+<IssueSelectionDialog
+  open={issueDialogOpen}
+  {workspace}
+  onSelect={handleIssueSelected}
+  onClose={closeIssueDialog}
+/>
 
 <style>
   main {
@@ -80,6 +141,7 @@
     border-radius: 8px;
     padding: 1rem 1.25rem;
     margin-bottom: 1rem;
+    text-align: left;
   }
 
   .panel h2 {
@@ -103,7 +165,16 @@
     color: white;
   }
 
+  .btn.secondary {
+    margin: 0.75rem 0 0;
+    background: #334155;
+  }
+
   .btn:hover {
     background: #2563eb;
+  }
+
+  .btn.secondary:hover {
+    background: #475569;
   }
 </style>
