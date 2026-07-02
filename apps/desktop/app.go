@@ -177,6 +177,11 @@ func (a *App) openIssueSelectionDialog() {
 		return
 	}
 
+	if !a.IsAuthenticated() {
+		_ = a.OpenLogin()
+		return
+	}
+
 	runtime.WindowShow(a.ctx)
 	runtime.EventsEmit(a.ctx, eventOpenIssueSelection)
 }

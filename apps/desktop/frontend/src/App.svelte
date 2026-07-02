@@ -1,10 +1,12 @@
 <script>
   import LoginWebview from "./components/LoginWebview.svelte";
+  import IssueSelectionDialog from "./components/IssueSelectionDialog.svelte";
   import {
     GetAuthState,
     GetConfig,
     GetTimerState,
     GetCurrentUser,
+    GetCurrentWorkspace,
     OpenLogin,
   } from "../wailsjs/go/main/App.js";
   import { EventsOn } from "../wailsjs/runtime/runtime.js";
@@ -13,7 +15,10 @@
   let config = $state({ plane_url: "" });
   let timerState = $state({ is_active: false, issue_title: "", elapsed_seconds: 0 });
   let user = $state(null);
+  let workspace = $state(null);
   let loadError = $state("");
+  let issueDialogOpen = $state(false);
+  let timerRefreshInterval = null;
 
   const isAuthenticated = $derived(authState.status === "authenticated");
 
@@ -23,10 +28,27 @@
       config = await GetConfig();
       timerState = await GetTimerState();
       user = await GetCurrentUser();
+      workspace = await GetCurrentWorkspace();
       loadError = "";
     } catch (err) {
       loadError = String(err);
     }
+  }
+
+  function openIssueDialog() {
+    if (!isAuthenticated) {
+      void showLogin();
+      return;
+    }
+    issueDialogOpen = true;
+  }
+
+  function closeIssueDialog() {
+    issueDialogOpen = false;
+  }
+
+  async function handleIssueSelected() {
+    await refresh();
   }
 
   async function showLogin() {
@@ -42,8 +64,27 @@
       refresh();
     });
 
+    const cancelIssueSelection = EventsOn("open-issue-selection", () => {
+      openIssueDialog();
+    });
+
+    timerRefreshInterval = setInterval(async () => {
+      if (authState.status !== "authenticated") {
+        return;
+      }
+      try {
+        timerState = await GetTimerState();
+      } catch {
+        // Ignore transient timer refresh errors.
+      }
+    }, 1000);
+
     return () => {
       cancelAuth();
+      cancelIssueSelection();
+      if (timerRefreshInterval) {
+        clearInterval(timerRefreshInterval);
+      }
     };
   });
 </script>
@@ -75,10 +116,20 @@
       {:else}
         <p>No active tracking session. Use the system tray to start tracking.</p>
       {/if}
+      <button class="btn secondary" type="button" onclick={openIssueDialog}>
+        Start tracking
+      </button>
     </section>
 
-    <button class="btn" onclick={refresh}>Refresh</button>
+    <button class="btn" type="button" onclick={refresh}>Refresh</button>
   </main>
+
+  <IssueSelectionDialog
+    open={issueDialogOpen}
+    {workspace}
+    onSelect={handleIssueSelected}
+    onClose={closeIssueDialog}
+  />
 {:else}
   <LoginWebview loginUrl={authState.login_url ? `${authState.login_url}/sign-in/` : ""} />
 {/if}
@@ -145,7 +196,16 @@
     color: white;
   }
 
+  .btn.secondary {
+    margin-top: 0.75rem;
+    background: #334155;
+  }
+
   .btn:hover {
     background: #2563eb;
+  }
+
+  .btn.secondary:hover {
+    background: #475569;
   }
 </style>
