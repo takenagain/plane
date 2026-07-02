@@ -57,16 +57,27 @@
   }
 
   $effect(() => {
-    refresh();
+    void refresh();
 
-    const cancelAuth = EventsOn("auth:state-changed", (state) => {
-      authState = state;
-      refresh();
-    });
+    let cancelAuth = () => {};
+    let cancelIssueSelection = () => {};
 
-    const cancelIssueSelection = EventsOn("open-issue-selection", () => {
-      openIssueDialog();
-    });
+    try {
+      if (window.runtime?.EventsOnMultiple) {
+        cancelAuth = EventsOn("auth:state-changed", (state) => {
+          authState = state;
+          refresh();
+        });
+
+        cancelIssueSelection = EventsOn("open-issue-selection", () => {
+          openIssueDialog();
+        });
+      } else {
+        loadError = "Wails runtime not ready — restart the app.";
+      }
+    } catch (err) {
+      loadError = String(err);
+    }
 
     timerRefreshInterval = setInterval(async () => {
       if (authState.status !== "authenticated") {
@@ -131,7 +142,12 @@
     onClose={closeIssueDialog}
   />
 {:else}
-  <LoginWebview loginUrl={authState.login_url ? `${authState.login_url}/sign-in/` : ""} />
+  <main class="shell login-fallback">
+    {#if loadError}
+      <p class="error">{loadError}</p>
+    {/if}
+    <LoginWebview loginUrl={authState.login_url ? `${authState.login_url}/sign-in/` : ""} />
+  </main>
 {/if}
 
 <style>
@@ -207,5 +223,9 @@
 
   .btn.secondary:hover {
     background: #475569;
+  }
+
+  .login-fallback {
+    min-height: 100vh;
   }
 </style>

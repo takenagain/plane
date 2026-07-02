@@ -59,9 +59,16 @@
     refreshLoginUrl();
     startPolling();
 
-    const cancelLoginURL = EventsOn("auth:login-url", (url) => {
-      iframeSrc = `${url}/sign-in/`;
-    });
+    let cancelLoginURL = () => {};
+    try {
+      if (window.runtime?.EventsOnMultiple) {
+        cancelLoginURL = EventsOn("auth:login-url", (url) => {
+          iframeSrc = `${url}/sign-in/`;
+        });
+      }
+    } catch (err) {
+      statusMessage = String(err);
+    }
 
     return () => {
       stopPolling();
