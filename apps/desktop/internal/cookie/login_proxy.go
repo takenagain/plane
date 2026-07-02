@@ -125,7 +125,23 @@ func (p *LoginProxy) director(req *http.Request) {
 }
 
 func (p *LoginProxy) modifyResponse(resp *http.Response) error {
-	if resp == nil || p.onCookies == nil {
+	if resp == nil {
+		return nil
+	}
+
+	// Plane sends X-Frame-Options: DENY; strip frame-blocking headers so the
+	// sign-in page can render inside the desktop app's iframe via this proxy.
+	resp.Header.Del("X-Frame-Options")
+	resp.Header.Del("Content-Security-Policy")
+	resp.Header.Del("Content-Security-Policy-Report-Only")
+
+	if loc := resp.Header.Get("Location"); loc != "" {
+		if rewritten := p.rewriteToProxy(loc); rewritten != loc {
+			resp.Header.Set("Location", rewritten)
+		}
+	}
+
+	if p.onCookies == nil {
 		return nil
 	}
 
@@ -141,4 +157,31 @@ func (p *LoginProxy) modifyResponse(resp *http.Response) error {
 
 	p.onCookies(cookies)
 	return nil
+}
+
+func (p *LoginProxy) rewriteToProxy(raw string) string {
+	base := p.BaseURL()
+	if base == "" {
+		return raw
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	targetHost := p.target.Host
+	proxyHost := p.listener.Addr().String()
+
+	switch {
+	case parsed.Host == targetHost:
+		parsed.Scheme = "http"
+		parsed.Host = proxyHost
+		return parsed.String()
+	case parsed.Host == "":
+		// Relative redirect — keep as-is for the proxy client.
+		return raw
+	default:
+		return raw
+	}
 }

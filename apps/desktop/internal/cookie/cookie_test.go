@@ -96,3 +96,40 @@ func TestLoginProxyCapturesCookies(t *testing.T) {
 		t.Fatal("expected proxy to capture cookies")
 	}
 }
+
+func TestLoginProxyStripsFrameHeaders(t *testing.T) {
+	backend := http.NewServeMux()
+	backend.HandleFunc("/sign-in/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("<html><body>sign in</body></html>"))
+	})
+
+	server := httptest.NewServer(backend)
+	defer server.Close()
+
+	proxy, err := NewLoginProxy(server.URL, nil)
+	if err != nil {
+		t.Fatalf("new proxy: %v", err)
+	}
+
+	proxyURL, err := proxy.Start()
+	if err != nil {
+		t.Fatalf("start proxy: %v", err)
+	}
+	defer proxy.Stop()
+
+	resp, err := http.Get(proxyURL + "/sign-in/")
+	if err != nil {
+		t.Fatalf("proxy request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.Header.Get("X-Frame-Options") != "" {
+		t.Fatalf("expected X-Frame-Options stripped, got %q", resp.Header.Get("X-Frame-Options"))
+	}
+	if resp.Header.Get("Content-Security-Policy") != "" {
+		t.Fatalf("expected CSP stripped, got %q", resp.Header.Get("Content-Security-Policy"))
+	}
+}

@@ -48,7 +48,13 @@
     }, 2500);
   }
 
-  function stopPolling() {
+  function handleIframeLoad() {
+    statusMessage = "Sign-in page loaded — enter your credentials below.";
+  }
+
+  function handleIframeError() {
+    statusMessage = "Could not load sign-in page. Check your network or Plane URL in settings.";
+  }
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -89,6 +95,8 @@
       title="Plane sign-in"
       src={iframeSrc}
       sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"
+      onload={handleIframeLoad}
+      onerror={handleIframeError}
     ></iframe>
   {:else}
     <p class="login-placeholder">Preparing login…</p>
