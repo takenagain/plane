@@ -19,15 +19,13 @@ type Manager struct {
 	onQuit        func()
 
 	// Menu items
-	timerItem     *systray.MenuItem
-	stopItem      *systray.MenuItem
-	startItem     *systray.MenuItem
-	searchItem    *systray.MenuItem
-	separator1    *systray.MenuItem
-	showItem      *systray.MenuItem
-	settingsItem  *systray.MenuItem
-	separator2    *systray.MenuItem
-	quitItem      *systray.MenuItem
+	timerItem    *systray.MenuItem
+	stopItem     *systray.MenuItem
+	startItem    *systray.MenuItem
+	searchItem   *systray.MenuItem
+	showItem     *systray.MenuItem
+	settingsItem *systray.MenuItem
+	quitItem     *systray.MenuItem
 }
 
 // NewManager creates a new system tray manager
@@ -70,7 +68,7 @@ func (m *Manager) onReady() {
 	m.timerItem = systray.AddMenuItem("No tracking active", "Current time tracking status")
 	m.timerItem.Disable()
 
-	m.separator1 = systray.AddSeparator()
+	systray.AddSeparator()
 
 	m.stopItem = systray.AddMenuItem("⏹  Stop Tracking", "Stop current time tracking")
 	m.stopItem.Hide()
@@ -79,13 +77,13 @@ func (m *Manager) onReady() {
 
 	m.searchItem = systray.AddMenuItem("🔍 Search Issues", "Search for issues to track")
 
-	m.separator1 = systray.AddSeparator()
+	systray.AddSeparator()
 
 	m.showItem = systray.AddMenuItem("🪟 Show Window", "Show main application window")
 
 	m.settingsItem = systray.AddMenuItem("⚙️  Settings", "Open settings")
 
-	m.separator2 = systray.AddSeparator()
+	systray.AddSeparator()
 
 	m.quitItem = systray.AddMenuItem("🚪 Quit", "Quit Plane Desktop")
 
