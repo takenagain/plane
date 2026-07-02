@@ -6,6 +6,30 @@ export function GetConfig() {
   return window["go"]["main"]["App"]["GetConfig"]();
 }
 
+export function GetAuthState() {
+  return window["go"]["main"]["App"]["GetAuthState"]();
+}
+
+export function IsAuthenticated() {
+  return window["go"]["main"]["App"]["IsAuthenticated"]();
+}
+
+export function OpenLogin() {
+  return window["go"]["main"]["App"]["OpenLogin"]();
+}
+
+export function GetLoginURL() {
+  return window["go"]["main"]["App"]["GetLoginURL"]();
+}
+
+export function TryAuthenticateFromWebview() {
+  return window["go"]["main"]["App"]["TryAuthenticateFromWebview"]();
+}
+
+export function SubmitWebviewCookies(arg1) {
+  return window["go"]["main"]["App"]["SubmitWebviewCookies"](arg1);
+}
+
 export function UpdateConfig(arg1) {
   return window["go"]["main"]["App"]["UpdateConfig"](arg1);
 }

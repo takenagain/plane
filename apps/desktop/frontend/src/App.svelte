@@ -1,139 +1,122 @@
 <script>
-  import { onMount } from "svelte";
-  import logo from "./assets/images/logo-universal.png";
-  import IssueSelectionDialog from "./components/IssueSelectionDialog.svelte";
+  import LoginWebview from "./components/LoginWebview.svelte";
   import {
+    GetAuthState,
     GetConfig,
     GetTimerState,
     GetCurrentUser,
-    GetCurrentWorkspace,
+    OpenLogin,
   } from "../wailsjs/go/main/App.js";
   import { EventsOn } from "../wailsjs/runtime/runtime.js";
 
-  let config = { plane_url: "" };
-  let timerState = { is_active: false, issue_title: "", elapsed_secs: 0 };
-  let user = null;
-  let workspace = null;
-  let loadError = "";
-  let issueDialogOpen = false;
-  let timerRefreshInterval = null;
+  let authState = $state({ status: "login_required", login_url: "", plane_url: "" });
+  let config = $state({ plane_url: "" });
+  let timerState = $state({ is_active: false, issue_title: "", elapsed_seconds: 0 });
+  let user = $state(null);
+  let loadError = $state("");
+
+  const isAuthenticated = $derived(authState.status === "authenticated");
 
   async function refresh() {
     try {
+      authState = await GetAuthState();
       config = await GetConfig();
       timerState = await GetTimerState();
       user = await GetCurrentUser();
-      workspace = await GetCurrentWorkspace();
       loadError = "";
     } catch (err) {
       loadError = String(err);
     }
   }
 
-  function openIssueDialog() {
-    issueDialogOpen = true;
-  }
-
-  function closeIssueDialog() {
-    issueDialogOpen = false;
-  }
-
-  async function handleIssueSelected() {
+  async function showLogin() {
+    await OpenLogin();
     await refresh();
   }
 
-  onMount(() => {
+  $effect(() => {
     refresh();
 
-    const unsubscribe = EventsOn("open-issue-selection", () => {
-      openIssueDialog();
+    const cancelAuth = EventsOn("auth:state-changed", (state) => {
+      authState = state;
+      refresh();
     });
 
-    timerRefreshInterval = setInterval(async () => {
-      try {
-        timerState = await GetTimerState();
-      } catch {
-        // Ignore transient timer refresh errors.
-      }
-    }, 1000);
-
     return () => {
-      unsubscribe?.();
-      if (timerRefreshInterval) {
-        clearInterval(timerRefreshInterval);
-      }
+      cancelAuth();
     };
   });
 </script>
 
-<main>
-  <img alt="Plane logo" id="logo" src={logo} />
-  <h1>Plane Desktop</h1>
-
-  {#if loadError}
-    <p class="error">{loadError}</p>
-  {/if}
-
-  <section class="panel">
-    <h2>Configuration</h2>
-    <p><strong>Instance:</strong> {config?.plane_url || "Not configured"}</p>
-  </section>
-
-  <section class="panel">
-    <h2>Authentication</h2>
-    {#if user}
-      <p>Signed in as {user.display_name || user.email}</p>
-      {#if workspace}
-        <p>Workspace: {workspace.name}</p>
+{#if isAuthenticated}
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <h1>Plane Desktop</h1>
+        <p class="subtitle">Connected to {config?.plane_url}</p>
+      </div>
+      {#if user}
+        <p class="user-chip">{user.display_name || user.email}</p>
       {/if}
-    {:else}
-      <p>Not authenticated — sign in via Plane web or configure cookies for testing.</p>
+    </header>
+
+    {#if loadError}
+      <p class="error">{loadError}</p>
     {/if}
-  </section>
 
-  <section class="panel">
-    <h2>Time Tracking</h2>
-    {#if timerState?.is_active}
-      <p>Tracking: {timerState.issue_title}</p>
-      <p>
-        Elapsed: {Math.floor((timerState.elapsed_seconds || 0) / 60)}m
-        {(timerState.elapsed_seconds || 0) % 60}s
-      </p>
-    {:else}
-      <p>No active tracking session.</p>
-    {/if}
-    <button class="btn secondary" type="button" onclick={openIssueDialog}>
-      Start tracking
-    </button>
-  </section>
+    <section class="panel">
+      <h2>Time Tracking</h2>
+      {#if timerState?.is_active}
+        <p>Tracking: {timerState.issue_title}</p>
+        <p>
+          Elapsed: {Math.floor((timerState.elapsed_seconds || 0) / 60)}m
+          {(timerState.elapsed_seconds || 0) % 60}s
+        </p>
+      {:else}
+        <p>No active tracking session. Use the system tray to start tracking.</p>
+      {/if}
+    </section>
 
-  <button class="btn" type="button" onclick={refresh}>Refresh</button>
-</main>
-
-<IssueSelectionDialog
-  open={issueDialogOpen}
-  {workspace}
-  onSelect={handleIssueSelected}
-  onClose={closeIssueDialog}
-/>
+    <button class="btn" onclick={refresh}>Refresh</button>
+  </main>
+{:else}
+  <LoginWebview loginUrl={authState.login_url ? `${authState.login_url}/sign-in/` : ""} />
+{/if}
 
 <style>
-  main {
-    max-width: 640px;
+  .shell {
+    max-width: 720px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1.5rem;
     color: #e2e8f0;
+    text-align: left;
   }
 
-  #logo {
-    display: block;
-    width: 120px;
-    margin: 0 auto 1rem;
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
 
   h1 {
-    text-align: center;
-    margin-bottom: 1.5rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .subtitle {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .user-chip {
+    margin: 0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #bfdbfe;
+    font-size: 0.85rem;
   }
 
   .panel {
@@ -141,7 +124,6 @@
     border-radius: 8px;
     padding: 1rem 1.25rem;
     margin-bottom: 1rem;
-    text-align: left;
   }
 
   .panel h2 {
@@ -155,8 +137,6 @@
   }
 
   .btn {
-    display: block;
-    margin: 1.5rem auto 0;
     padding: 0.5rem 1.25rem;
     border: none;
     border-radius: 6px;
@@ -165,16 +145,7 @@
     color: white;
   }
 
-  .btn.secondary {
-    margin: 0.75rem 0 0;
-    background: #334155;
-  }
-
   .btn:hover {
     background: #2563eb;
-  }
-
-  .btn.secondary:hover {
-    background: #475569;
   }
 </style>

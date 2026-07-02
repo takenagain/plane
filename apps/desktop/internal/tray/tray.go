@@ -177,7 +177,12 @@ func (m *Manager) updateMenuForState() {
 	m.onTimerTick(&state)
 }
 
-// Quit stops the system tray
-func (m *Manager) Quit() {
-	systray.Quit()
+// SetAuthenticated updates tray messaging for the auth state.
+func (m *Manager) SetAuthenticated(authenticated bool) {
+	if authenticated {
+		systray.SetTooltip("Plane Desktop - Signed in")
+		return
+	}
+
+	systray.SetTooltip("Plane Desktop - Sign in required")
 }

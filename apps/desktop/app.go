@@ -18,14 +18,15 @@ const eventOpenIssueSelection = "open-issue-selection"
 
 // App struct
 type App struct {
-	ctx           context.Context
-	configMgr     *config.Manager
-	cookieMgr     *cookie.Manager
-	timerMgr      *timer.Manager
-	trayMgr       *tray.Manager
-	apiClient     *api.Client
-	currentUser   *models.User
+	ctx              context.Context
+	configMgr        *config.Manager
+	cookieMgr        *cookie.Manager
+	timerMgr         *timer.Manager
+	trayMgr          *tray.Manager
+	apiClient        *api.Client
+	currentUser      *models.User
 	currentWorkspace *models.Workspace
+	auth             authController
 }
 
 // NewApp creates a new App application struct
@@ -76,14 +77,6 @@ func (a *App) startup(ctx context.Context) {
 	cfg := a.configMgr.Get()
 	a.apiClient = api.NewClient(cfg.PlaneURL, a.cookieMgr)
 
-	// Try to authenticate if we have cookies
-	if a.cookieMgr.IsValid() {
-		if err := a.authenticate(); err != nil {
-			log.Printf("Authentication failed: %v", err)
-			// Will need to login through webview
-		}
-	}
-
 	// Tray manager
 	a.trayMgr = tray.NewManager(a.timerMgr)
 	a.trayMgr.SetCallbacks(
@@ -93,6 +86,9 @@ func (a *App) startup(ctx context.Context) {
 		a.handleSettings,
 		a.handleQuit,
 	)
+
+	// Authenticate or show login webview
+	a.bootstrapAuth()
 
 	// Start tray in a goroutine
 	go a.trayMgr.Run()
@@ -227,6 +223,11 @@ func (a *App) handleShowWindow() {
 
 // handleSettings opens the settings dialog
 func (a *App) handleSettings() {
+	if !a.IsAuthenticated() {
+		_ = a.OpenLogin()
+		return
+	}
+
 	// TODO: Implement settings dialog
 	log.Println("Settings not yet implemented")
 }

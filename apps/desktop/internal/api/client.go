@@ -19,6 +19,7 @@ type Client struct {
 	baseURL       string
 	httpClient    *http.Client
 	cookieManager *cookie.Manager
+	onAuthError   func()
 }
 
 // NewClient creates a new Plane API client
@@ -32,7 +33,10 @@ func NewClient(baseURL string, cookieMgr *cookie.Manager) *Client {
 	}
 }
 
-// doRequest performs an HTTP request with cookies
+// SetAuthErrorHandler registers a callback for authentication failures.
+func (c *Client) SetAuthErrorHandler(handler func()) {
+	c.onAuthError = handler
+}
 func (c *Client) doRequest(method, path string, body interface{}) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
@@ -66,6 +70,9 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 	// Check for authentication errors
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		resp.Body.Close()
+		if c.onAuthError != nil {
+			c.onAuthError()
+		}
 		return nil, fmt.Errorf("authentication failed: status %d", resp.StatusCode)
 	}
 

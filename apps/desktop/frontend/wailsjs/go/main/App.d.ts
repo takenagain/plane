@@ -3,6 +3,18 @@
 
 export function GetConfig(): Promise<config.Config>;
 
+export function GetAuthState(): Promise<main.AuthState>;
+
+export function IsAuthenticated(): Promise<boolean>;
+
+export function OpenLogin(): Promise<void>;
+
+export function GetLoginURL(): Promise<string>;
+
+export function TryAuthenticateFromWebview(): Promise<void>;
+
+export function SubmitWebviewCookies(arg1: string): Promise<void>;
+
 export function UpdateConfig(arg1: config.Config): Promise<void>;
 
 export function GetTimerState(): Promise<timer.State>;
@@ -20,6 +32,15 @@ export function StartTracking(arg1: string, arg2: string): Promise<void>;
 export function StartTrackingIssue(arg1: models.Issue): Promise<void>;
 
 export function StopTracking(): Promise<void>;
+
+export namespace main {
+  export class AuthState {
+    status: string;
+    login_url: string;
+    plane_url: string;
+    user_email?: string;
+  }
+}
 
 export namespace config {
   export class Config {
