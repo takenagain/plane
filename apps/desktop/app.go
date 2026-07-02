@@ -77,21 +77,23 @@ func (a *App) startup(ctx context.Context) {
 	cfg := a.configMgr.Get()
 	a.apiClient = api.NewClient(cfg.PlaneURL, a.cookieMgr)
 
-	// Tray manager
-	a.trayMgr = tray.NewManager(a.timerMgr)
-	a.trayMgr.SetCallbacks(
-		a.handleStopTracking,
-		a.handleStartTracking,
-		a.handleShowWindow,
-		a.handleSettings,
-		a.handleQuit,
-	)
+	// Tray manager (optional — disabled on Linux by default; see tray.Supported)
+	if tray.Supported() {
+		a.trayMgr = tray.NewManager(a.timerMgr)
+		a.trayMgr.SetCallbacks(
+			a.handleStopTracking,
+			a.handleStartTracking,
+			a.handleShowWindow,
+			a.handleSettings,
+			a.handleQuit,
+		)
+		go a.trayMgr.Run()
+	} else {
+		log.Printf("System tray disabled (on Linux set PLANE_DESKTOP_ENABLE_TRAY=1 to opt in)")
+	}
 
 	// Authenticate or show login webview
 	a.bootstrapAuth()
-
-	// Start tray in a goroutine
-	go a.trayMgr.Run()
 }
 
 // authenticate attempts to authenticate with stored cookies
