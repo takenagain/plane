@@ -17,9 +17,18 @@ type LoginProxy struct {
 	server   *http.Server
 	listener net.Listener
 	onCookies func([]*http.Cookie)
+	injectRequestCookies func(*http.Request)
 
 	mu      sync.Mutex
 	started bool
+}
+
+// SetRequestCookieInjector merges stored session cookies into proxied requests
+// when the browser iframe has not yet received them (e.g. after app restart).
+func (p *LoginProxy) SetRequestCookieInjector(fn func(*http.Request)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.injectRequestCookies = fn
 }
 
 // NewLoginProxy creates a proxy for the given Plane instance URL.
@@ -39,6 +48,8 @@ func NewLoginProxy(planeURL string, onCookies func([]*http.Cookie)) (*LoginProxy
 	}, nil
 }
 
+const loginProxyPort = "38472"
+
 // Start listens on localhost and serves proxied Plane content.
 func (p *LoginProxy) Start() (string, error) {
 	p.mu.Lock()
@@ -48,7 +59,11 @@ func (p *LoginProxy) Start() (string, error) {
 		return p.BaseURL(), nil
 	}
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", "127.0.0.1:"+loginProxyPort)
+	if err != nil {
+		// Fall back to an ephemeral port if the preferred one is taken.
+		listener, err = net.Listen("tcp", "127.0.0.1:0")
+	}
 	if err != nil {
 		return "", fmt.Errorf("start login proxy: %w", err)
 	}
@@ -122,6 +137,28 @@ func (p *LoginProxy) director(req *http.Request) {
 	if req.Header.Get("X-Forwarded-Host") == "" {
 		req.Header.Set("X-Forwarded-Host", target.Host)
 	}
+
+	if p.injectRequestCookies != nil {
+		p.injectRequestCookies(req)
+	}
+}
+
+// MergeRequestCookies adds cookies to req when the client did not send them.
+func MergeRequestCookies(req *http.Request, cookies []*http.Cookie) {
+	if req == nil || len(cookies) == 0 {
+		return
+	}
+
+	existing := make(map[string]struct{}, len(req.Cookies()))
+	for _, cookie := range req.Cookies() {
+		existing[cookie.Name] = struct{}{}
+	}
+
+	for _, cookie := range cookies {
+		if _, ok := existing[cookie.Name]; !ok {
+			req.AddCookie(cookie)
+		}
+	}
 }
 
 func (p *LoginProxy) modifyResponse(resp *http.Response) error {
@@ -141,22 +178,43 @@ func (p *LoginProxy) modifyResponse(resp *http.Response) error {
 		}
 	}
 
-	if p.onCookies == nil {
-		return nil
+	cookies := rewriteProxySetCookies(resp)
+	if p.onCookies != nil && len(cookies) > 0 {
+		p.onCookies(cookies)
 	}
 
+	return nil
+}
+
+// rewriteProxySetCookies normalizes Set-Cookie headers for localhost HTTP embedding.
+// HTTPS backends set Secure cookies that browsers refuse to store on http://127.0.0.1,
+// which breaks Django CSRF on login POST.
+func rewriteProxySetCookies(resp *http.Response) []*http.Cookie {
 	cookies := resp.Cookies()
 	if len(cookies) == 0 {
 		return nil
 	}
 
+	resp.Header.Del("Set-Cookie")
 	for _, cookie := range cookies {
-		cookie.Domain = ""
-		NormalizeExpiry(cookie)
+		normalizeProxyCookie(cookie)
+		resp.Header.Add("Set-Cookie", cookie.String())
 	}
 
-	p.onCookies(cookies)
-	return nil
+	return cookies
+}
+
+func normalizeProxyCookie(cookie *http.Cookie) {
+	if cookie == nil {
+		return
+	}
+
+	cookie.Domain = ""
+	cookie.Secure = false
+	if cookie.SameSite == http.SameSiteNoneMode {
+		cookie.SameSite = http.SameSiteLaxMode
+	}
+	NormalizeExpiry(cookie)
 }
 
 func (p *LoginProxy) rewriteToProxy(raw string) string {

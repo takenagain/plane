@@ -101,6 +101,11 @@ func hostFromURL(rawURL string) (string, error) {
 	return strings.ToLower(host), nil
 }
 
+// HostFromPlaneURL returns the hostname for a Plane instance URL.
+func HostFromPlaneURL(rawURL string) (string, error) {
+	return hostFromURL(rawURL)
+}
+
 // NormalizeExpiry ensures cookie expiration metadata is usable by the manager.
 func NormalizeExpiry(cookie *http.Cookie) {
 	if cookie == nil {

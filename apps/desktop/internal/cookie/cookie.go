@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -42,8 +43,8 @@ func (m *Manager) SetCookies(cookies []*http.Cookie) {
 	m.store.Cookies = cookies
 	m.store.UpdatedAt = time.Now()
 
-	// Set expiration to the earliest cookie expiration or 24 hours
-	expiresAt := time.Now().Add(24 * time.Hour)
+	// Default to Plane's SESSION_COOKIE_AGE (7 days) when cookies are session-scoped.
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	for _, cookie := range cookies {
 		if !cookie.Expires.IsZero() && cookie.Expires.Before(expiresAt) {
 			expiresAt = cookie.Expires
@@ -67,8 +68,11 @@ func (m *Manager) GetCookiesForRequest(domain string) []*http.Cookie {
 			continue
 		}
 
-		// Basic domain matching
-		if cookie.Domain == "" || cookie.Domain == domain {
+		cookieDomain := strings.TrimPrefix(strings.ToLower(cookie.Domain), ".")
+		requestDomain := strings.ToLower(domain)
+		if cookieDomain == "" ||
+			cookieDomain == requestDomain ||
+			strings.HasSuffix(requestDomain, "."+cookieDomain) {
 			validCookies = append(validCookies, cookie)
 		}
 	}

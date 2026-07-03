@@ -43,10 +43,48 @@ type Issue struct {
 	Priority          string    `json:"priority"`
 	State             string    `json:"state"`
 	StateDetail       *State    `json:"state_detail"`
+	StateGroup        string    `json:"state__group"`
+	StateName         string    `json:"state__name"`
+	StateColor        string    `json:"state__color"`
 	ProjectIdentifier string    `json:"project__identifier"`
 	WorkspaceSlug     string    `json:"workspace__slug"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+// NormalizeState maps flat state fields from search responses into StateDetail.
+func (i *Issue) NormalizeState() {
+	if i.StateDetail != nil || i.StateGroup == "" {
+		return
+	}
+	i.StateDetail = &State{
+		Name:  i.StateName,
+		Color: i.StateColor,
+		Group: i.StateGroup,
+	}
+}
+
+// IsClosed reports whether the issue is in a completed or cancelled state group.
+func (i *Issue) IsClosed() bool {
+	i.NormalizeState()
+	if i.StateDetail == nil {
+		return false
+	}
+	group := i.StateDetail.Group
+	return group == "completed" || group == "cancelled"
+}
+
+// FilterOpenIssues returns issues that are not completed or cancelled.
+func FilterOpenIssues(issues []Issue) []Issue {
+	open := make([]Issue, 0, len(issues))
+	for _, issue := range issues {
+		if issue.IsClosed() {
+			continue
+		}
+		issue.NormalizeState()
+		open = append(open, issue)
+	}
+	return open
 }
 
 // DisplayIdentifier returns the human-readable issue identifier (e.g., "PROJ-123")

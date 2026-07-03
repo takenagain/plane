@@ -98,22 +98,17 @@ func (a *App) startup(ctx context.Context) {
 
 // authenticate attempts to authenticate with stored cookies
 func (a *App) authenticate() error {
-	// Test connection
-	if err := a.apiClient.TestConnection(); err != nil {
-		return fmt.Errorf("connection test failed: %w", err)
-	}
-
-	// Get current user
 	user, err := a.apiClient.GetCurrentUser()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
 	a.currentUser = user
 
-	// Get workspaces
 	workspaces, err := a.apiClient.GetWorkspaces()
 	if err != nil {
-		return fmt.Errorf("failed to get workspaces: %w", err)
+		// Session is still valid; workspace list can be retried later.
+		log.Printf("Failed to load workspaces: %v", err)
+		return nil
 	}
 
 	// Set current workspace (use last workspace from config or first available)
@@ -201,6 +196,13 @@ func (a *App) startTrackingForIssue(issue *models.Issue) error {
 		return fmt.Errorf("not authenticated")
 	}
 
+	// Single global timer — stop any active session before starting a new one.
+	if a.timerMgr.IsActive() {
+		if err := a.StopTracking(); err != nil {
+			return fmt.Errorf("failed to stop current tracking: %w", err)
+		}
+	}
+
 	worklog, err := a.apiClient.StartTimeTracking(
 		a.currentWorkspace.Slug,
 		issue.ProjectID,
@@ -249,6 +251,13 @@ func (a *App) handleQuit() {
 	// Save config
 	if a.configMgr != nil {
 		a.configMgr.Save()
+	}
+
+	// Persist session cookies on quit
+	if a.cookieMgr != nil && a.IsAuthenticated() {
+		if err := a.cookieMgr.SaveSecurely(); err != nil {
+			log.Printf("Failed to save cookies on quit: %v", err)
+		}
 	}
 
 	runtime.Quit(a.ctx)
@@ -309,7 +318,31 @@ func (a *App) SearchIssues(query string) ([]models.Issue, error) {
 		return nil, fmt.Errorf("not authenticated")
 	}
 
-	return a.apiClient.SearchIssues(a.currentWorkspace.Slug, query)
+	issues, err := a.apiClient.SearchIssues(a.currentWorkspace.Slug, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return models.FilterOpenIssues(issues), nil
+}
+
+// GetMyIssues returns open work items assigned to the current user.
+func (a *App) GetMyIssues() ([]models.Issue, error) {
+	if a.apiClient == nil || a.currentWorkspace == nil || a.currentUser == nil {
+		return nil, fmt.Errorf("not authenticated")
+	}
+
+	filters := models.IssueFilters{
+		AssignedTo: a.currentUser.ID,
+		Limit:      50,
+	}
+
+	issues, err := a.apiClient.GetMyIssues(a.currentWorkspace.Slug, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	return models.FilterOpenIssues(issues), nil
 }
 
 // StartTracking starts tracking an issue by project and issue ID

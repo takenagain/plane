@@ -47,7 +47,10 @@ func (a *App) bootstrapAuth() {
 
 	if a.cookieMgr.IsValid() && a.cookieMgr.HasSessionCookies() {
 		if err := a.authenticate(); err != nil {
-			log.Printf("Authentication failed: %v", err)
+			log.Printf("Stored session invalid: %v", err)
+			if clearErr := a.cookieMgr.Clear(); clearErr != nil {
+				log.Printf("Failed to clear stale cookies: %v", clearErr)
+			}
 			a.requireLogin()
 			return
 		}
@@ -83,11 +86,27 @@ func (a *App) setAuthenticated() {
 		a.trayMgr.SetAuthenticated(true)
 	}
 
+	if a.cookieMgr != nil {
+		if err := a.cookieMgr.SaveSecurely(); err != nil {
+			log.Printf("Failed to persist session cookies: %v", err)
+		}
+	}
+
+	if err := a.ensureLoginProxy(); err != nil {
+		log.Printf("Failed to start app proxy: %v", err)
+	}
+
 	a.emitAuthState()
 }
 
 func (a *App) handleAuthFailure() {
 	if a.cookieMgr == nil {
+		return
+	}
+
+	// Do not wipe cookies while the login webview is still probing — partial
+	// captures (e.g. csrftoken before session-id) would otherwise be erased on 401.
+	if a.auth.status != authStatusAuthenticated {
 		return
 	}
 
@@ -110,7 +129,18 @@ func (a *App) ensureLoginProxy() error {
 	proxy, err := cookie.NewLoginProxy(planeURL, func(cookies []*http.Cookie) {
 		if err := a.cookieMgr.ExtractFromWebview(planeURL, cookies); err != nil {
 			log.Printf("Failed to store webview cookies: %v", err)
+			return
 		}
+
+		if a.auth.status == authStatusAuthenticated || !a.cookieMgr.HasSessionCookies() {
+			return
+		}
+
+		go func() {
+			if err := a.TryAuthenticateFromWebview(); err != nil {
+				log.Printf("Login probe failed: %v", err)
+			}
+		}()
 	})
 	if err != nil {
 		return err
@@ -120,6 +150,20 @@ func (a *App) ensureLoginProxy() error {
 	if err != nil {
 		return err
 	}
+
+	proxy.SetRequestCookieInjector(func(req *http.Request) {
+		if a.cookieMgr == nil || a.configMgr == nil {
+			return
+		}
+
+		planeURL := a.configMgr.Get().PlaneURL
+		host, err := cookie.HostFromPlaneURL(planeURL)
+		if err != nil || host == "" {
+			return
+		}
+
+		cookie.MergeRequestCookies(req, a.cookieMgr.GetCookiesForRequest(host))
+	})
 
 	a.auth.loginProxy = proxy
 	a.auth.loginURL = loginURL
@@ -178,6 +222,23 @@ func (a *App) GetAuthState() AuthState {
 	}
 
 	return state
+}
+
+// GetWebsiteURL returns the proxy root URL for the embedded Plane web UI.
+func (a *App) GetWebsiteURL() string {
+	if err := a.ensureLoginProxy(); err != nil {
+		log.Printf("Failed to ensure app proxy: %v", err)
+	}
+
+	if a.auth.loginURL != "" {
+		return a.auth.loginURL
+	}
+
+	if a.configMgr != nil {
+		return a.configMgr.Get().PlaneURL
+	}
+
+	return ""
 }
 
 // GetLoginURL returns the URL the login iframe should load.

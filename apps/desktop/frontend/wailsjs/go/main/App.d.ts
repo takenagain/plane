@@ -11,6 +11,8 @@ export function OpenLogin(): Promise<void>;
 
 export function GetLoginURL(): Promise<string>;
 
+export function GetWebsiteURL(): Promise<string>;
+
 export function TryAuthenticateFromWebview(): Promise<void>;
 
 export function SubmitWebviewCookies(arg1: string): Promise<void>;
@@ -26,6 +28,8 @@ export function GetWorkspaces(): Promise<Array<models.Workspace>>;
 export function GetCurrentWorkspace(): Promise<models.Workspace>;
 
 export function SearchIssues(arg1: string): Promise<Array<models.Issue>>;
+
+export function GetMyIssues(): Promise<Array<models.Issue>>;
 
 export function StartTracking(arg1: string, arg2: string): Promise<void>;
 

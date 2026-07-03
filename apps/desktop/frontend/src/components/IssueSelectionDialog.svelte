@@ -1,36 +1,47 @@
 <script>
   import { SearchIssues, StartTrackingIssue } from "../../wailsjs/go/main/App.js";
 
-  export let open = false;
-  export let workspace = null;
-  export let onSelect = () => {};
-  export let onClose = () => {};
+  let { open = false, workspace = null, onSelect = () => {}, onClose = () => {} } = $props();
 
-  let query = "";
-  let issues = [];
-  let loading = false;
-  let error = "";
-  let selectedIndex = 0;
+  let query = $state("");
+  let issues = $state([]);
+  let loading = $state(false);
+  let error = $state("");
+  let selectedIndex = $state(0);
   let searchTimer = null;
-  let inputEl;
+  let inputEl = $state(null);
+  let listboxId = "issue-search-listbox";
 
-  $: if (open) {
+  const canSearch = $derived(Boolean(workspace?.slug));
+
+  $effect(() => {
+    if (!open) {
+      query = "";
+      issues = [];
+      error = "";
+      loading = false;
+      selectedIndex = 0;
+      clearTimeout(searchTimer);
+      return;
+    }
+
     selectedIndex = 0;
-    error = "";
     if (!query.trim()) {
       issues = [];
       loading = false;
     }
-    queueMicrotask(() => inputEl?.focus());
-  }
 
-  $: if (!open) {
-    query = "";
-    issues = [];
-    error = "";
-    loading = false;
-    selectedIndex = 0;
-  }
+    queueMicrotask(() => inputEl?.focus());
+  });
+
+  $effect(() => {
+    if (!open || issues.length === 0) {
+      return;
+    }
+
+    const selected = document.getElementById(`${listboxId}-option-${selectedIndex}`);
+    selected?.scrollIntoView({ block: "nearest" });
+  });
 
   function issueIdentifier(issue) {
     if (issue.project__identifier && issue.sequence_id) {
@@ -52,6 +63,48 @@
     return parts.join(" · ");
   }
 
+  function fuzzyScore(text, search) {
+    const value = (text || "").toLowerCase();
+    const term = search.toLowerCase().trim();
+    if (!term) {
+      return 0;
+    }
+    if (value === term) {
+      return 100;
+    }
+    if (value.includes(term)) {
+      return 80 + (term.length / Math.max(value.length, 1)) * 20;
+    }
+
+    let score = 0;
+    let start = 0;
+    for (const char of term) {
+      const index = value.indexOf(char, start);
+      if (index === -1) {
+        return 0;
+      }
+      score += 10 - Math.min(index - start, 9);
+      start = index + 1;
+    }
+    return score;
+  }
+
+  function rankIssues(results, searchQuery) {
+    const term = searchQuery.trim();
+    if (!term) {
+      return results;
+    }
+
+    return [...results]
+      .map((issue) => ({
+        issue,
+        score: Math.max(fuzzyScore(issue.name, term), fuzzyScore(issueIdentifier(issue), term)),
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.issue);
+  }
+
   async function runSearch(searchQuery) {
     const trimmed = searchQuery.trim();
     if (!trimmed) {
@@ -61,16 +114,28 @@
       return;
     }
 
+    if (!canSearch) {
+      issues = [];
+      loading = false;
+      error = "No workspace selected. Sign in again or choose a workspace.";
+      return;
+    }
+
     loading = true;
     error = "";
 
     try {
       const results = await SearchIssues(trimmed);
-      issues = results ?? [];
+      issues = rankIssues(results ?? [], trimmed);
       selectedIndex = 0;
     } catch (err) {
       issues = [];
-      error = String(err);
+      const message = String(err);
+      if (message.includes("not authenticated")) {
+        error = "You are not signed in. Close this dialog and sign in again.";
+      } else {
+        error = message;
+      }
     } finally {
       loading = false;
     }
@@ -144,7 +209,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if open}
   <div class="backdrop" role="presentation" onclick={handleBackdropClick}>
@@ -154,6 +219,8 @@
           <h2 id="issue-dialog-title">Select issue to track</h2>
           {#if workspace?.name}
             <p class="workspace">{workspace.name}</p>
+          {:else}
+            <p class="workspace warning">No workspace available</p>
           {/if}
         </div>
         <button class="icon-btn" type="button" aria-label="Close" onclick={onClose}>×</button>
@@ -164,28 +231,37 @@
           bind:this={inputEl}
           class="search-input"
           type="search"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={issues.length > 0}
+          aria-controls={listboxId}
+          aria-activedescendant={issues.length > 0 ? `${listboxId}-option-${selectedIndex}` : undefined}
           placeholder="Search by title or ID…"
           value={query}
           oninput={handleInput}
+          disabled={!canSearch}
           autocomplete="off"
         />
       </div>
 
       {#if error}
         <p class="status error">{error}</p>
+      {:else if !canSearch}
+        <p class="status error">Sign in and select a workspace to search issues.</p>
       {:else if loading}
         <p class="status">Searching…</p>
       {:else if query.trim() && issues.length === 0}
-        <p class="status">No issues found for "{query.trim()}".</p>
+        <p class="status">No open issues found for "{query.trim()}".</p>
       {:else if !query.trim()}
-        <p class="status muted">Type to search issues in your workspace.</p>
+        <p class="status muted">Type to search open issues in your workspace.</p>
       {/if}
 
       {#if issues.length > 0}
-        <ul class="issue-list" role="listbox" aria-label="Search results">
+        <ul class="issue-list" id={listboxId} role="listbox" aria-label="Search results">
           {#each issues as issue, index (issue.id)}
-            <li>
+            <li role="presentation">
               <button
+                id="{listboxId}-option-{index}"
                 type="button"
                 class="issue-item"
                 class:selected={index === selectedIndex}
@@ -205,7 +281,7 @@
       {/if}
 
       <footer class="dialog-footer">
-        <span>Enter to select · Esc to close</span>
+        <span>↑↓ to navigate · Enter to select · Esc to close</span>
       </footer>
     </div>
   </div>
@@ -255,6 +331,10 @@
     color: #94a3b8;
   }
 
+  .workspace.warning {
+    color: #fbbf24;
+  }
+
   .icon-btn {
     border: none;
     background: transparent;
@@ -284,6 +364,11 @@
     background: #0f172a;
     color: #e2e8f0;
     font: inherit;
+  }
+
+  .search-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .search-input:focus {

@@ -9,14 +9,15 @@
   let { loginUrl = "" } = $props();
 
   let iframeSrc = $state("");
-  let statusMessage = $state("Loading Plane sign-in…");
+  let loadError = $state("");
   let pollTimer;
 
   async function refreshLoginUrl() {
     try {
       iframeSrc = loginUrl || (await GetLoginURL());
+      loadError = "";
     } catch (err) {
-      statusMessage = String(err);
+      loadError = String(err);
     }
   }
 
@@ -48,13 +49,7 @@
     }, 2500);
   }
 
-  function handleIframeLoad() {
-    statusMessage = "Sign-in page loaded — enter your credentials below.";
-  }
-
-  function handleIframeError() {
-    statusMessage = "Could not load sign-in page. Check your network or Plane URL in settings.";
-  }
+  function stopPolling() {
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -73,7 +68,7 @@
         });
       }
     } catch (err) {
-      statusMessage = String(err);
+      loadError = String(err);
     }
 
     return () => {
@@ -84,10 +79,9 @@
 </script>
 
 <section class="login-shell" aria-label="Plane sign-in">
-  <header class="login-header">
-    <h1>Sign in to Plane</h1>
-    <p>{statusMessage}</p>
-  </header>
+  {#if loadError}
+    <p class="login-error" role="alert">{loadError}</p>
+  {/if}
 
   {#if iframeSrc}
     <iframe
@@ -95,11 +89,9 @@
       title="Plane sign-in"
       src={iframeSrc}
       sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"
-      onload={handleIframeLoad}
-      onerror={handleIframeError}
     ></iframe>
   {:else}
-    <p class="login-placeholder">Preparing login…</p>
+    <p class="login-placeholder">Loading…</p>
   {/if}
 </section>
 
@@ -107,26 +99,11 @@
   .login-shell {
     display: flex;
     flex-direction: column;
+    width: 100%;
     height: 100vh;
+    min-height: 100vh;
     background: #0f172a;
     color: #e2e8f0;
-  }
-
-  .login-header {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-    text-align: left;
-  }
-
-  .login-header h1 {
-    margin: 0 0 0.25rem;
-    font-size: 1.1rem;
-  }
-
-  .login-header p {
-    margin: 0;
-    color: #94a3b8;
-    font-size: 0.9rem;
   }
 
   .login-frame {
@@ -136,8 +113,14 @@
     background: #fff;
   }
 
-  .login-placeholder {
+  .login-placeholder,
+  .login-error {
     margin: auto;
+    padding: 1rem 1.25rem;
     color: #94a3b8;
+  }
+
+  .login-error {
+    color: #f87171;
   }
 </style>

@@ -22,6 +22,10 @@ export function GetLoginURL() {
   return window["go"]["main"]["App"]["GetLoginURL"]();
 }
 
+export function GetWebsiteURL() {
+  return window["go"]["main"]["App"]["GetWebsiteURL"]();
+}
+
 export function TryAuthenticateFromWebview() {
   return window["go"]["main"]["App"]["TryAuthenticateFromWebview"]();
 }
@@ -52,6 +56,10 @@ export function GetCurrentWorkspace() {
 
 export function SearchIssues(arg1) {
   return window["go"]["main"]["App"]["SearchIssues"](arg1);
+}
+
+export function GetMyIssues() {
+  return window["go"]["main"]["App"]["GetMyIssues"]();
 }
 
 export function StartTracking(arg1, arg2) {

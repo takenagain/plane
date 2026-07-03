@@ -3,6 +3,7 @@ package cookie
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -54,6 +55,26 @@ func TestManagerExtractFromWebview(t *testing.T) {
 
 	if len(manager.GetCookies()) != 1 {
 		t.Fatalf("expected persisted cookie, got %d", len(manager.GetCookies()))
+	}
+}
+
+func TestHasSessionCookiesRequiresSessionID(t *testing.T) {
+	manager := &Manager{
+		store: &Store{Cookies: []*http.Cookie{
+			{Name: "csrftoken", Value: "abc", Domain: "plane.example.com"},
+		}},
+	}
+
+	if manager.HasSessionCookies() {
+		t.Fatal("csrftoken alone should not count as an authenticated session")
+	}
+
+	manager.store.Cookies = append(manager.store.Cookies, &http.Cookie{
+		Name: "session-id", Value: "token", Domain: "plane.example.com",
+	})
+
+	if !manager.HasSessionCookies() {
+		t.Fatal("expected session-id to satisfy HasSessionCookies")
 	}
 }
 
@@ -131,5 +152,44 @@ func TestLoginProxyStripsFrameHeaders(t *testing.T) {
 	}
 	if resp.Header.Get("Content-Security-Policy") != "" {
 		t.Fatalf("expected CSP stripped, got %q", resp.Header.Get("Content-Security-Policy"))
+	}
+}
+
+func TestLoginProxyRewritesSecureCookies(t *testing.T) {
+	backend := http.NewServeMux()
+	backend.HandleFunc("/sign-in/", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "csrftoken",
+			Value:    "abc",
+			Path:     "/",
+			Secure:   true,
+			SameSite: http.SameSiteNoneMode,
+		})
+		w.WriteHeader(http.StatusOK)
+	})
+
+	server := httptest.NewServer(backend)
+	defer server.Close()
+
+	proxy, err := NewLoginProxy(server.URL, nil)
+	if err != nil {
+		t.Fatalf("new proxy: %v", err)
+	}
+
+	proxyURL, err := proxy.Start()
+	if err != nil {
+		t.Fatalf("start proxy: %v", err)
+	}
+	defer proxy.Stop()
+
+	resp, err := http.Get(proxyURL + "/sign-in/")
+	if err != nil {
+		t.Fatalf("proxy request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	setCookie := resp.Header.Get("Set-Cookie")
+	if strings.Contains(setCookie, "Secure") {
+		t.Fatalf("expected Secure stripped from Set-Cookie, got %q", setCookie)
 	}
 }

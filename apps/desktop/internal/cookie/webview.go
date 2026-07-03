@@ -39,10 +39,26 @@ func (m *Manager) ExtractFromWebview(planeURL string, cookies []*http.Cookie) er
 		NormalizeExpiry(cookie)
 	}
 
+	AssignPlaneDomain(filtered, planeURL)
+
 	merged := MergeCookies(m.store.Cookies, filtered)
 	m.SetCookies(merged)
 
 	return m.SaveSecurely()
+}
+
+// AssignPlaneDomain tags stored cookies with the Plane host so API requests send them.
+func AssignPlaneDomain(cookies []*http.Cookie, planeURL string) {
+	host, err := hostFromURL(planeURL)
+	if err != nil || host == "" {
+		return
+	}
+
+	for _, cookie := range cookies {
+		if cookie != nil {
+			cookie.Domain = host
+		}
+	}
 }
 
 // HasSessionCookies reports whether stored cookies include a Plane session.
@@ -52,12 +68,14 @@ func (m *Manager) HasSessionCookies() bool {
 	}
 
 	for _, cookie := range m.store.Cookies {
-		for _, name := range SessionCookieNames {
-			if strings.EqualFold(cookie.Name, name) && cookie.Value != "" {
-				return true
-			}
+		name := strings.ToLower(cookie.Name)
+		if cookie.Value == "" {
+			continue
+		}
+		if name == "session-id" || name == "sessionid" {
+			return true
 		}
 	}
 
-	return len(m.store.Cookies) > 0
+	return false
 }
