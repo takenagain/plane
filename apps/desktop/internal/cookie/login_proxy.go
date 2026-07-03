@@ -1,6 +1,7 @@
 package cookie
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
@@ -16,11 +17,13 @@ import (
 const (
 	// ProxySecretHeader must be sent on proxied requests that need stored session cookies.
 	ProxySecretHeader = "X-Plane-Desktop-Proxy-Secret"
-	// ProxySecretQuery is appended to iframe URLs; browsers cannot set custom headers on navigation.
-	ProxySecretQuery = "plane_desktop_proxy_secret"
-	// ProxySecretCookie is set by the proxy after a valid query-param bootstrap request.
+	// ProxySecretCookie is set by the proxy after a valid bootstrap request.
 	ProxySecretCookie = "plane_desktop_proxy_secret"
+	// ProxyBootstrapQuery is a one-time token query parameter for iframe bootstrap.
+	ProxyBootstrapQuery = "plane_desktop_bootstrap"
 )
+
+type proxyContextKey struct{}
 
 // LoginProxy reverse-proxies the Plane web UI so Set-Cookie headers can be captured
 // for the Go API client while the user signs in through an embedded iframe.
@@ -29,19 +32,11 @@ type LoginProxy struct {
 	server   *http.Server
 	listener net.Listener
 	onCookies func([]*http.Cookie)
-	injectRequestCookies func(*http.Request)
 
-	mu            sync.Mutex
-	started       bool
-	sessionSecret string
-}
-
-// SetRequestCookieInjector merges stored session cookies into proxied requests
-// when the browser iframe has not yet received them (e.g. after app restart).
-func (p *LoginProxy) SetRequestCookieInjector(fn func(*http.Request)) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.injectRequestCookies = fn
+	mu              sync.Mutex
+	started         bool
+	sessionSecret   string
+	bootstrapTokens map[string]struct{}
 }
 
 // NewLoginProxy creates a proxy for the given Plane instance URL.
@@ -56,8 +51,9 @@ func NewLoginProxy(planeURL string, onCookies func([]*http.Cookie)) (*LoginProxy
 	}
 
 	return &LoginProxy{
-		target:    target,
-		onCookies: onCookies,
+		target:          target,
+		onCookies:       onCookies,
+		bootstrapTokens: make(map[string]struct{}),
 	}, nil
 }
 
@@ -88,8 +84,20 @@ func (p *LoginProxy) Start() (string, error) {
 		http.Error(w, "login proxy error", http.StatusBadGateway)
 	}
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorized := p.validateProxySecret(r)
+		if !authorized {
+			if !p.consumeBootstrapToken(r) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			r = r.WithContext(context.WithValue(r.Context(), proxyContextKey{}, true))
+		}
+		proxy.ServeHTTP(w, r)
+	})
+
 	p.listener = listener
-	p.server = &http.Server{Handler: proxy}
+	p.server = &http.Server{Handler: handler}
 	p.started = true
 	p.sessionSecret = generateProxySecret()
 
@@ -130,10 +138,15 @@ func (p *LoginProxy) BaseURL() string {
 	return "http://" + p.listener.Addr().String()
 }
 
-// URLWithSecret returns a proxy URL with the per-session secret query parameter.
-func (p *LoginProxy) URLWithSecret(path string) string {
+// URLWithBootstrap returns a proxy URL with a one-time bootstrap token.
+func (p *LoginProxy) URLWithBootstrap(path string) string {
 	base := strings.TrimSuffix(p.BaseURL(), "/")
-	if base == "" || p.sessionSecret == "" {
+	if base == "" {
+		return base + path
+	}
+
+	token := p.createBootstrapToken()
+	if token == "" {
 		return base + path
 	}
 
@@ -143,9 +156,36 @@ func (p *LoginProxy) URLWithSecret(path string) string {
 	}
 
 	query := parsed.Query()
-	query.Set(ProxySecretQuery, p.sessionSecret)
+	query.Set(ProxyBootstrapQuery, token)
 	parsed.RawQuery = query.Encode()
 	return parsed.String()
+}
+
+func (p *LoginProxy) createBootstrapToken() string {
+	token := generateProxySecret()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.bootstrapTokens[token] = struct{}{}
+	return token
+}
+
+func (p *LoginProxy) consumeBootstrapToken(req *http.Request) bool {
+	if req == nil {
+		return false
+	}
+
+	token := req.URL.Query().Get(ProxyBootstrapQuery)
+	if token == "" {
+		return false
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if _, ok := p.bootstrapTokens[token]; !ok {
+		return false
+	}
+	delete(p.bootstrapTokens, token)
+	return true
 }
 
 func generateProxySecret() string {
@@ -167,10 +207,6 @@ func (p *LoginProxy) validateProxySecret(req *http.Request) bool {
 		return subtle.ConstantTimeCompare([]byte(header), expected) == 1
 	}
 
-	if query := req.URL.Query().Get(ProxySecretQuery); query != "" {
-		return subtle.ConstantTimeCompare([]byte(query), expected) == 1
-	}
-
 	for _, cookie := range req.Cookies() {
 		if cookie.Name == ProxySecretCookie {
 			return subtle.ConstantTimeCompare([]byte(cookie.Value), expected) == 1
@@ -178,6 +214,16 @@ func (p *LoginProxy) validateProxySecret(req *http.Request) bool {
 	}
 
 	return false
+}
+
+func (p *LoginProxy) shouldIssueProxyCookie(req *http.Request) bool {
+	if req == nil {
+		return false
+	}
+	if p.validateProxySecret(req) {
+		return true
+	}
+	return req.Context().Value(proxyContextKey{}) == true
 }
 
 func (p *LoginProxy) director(req *http.Request) {
@@ -201,28 +247,6 @@ func (p *LoginProxy) director(req *http.Request) {
 	if req.Header.Get("X-Forwarded-Host") == "" {
 		req.Header.Set("X-Forwarded-Host", target.Host)
 	}
-
-	if p.injectRequestCookies != nil && p.validateProxySecret(req) {
-		p.injectRequestCookies(req)
-	}
-}
-
-// MergeRequestCookies adds cookies to req when the client did not send them.
-func MergeRequestCookies(req *http.Request, cookies []*http.Cookie) {
-	if req == nil || len(cookies) == 0 {
-		return
-	}
-
-	existing := make(map[string]struct{}, len(req.Cookies()))
-	for _, cookie := range req.Cookies() {
-		existing[cookie.Name] = struct{}{}
-	}
-
-	for _, cookie := range cookies {
-		if _, ok := existing[cookie.Name]; !ok {
-			req.AddCookie(cookie)
-		}
-	}
 }
 
 func (p *LoginProxy) modifyResponse(resp *http.Response) error {
@@ -230,7 +254,7 @@ func (p *LoginProxy) modifyResponse(resp *http.Response) error {
 		return nil
 	}
 
-	if resp.Request != nil && p.validateProxySecret(resp.Request) {
+	if resp.Request != nil && p.shouldIssueProxyCookie(resp.Request) {
 		proxyCookie := &http.Cookie{
 			Name:     ProxySecretCookie,
 			Value:    p.sessionSecret,

@@ -20,17 +20,13 @@ var SessionCookieNames = []string{
 	"csrf_token",
 }
 
-// ExtractFromWebview stores cookies captured from the embedded login webview.
-func (m *Manager) ExtractFromWebview(planeURL string, cookies []*http.Cookie) error {
+// MergeFromWebview merges cookies from the embedded webview into memory.
+func (m *Manager) MergeFromWebview(planeURL string, cookies []*http.Cookie) error {
 	if m == nil {
 		return fmt.Errorf("cookie manager is nil")
 	}
 
 	filtered := FilterForHost(cookies, planeURL)
-	if len(filtered) == 0 {
-		filtered = cookies
-	}
-
 	if len(filtered) == 0 {
 		return ErrNoSessionCookies
 	}
@@ -44,7 +40,41 @@ func (m *Manager) ExtractFromWebview(planeURL string, cookies []*http.Cookie) er
 	merged := MergeCookies(m.store.Cookies, filtered)
 	m.SetCookies(merged)
 
+	return nil
+}
+
+// ExtractFromWebview stores cookies captured from the embedded login webview.
+func (m *Manager) ExtractFromWebview(planeURL string, cookies []*http.Cookie) error {
+	if err := m.MergeFromWebview(planeURL, cookies); err != nil {
+		return err
+	}
+
 	return m.SaveSecurely()
+}
+
+// SnapshotCookies returns a copy of the current in-memory cookies.
+func (m *Manager) SnapshotCookies() []*http.Cookie {
+	if m == nil || len(m.store.Cookies) == 0 {
+		return nil
+	}
+
+	snapshot := make([]*http.Cookie, len(m.store.Cookies))
+	for i, cookie := range m.store.Cookies {
+		if cookie == nil {
+			continue
+		}
+		clone := *cookie
+		snapshot[i] = &clone
+	}
+	return snapshot
+}
+
+// RestoreCookies replaces in-memory cookies without persisting.
+func (m *Manager) RestoreCookies(cookies []*http.Cookie) {
+	if m == nil {
+		return
+	}
+	m.SetCookies(cookies)
 }
 
 // AssignPlaneDomain tags stored cookies with the Plane host so API requests send them.

@@ -88,7 +88,7 @@
       class="login-frame"
       title="Plane sign-in"
       src={iframeSrc}
-      sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"
+      sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation-by-user-activation"
     ></iframe>
   {:else}
     <p class="login-placeholder">Loading…</p>

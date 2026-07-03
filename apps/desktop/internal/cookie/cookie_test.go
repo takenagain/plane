@@ -102,13 +102,12 @@ func TestLoginProxyCapturesCookies(t *testing.T) {
 		t.Fatalf("new proxy: %v", err)
 	}
 
-	proxyURL, err := proxy.Start()
-	if err != nil {
+	if _, err := proxy.Start(); err != nil {
 		t.Fatalf("start proxy: %v", err)
 	}
 	defer proxy.Stop()
 
-	resp, err := http.Get(proxyURL + "/sign-in/")
+	resp, err := http.Get(proxy.URLWithBootstrap("/sign-in/"))
 	if err != nil {
 		t.Fatalf("proxy request failed: %v", err)
 	}
@@ -136,13 +135,12 @@ func TestLoginProxyStripsFrameHeaders(t *testing.T) {
 		t.Fatalf("new proxy: %v", err)
 	}
 
-	proxyURL, err := proxy.Start()
-	if err != nil {
+	if _, err := proxy.Start(); err != nil {
 		t.Fatalf("start proxy: %v", err)
 	}
 	defer proxy.Stop()
 
-	resp, err := http.Get(proxyURL + "/sign-in/")
+	resp, err := http.Get(proxy.URLWithBootstrap("/sign-in/"))
 	if err != nil {
 		t.Fatalf("proxy request failed: %v", err)
 	}
@@ -177,13 +175,12 @@ func TestLoginProxyRewritesSecureCookies(t *testing.T) {
 		t.Fatalf("new proxy: %v", err)
 	}
 
-	proxyURL, err := proxy.Start()
-	if err != nil {
+	if _, err := proxy.Start(); err != nil {
 		t.Fatalf("start proxy: %v", err)
 	}
 	defer proxy.Stop()
 
-	resp, err := http.Get(proxyURL + "/sign-in/")
+	resp, err := http.Get(proxy.URLWithBootstrap("/sign-in/"))
 	if err != nil {
 		t.Fatalf("proxy request failed: %v", err)
 	}
@@ -195,12 +192,49 @@ func TestLoginProxyRewritesSecureCookies(t *testing.T) {
 	}
 }
 
-func TestLoginProxyRequiresSecretForCookieInjection(t *testing.T) {
+func TestLoginProxyRequiresBootstrap(t *testing.T) {
 	backend := http.NewServeMux()
 	backend.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie("session-id"); err != nil || cookie.Value != "stored" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+		w.WriteHeader(http.StatusOK)
+	})
+
+	server := httptest.NewServer(backend)
+	defer server.Close()
+
+	proxy, err := NewLoginProxy(server.URL, nil)
+	if err != nil {
+		t.Fatalf("new proxy: %v", err)
+	}
+
+	if _, err := proxy.Start(); err != nil {
+		t.Fatalf("start proxy: %v", err)
+	}
+	defer proxy.Stop()
+
+	unauthorized, err := http.Get(proxy.BaseURL() + "/api/me/")
+	if err != nil {
+		t.Fatalf("proxy request failed: %v", err)
+	}
+	unauthorized.Body.Close()
+	if unauthorized.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 without bootstrap, got %d", unauthorized.StatusCode)
+	}
+
+	authorized, err := http.Get(proxy.URLWithBootstrap("/api/me/"))
+	if err != nil {
+		t.Fatalf("bootstrap proxy request failed: %v", err)
+	}
+	authorized.Body.Close()
+	if authorized.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with bootstrap, got %d", authorized.StatusCode)
+	}
+}
+
+func TestLoginProxyDoesNotInjectStoredSessionCookies(t *testing.T) {
+	backend := http.NewServeMux()
+	backend.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := r.Cookie("session-id"); err == nil {
+			t.Fatal("proxy must not inject stored session cookies into proxied requests")
 		}
 		w.WriteHeader(http.StatusOK)
 	})
@@ -213,32 +247,17 @@ func TestLoginProxyRequiresSecretForCookieInjection(t *testing.T) {
 		t.Fatalf("new proxy: %v", err)
 	}
 
-	proxy.SetRequestCookieInjector(func(req *http.Request) {
-		req.AddCookie(&http.Cookie{Name: "session-id", Value: "stored"})
-	})
-
-	proxyURL, err := proxy.Start()
-	if err != nil {
+	if _, err := proxy.Start(); err != nil {
 		t.Fatalf("start proxy: %v", err)
 	}
 	defer proxy.Stop()
 
-	unauthorized, err := http.Get(proxyURL + "/api/me/")
+	resp, err := http.Get(proxy.URLWithBootstrap("/api/me/"))
 	if err != nil {
-		t.Fatalf("proxy request failed: %v", err)
+		t.Fatalf("bootstrap proxy request failed: %v", err)
 	}
-	unauthorized.Body.Close()
-	if unauthorized.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("expected 401 without secret, got %d", unauthorized.StatusCode)
-	}
-
-	authorizedURL := proxy.URLWithSecret("/api/me/")
-	authorized, err := http.Get(authorizedURL)
-	if err != nil {
-		t.Fatalf("authorized proxy request failed: %v", err)
-	}
-	authorized.Body.Close()
-	if authorized.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 with secret, got %d", authorized.StatusCode)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with bootstrap, got %d", resp.StatusCode)
 	}
 }

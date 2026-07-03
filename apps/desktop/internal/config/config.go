@@ -2,8 +2,11 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Config represents the application configuration
@@ -59,7 +62,11 @@ func (m *Manager) Load() error {
 		return err
 	}
 
-	return json.Unmarshal(data, m.config)
+	if err := json.Unmarshal(data, m.config); err != nil {
+		return err
+	}
+
+	return ValidatePlaneURL(m.config.PlaneURL)
 }
 
 // Save writes the configuration to disk
@@ -77,7 +84,7 @@ func (m *Manager) Save() error {
 
 	// Write to temp file first, then rename (atomic operation)
 	tempPath := m.path + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0600); err != nil {
 		return err
 	}
 
@@ -90,8 +97,37 @@ func (m *Manager) Get() *Config {
 }
 
 // Update updates the configuration
-func (m *Manager) Update(config *Config) {
+func (m *Manager) Update(config *Config) error {
+	if config == nil {
+		return fmt.Errorf("config is required")
+	}
+	if err := ValidatePlaneURL(config.PlaneURL); err != nil {
+		return err
+	}
 	m.config = config
+	return nil
+}
+
+// ValidatePlaneURL ensures the Plane instance URL uses HTTPS in production builds.
+func ValidatePlaneURL(raw string) error {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return fmt.Errorf("invalid plane url: %w", err)
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return fmt.Errorf("plane url must include scheme and host")
+	}
+	switch parsed.Scheme {
+	case "https":
+		return nil
+	case "http":
+		if os.Getenv("PLANE_DESKTOP_ALLOW_HTTP") == "1" {
+			return nil
+		}
+		return fmt.Errorf("plane url must use https (set PLANE_DESKTOP_ALLOW_HTTP=1 for development)")
+	default:
+		return fmt.Errorf("plane url must use http or https")
+	}
 }
 
 // GetConfigPath returns the platform-specific config file path

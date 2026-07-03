@@ -30,10 +30,12 @@ const (
 )
 
 type authController struct {
-	mu         sync.Mutex
-	status     string
-	loginProxy *cookie.LoginProxy
-	loginURL   string
+	mu            sync.Mutex
+	status        string
+	loginProxy    *cookie.LoginProxy
+	loginURL      string
+	probeMu       sync.Mutex
+	probeInFlight bool
 }
 
 func (a *App) initAuthController() {
@@ -137,6 +139,20 @@ func (a *App) ensureLoginProxy() error {
 		}
 
 		go func() {
+			a.auth.probeMu.Lock()
+			if a.auth.probeInFlight {
+				a.auth.probeMu.Unlock()
+				return
+			}
+			a.auth.probeInFlight = true
+			a.auth.probeMu.Unlock()
+
+			defer func() {
+				a.auth.probeMu.Lock()
+				a.auth.probeInFlight = false
+				a.auth.probeMu.Unlock()
+			}()
+
 			if err := a.TryAuthenticateFromWebview(); err != nil {
 				log.Printf("Login probe failed: %v", err)
 			}
@@ -150,20 +166,6 @@ func (a *App) ensureLoginProxy() error {
 	if err != nil {
 		return err
 	}
-
-	proxy.SetRequestCookieInjector(func(req *http.Request) {
-		if a.cookieMgr == nil || a.configMgr == nil {
-			return
-		}
-
-		planeURL := a.configMgr.Get().PlaneURL
-		host, err := cookie.HostFromPlaneURL(planeURL)
-		if err != nil || host == "" {
-			return
-		}
-
-		cookie.MergeRequestCookies(req, a.cookieMgr.GetCookiesForRequest(host))
-	})
 
 	a.auth.loginProxy = proxy
 	a.auth.loginURL = loginURL
@@ -231,7 +233,7 @@ func (a *App) GetWebsiteURL() string {
 	}
 
 	if a.auth.loginProxy != nil {
-		return a.auth.loginProxy.URLWithSecret("/")
+		return a.auth.loginProxy.URLWithBootstrap("/")
 	}
 
 	if a.configMgr != nil {
@@ -244,7 +246,7 @@ func (a *App) GetWebsiteURL() string {
 // GetLoginURL returns the URL the login iframe should load.
 func (a *App) GetLoginURL() string {
 	if a.auth.loginProxy != nil {
-		return a.auth.loginProxy.URLWithSecret("/sign-in/")
+		return a.auth.loginProxy.URLWithBootstrap("/sign-in/")
 	}
 
 	if a.configMgr != nil {
@@ -277,7 +279,7 @@ func (a *App) TryAuthenticateFromWebview() error {
 	return nil
 }
 
-// SubmitWebviewCookies stores cookies provided by the frontend JS bridge.
+// SubmitWebviewCookies probes webview cookies without persisting until auth succeeds.
 func (a *App) SubmitWebviewCookies(cookieHeader string) error {
 	if a.configMgr == nil || a.cookieMgr == nil {
 		return fmt.Errorf("app not initialized")
@@ -289,9 +291,19 @@ func (a *App) SubmitWebviewCookies(cookieHeader string) error {
 	}
 
 	planeURL := a.configMgr.Get().PlaneURL
-	if err := a.cookieMgr.ExtractFromWebview(planeURL, cookies); err != nil {
+	snapshot := a.cookieMgr.SnapshotCookies()
+	if err := a.cookieMgr.MergeFromWebview(planeURL, cookies); err != nil {
 		return err
 	}
 
-	return a.TryAuthenticateFromWebview()
+	if err := a.TryAuthenticateFromWebview(); err != nil {
+		a.cookieMgr.RestoreCookies(snapshot)
+		return err
+	}
+
+	if err := a.cookieMgr.SaveSecurely(); err != nil {
+		return err
+	}
+
+	return nil
 }

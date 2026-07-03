@@ -319,7 +319,7 @@
     {#if loadError}
       <p class="error login-error">{loadError}</p>
     {/if}
-    <LoginWebview loginUrl={authState.login_url ? `${authState.login_url}/sign-in/` : ""} />
+    <LoginWebview />
   </main>
 {/if}
 
