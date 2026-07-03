@@ -26,6 +26,62 @@ from plane.utils.path_validator import sanitize_filename
 from plane.bgtasks.storage_metadata_task import get_asset_object_metadata
 from plane.throttles.asset import AssetRateThrottle
 
+# Entity types created and served via ProjectAssetEndpoint — not workspace-scoped routes.
+_PROJECT_SCOPED_ENTITY_TYPES = (
+    FileAsset.EntityTypeContext.ISSUE_ATTACHMENT,
+    FileAsset.EntityTypeContext.ISSUE_DESCRIPTION,
+    FileAsset.EntityTypeContext.COMMENT_DESCRIPTION,
+    FileAsset.EntityTypeContext.PAGE_DESCRIPTION,
+    FileAsset.EntityTypeContext.DRAFT_ISSUE_ATTACHMENT,
+    FileAsset.EntityTypeContext.DRAFT_ISSUE_DESCRIPTION,
+)
+
+
+def _entity_id_value_for_asset(asset):
+    if asset.entity_type == FileAsset.EntityTypeContext.WORKSPACE_LOGO:
+        return asset.workspace_id
+    if asset.entity_type == FileAsset.EntityTypeContext.PROJECT_COVER:
+        return asset.project_id
+    if asset.entity_type in (
+        FileAsset.EntityTypeContext.USER_AVATAR,
+        FileAsset.EntityTypeContext.USER_COVER,
+    ):
+        return asset.user_id
+    if asset.entity_type in (
+        FileAsset.EntityTypeContext.ISSUE_ATTACHMENT,
+        FileAsset.EntityTypeContext.ISSUE_DESCRIPTION,
+    ):
+        return asset.issue_id
+    if asset.entity_type == FileAsset.EntityTypeContext.PAGE_DESCRIPTION:
+        return asset.page_id
+    if asset.entity_type == FileAsset.EntityTypeContext.COMMENT_DESCRIPTION:
+        return asset.comment_id
+    if asset.entity_type == FileAsset.EntityTypeContext.DRAFT_ISSUE_DESCRIPTION:
+        return asset.draft_issue_id
+    return None
+
+
+def _verify_asset_entity_project_context(asset, project_id):
+    """When entity_type implies a parent, ensure it belongs to the URL project."""
+    if asset.entity_type in (
+        FileAsset.EntityTypeContext.ISSUE_ATTACHMENT,
+        FileAsset.EntityTypeContext.ISSUE_DESCRIPTION,
+    ):
+        if asset.issue_id is not None and str(asset.issue.project_id) != str(project_id):
+            raise FileAsset.DoesNotExist
+    elif asset.entity_type == FileAsset.EntityTypeContext.COMMENT_DESCRIPTION:
+        if asset.comment_id is not None and str(asset.comment.issue.project_id) != str(project_id):
+            raise FileAsset.DoesNotExist
+    elif asset.entity_type == FileAsset.EntityTypeContext.PAGE_DESCRIPTION:
+        if asset.page_id is not None and str(asset.page.project_id) != str(project_id):
+            raise FileAsset.DoesNotExist
+    elif asset.entity_type == FileAsset.EntityTypeContext.DRAFT_ISSUE_DESCRIPTION:
+        if asset.draft_issue_id is not None and str(asset.draft_issue.project_id) != str(project_id):
+            raise FileAsset.DoesNotExist
+    elif asset.entity_type == FileAsset.EntityTypeContext.PROJECT_COVER:
+        if asset.project_id is not None and str(asset.project_id) != str(project_id):
+            raise FileAsset.DoesNotExist
+
 
 class UserAssetsV2Endpoint(BaseAPIView):
     """This endpoint is used to upload user profile images."""
@@ -234,6 +290,18 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
             return {"comment_id": entity_id}
         return {}
 
+    def get_workspace_asset(self, asset_id, slug):
+        asset = FileAsset.objects.get(id=asset_id, workspace__slug=slug)
+
+        if asset.entity_type in _PROJECT_SCOPED_ENTITY_TYPES:
+            raise FileAsset.DoesNotExist
+
+        entity_id = _entity_id_value_for_asset(asset)
+        entity_filters = self.get_entity_id_field(entity_type=asset.entity_type, entity_id=entity_id)
+        if entity_filters:
+            return FileAsset.objects.get(id=asset_id, workspace__slug=slug, **entity_filters)
+        return asset
+
     def asset_delete(self, asset_id):
         asset = FileAsset.objects.filter(id=asset_id).first()
         # Check if the asset exists
@@ -391,8 +459,8 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def patch(self, request, slug, asset_id):
-        # get the asset id
-        asset = FileAsset.objects.get(id=asset_id, workspace__slug=slug)
+        # get the asset id — scope by entity binding set at creation
+        asset = self.get_workspace_asset(asset_id=asset_id, slug=slug)
         # get the storage metadata
         asset.is_uploaded = True
         # get the storage metadata
@@ -413,7 +481,7 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def delete(self, request, slug, asset_id):
-        asset = FileAsset.objects.get(id=asset_id, workspace__slug=slug)
+        asset = self.get_workspace_asset(asset_id=asset_id, slug=slug)
         asset.is_deleted = True
         asset.deleted_at = timezone.now()
         # get the entity and save the asset id for the request field
@@ -423,8 +491,8 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def get(self, request, slug, asset_id):
-        # get the asset id
-        asset = FileAsset.objects.get(id=asset_id, workspace__slug=slug)
+        # get the asset id — scope by entity binding set at creation
+        asset = self.get_workspace_asset(asset_id=asset_id, slug=slug)
 
         # Check if the asset is uploaded
         if not asset.is_uploaded:
@@ -525,6 +593,20 @@ class ProjectAssetEndpoint(BaseAPIView):
             return {"draft_issue_id": entity_id}
         return {}
 
+    def get_project_asset(self, asset_id, slug, project_id):
+        asset = FileAsset.objects.get(id=asset_id, workspace__slug=slug, project_id=project_id)
+        _verify_asset_entity_project_context(asset, project_id)
+        entity_id = _entity_id_value_for_asset(asset)
+        entity_filters = self.get_entity_id_field(entity_type=asset.entity_type, entity_id=entity_id)
+        if entity_filters:
+            return FileAsset.objects.get(
+                id=asset_id,
+                workspace__slug=slug,
+                project_id=project_id,
+                **entity_filters,
+            )
+        return asset
+
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def post(self, request, slug, project_id):
         name = sanitize_filename(request.data.get("name")) or "unnamed"
@@ -594,8 +676,8 @@ class ProjectAssetEndpoint(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def patch(self, request, slug, project_id, pk):
-        # get the asset id
-        asset = FileAsset.objects.get(id=pk, workspace__slug=slug, project_id=project_id)
+        # get the asset id — scope to project and parent entity binding
+        asset = self.get_project_asset(asset_id=pk, slug=slug, project_id=project_id)
         # get the storage metadata
         asset.is_uploaded = True
         # get the storage metadata
@@ -610,8 +692,8 @@ class ProjectAssetEndpoint(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def delete(self, request, slug, project_id, pk):
-        # Get the asset
-        asset = FileAsset.objects.get(id=pk, workspace__slug=slug, project_id=project_id)
+        # Get the asset — scope to project and parent entity binding
+        asset = self.get_project_asset(asset_id=pk, slug=slug, project_id=project_id)
         # Check deleted assets
         asset.is_deleted = True
         asset.deleted_at = timezone.now()
@@ -621,8 +703,8 @@ class ProjectAssetEndpoint(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id, pk):
-        # get the asset id
-        asset = FileAsset.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
+        # get the asset id — scope to project and parent entity binding
+        asset = self.get_project_asset(asset_id=pk, slug=slug, project_id=project_id)
 
         # Check if the asset is uploaded
         if not asset.is_uploaded:
