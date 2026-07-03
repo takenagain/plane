@@ -1,0 +1,198 @@
+name: Desktop release artifacts
+
+on:
+  push:
+    branches:
+      - preview
+      - staging
+    tags:
+      - "v*"
+      - "v*-rc*"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build from"
+        required: false
+        default: "staging"
+      platform:
+        description: "Platform to build (all, linux-amd64, windows-amd64, macos-universal)"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - linux-amd64
+          - windows-amd64
+          - macos-universal
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  WAILS_VERSION: "v2.12.0"
+  APP_WORKING_DIRECTORY: apps/desktop
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact_name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-amd64
+            artifact_name: plane-desktop-linux-amd64
+            os: ubuntu-latest
+            wails_platform: linux/amd64
+            nsis: false
+          - id: windows-amd64
+            artifact_name: plane-desktop-windows-amd64
+            os: windows-latest
+            wails_platform: windows/amd64
+            nsis: true
+          - id: macos-universal
+            artifact_name: plane-desktop-macos-universal
+            os: macos-latest
+            wails_platform: darwin/universal
+            nsis: false
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.platform == 'all' ||
+      github.event.inputs.platform == matrix.id
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Resolve build version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            version="${GITHUB_REF#refs/tags/}"
+          elif [[ -n "${{ github.event.inputs.branch }}" ]]; then
+            version="${{ github.event.inputs.branch }}"
+          else
+            version="${GITHUB_REF_NAME}"
+          fi
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${version}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/desktop/go.mod
+          cache-dependency-path: apps/desktop/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".node-version"
+          cache: npm
+          cache-dependency-path: apps/desktop/frontend/package-lock.json
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            gcc-aarch64-linux-gnu
+          distro="$(. /etc/os-release && echo "${VERSION_ID}")"
+          if [[ "${distro}" == "24.04" ]]; then
+            sudo apt-get install -y libwebkit2gtk-4.1-dev
+            echo "WAILS_BUILD_TAGS=webkit2_41" >> "$GITHUB_ENV"
+          else
+            sudo apt-get install -y libwebkit2gtk-4.0-dev
+          fi
+
+      - name: Install NSIS
+        if: runner.os == 'Windows' && matrix.nsis == true
+        shell: pwsh
+        run: choco install nsis -y
+
+      - name: Install Wails CLI
+        shell: bash
+        run: go install "github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}"
+
+      - name: Build desktop app
+        shell: bash
+        working-directory: ${{ env.APP_WORKING_DIRECTORY }}
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          build_args=(
+            -clean
+            -platform "${{ matrix.wails_platform }}"
+            -o plane-desktop
+            -webview2 embed
+          )
+          if [[ -n "${WAILS_BUILD_TAGS:-}" ]]; then
+            build_args+=(-tags "${WAILS_BUILD_TAGS}")
+          fi
+          if [[ "${{ matrix.nsis }}" == "true" ]]; then
+            build_args+=(-nsis)
+          fi
+          wails build "${build_args[@]}"
+
+      - name: Stage Linux artifacts
+        if: runner.os == 'Linux'
+        shell: bash
+        working-directory: ${{ env.APP_WORKING_DIRECTORY }}
+        run: |
+          set -euo pipefail
+          staging="dist/${{ matrix.artifact_name }}"
+          mkdir -p "${staging}"
+          cp "build/bin/plane-desktop" "${staging}/"
+          chmod +x "${staging}/plane-desktop"
+          echo "${{ steps.version.outputs.value }}" > "${staging}/VERSION"
+          # Wails v2 does not emit AppImage; upload the native binary for Linux.
+          echo "Note: AppImage packaging is not produced by Wails v2; see apps/desktop/build-release.sh for local parity." \
+            > "${staging}/BUILD-NOTES.txt"
+
+      - name: Stage Windows artifacts
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ env.APP_WORKING_DIRECTORY }}
+        run: |
+          set -euo pipefail
+          staging="dist/${{ matrix.artifact_name }}"
+          mkdir -p "${staging}"
+          cp "build/bin/plane-desktop.exe" "${staging}/"
+          if [[ -f "build/bin/plane-desktop-amd64-installer.exe" ]]; then
+            cp "build/bin/plane-desktop-amd64-installer.exe" "${staging}/"
+          fi
+          echo "${{ steps.version.outputs.value }}" > "${staging}/VERSION"
+
+      - name: Stage macOS artifacts
+        if: runner.os == 'macOS'
+        shell: bash
+        working-directory: ${{ env.APP_WORKING_DIRECTORY }}
+        run: |
+          set -euo pipefail
+          staging="dist/${{ matrix.artifact_name }}"
+          mkdir -p "${staging}"
+          ditto -c -k --keepParent "build/bin/plane-desktop.app" "${staging}/plane-desktop.app.zip"
+          echo "${{ steps.version.outputs.value }}" > "${staging}/VERSION"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ env.APP_WORKING_DIRECTORY }}/dist/${{ matrix.artifact_name }}
+          if-no-files-found: error
+          retention-days: 30

@@ -2,6 +2,9 @@ name: Desktop app
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "v*-rc.*"
   pull_request:
     branches:
       - "preview"
