@@ -183,7 +183,7 @@ class InstanceEndpoint(BaseAPIView):
         data["sentry_client_id"] = SENTRY_CLIENT_ID
 
         # Posthog
-        data["posthog_api_key"] = POSTHOG_API_KEY
+        data["has_posthog_configured"] = bool(POSTHOG_API_KEY)
         data["posthog_host"] = POSTHOG_HOST
 
         # Unsplash

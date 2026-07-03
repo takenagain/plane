@@ -10,6 +10,7 @@ from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 # Third Party imports
@@ -19,13 +20,15 @@ from rest_framework.permissions import AllowAny
 
 # Module imports
 from .base import BaseViewSet, BaseAPIView
-from plane.app.serializers import ProjectMemberInviteSerializer
+from plane.app.serializers import (
+    ProjectMemberInviteSerializer,
+    ProjectMemberInvitePublicSerializer,
+)
 from plane.app.permissions import allow_permission, ROLE
 from plane.db.models import (
     ProjectMember,
     Workspace,
     ProjectMemberInvite,
-    User,
     WorkspaceMember,
     Project,
     ProjectUserProperty,
@@ -49,6 +52,18 @@ class ProjectInvitationsViewset(BaseViewSet):
             .select_related("project")
             .select_related("workspace", "workspace__owner")
         )
+
+    @allow_permission([ROLE.ADMIN])
+    def list(self, request, slug, project_id):
+        return super().list(request, slug, project_id)
+
+    @allow_permission([ROLE.ADMIN])
+    def retrieve(self, request, slug, project_id, pk):
+        return super().retrieve(request, slug, project_id, pk)
+
+    @allow_permission([ROLE.ADMIN])
+    def destroy(self, request, slug, project_id, pk):
+        return super().destroy(request, slug, project_id, pk)
 
     @allow_permission([ROLE.ADMIN])
     def create(self, request, slug, project_id):
@@ -186,22 +201,46 @@ class ProjectJoinEndpoint(BaseAPIView):
     def post(self, request, slug, project_id, pk):
         project_invite = ProjectMemberInvite.objects.get(pk=pk, project_id=project_id, workspace__slug=slug)
 
-        email = request.data.get("email", "")
+        token = request.data.get("token", "")
 
-        if email == "" or project_invite.email != email:
+        # Validate the token to verify the user received the invitation email
+        if not token or project_invite.token != token:
             return Response(
                 {"error": "You do not have permission to join the project"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if project_invite.responded_at is None:
+        # Require an authenticated session — the accepting user must be the
+        # person who was invited. Without this check an attacker who registers
+        # with the invited address (email-squat) can steal the project membership.
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required to accept project invitation"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        if request.user.email.lower() != project_invite.email.lower():
+            return Response(
+                {"error": "You do not have permission to accept this invitation"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        with transaction.atomic():
+            project_invite = ProjectMemberInvite.objects.select_for_update().get(
+                pk=pk, project_id=project_id, workspace__slug=slug
+            )
+
+            if project_invite.responded_at is not None:
+                return Response(
+                    {"error": "You have already responded to the invitation request"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             project_invite.accepted = request.data.get("accepted", False)
             project_invite.responded_at = timezone.now()
             project_invite.save()
 
             if project_invite.accepted:
-                # Check if the user account exists
-                user = User.objects.filter(email=email).first()
+                user = request.user
 
                 # Check if user is a part of workspace
                 workspace_member = WorkspaceMember.objects.filter(workspace__slug=slug, member=user).first()
@@ -243,12 +282,7 @@ class ProjectJoinEndpoint(BaseAPIView):
                 status=status.HTTP_200_OK,
             )
 
-        return Response(
-            {"error": "You have already responded to the invitation request"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
     def get(self, request, slug, project_id, pk):
         project_invitation = ProjectMemberInvite.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
-        serializer = ProjectMemberInviteSerializer(project_invitation)
+        serializer = ProjectMemberInvitePublicSerializer(project_invitation)
         return Response(serializer.data, status=status.HTTP_200_OK)
