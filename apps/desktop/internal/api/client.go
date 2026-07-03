@@ -69,12 +69,17 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+	if resp.StatusCode == http.StatusUnauthorized {
 		resp.Body.Close()
 		if c.onAuthError != nil {
 			c.onAuthError()
 		}
 		return nil, fmt.Errorf("authentication failed: status %d", resp.StatusCode)
+	}
+
+	if resp.StatusCode == http.StatusForbidden {
+		resp.Body.Close()
+		return nil, fmt.Errorf("forbidden: status %d", resp.StatusCode)
 	}
 
 	return resp, nil
@@ -491,7 +496,8 @@ func (c *Client) GetIssueTotalTime(workspaceSlug, projectID, issueID string) (in
 	if err := decodeJSON(resp, &result); err != nil {
 		return 0, err
 	}
-	return result.TotalDuration, nil
+	// Plane API aggregates worklog duration in minutes; desktop UI expects seconds.
+	return result.TotalDuration * 60, nil
 }
 
 // StartTimeTracking starts time tracking for an issue

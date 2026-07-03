@@ -206,7 +206,7 @@ func (m *Manager) saveState() error {
 
 	// Write to temp file first
 	tempPath := m.statePath + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0600); err != nil {
 		return err
 	}
 

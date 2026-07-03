@@ -166,6 +166,8 @@ type State struct {
 type WorkLog struct {
 	ID        string    `json:"id"`
 	IssueID   string    `json:"issue"`
+	ProjectID string    `json:"project"`
+	IssueName string    `json:"issue_name"`
 	UserID    string    `json:"created_by"`
 	CreatedAt time.Time `json:"created_at"`
 	Duration  int       `json:"duration"`

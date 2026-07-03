@@ -250,7 +250,7 @@ func TestGetIssueTotalTime(t *testing.T) {
 		if r.URL.Path != expected {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"total_duration": 3600})
+		_ = json.NewEncoder(w).Encode(map[string]any{"total_duration": 60})
 	}))
 	t.Cleanup(server.Close)
 

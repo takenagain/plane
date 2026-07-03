@@ -126,7 +126,48 @@ func (a *App) authenticate() error {
 		a.configMgr.Save()
 	}
 
+	a.syncTimerWithServer()
+
 	return nil
+}
+
+func (a *App) syncTimerWithServer() {
+	if a.apiClient == nil || a.currentWorkspace == nil || a.timerMgr == nil {
+		return
+	}
+
+	active, err := a.apiClient.GetActiveTimeTracking(a.currentWorkspace.Slug)
+	if err != nil {
+		log.Printf("Failed to sync timer with server: %v", err)
+		return
+	}
+
+	if active == nil {
+		if a.timerMgr.IsActive() {
+			a.timerMgr.Stop()
+		}
+		return
+	}
+
+	issueTitle := active.IssueName
+	if issueTitle == "" {
+		issueTitle = fmt.Sprintf("Issue %s", active.IssueID)
+	}
+
+	state := a.timerMgr.GetState()
+	if !a.timerMgr.IsActive() {
+		if err := a.timerMgr.Start(active, issueTitle, active.ProjectID); err != nil {
+			log.Printf("Failed to restore active timer from server: %v", err)
+		}
+		return
+	}
+
+	if state.WorklogID != active.ID {
+		a.timerMgr.Stop()
+		if err := a.timerMgr.Start(active, issueTitle, active.ProjectID); err != nil {
+			log.Printf("Failed to reconcile active timer with server: %v", err)
+		}
+	}
 }
 
 // handleStopTracking handles stopping time tracking
@@ -192,6 +233,21 @@ func (a *App) startTrackingForIssue(issue *models.Issue) error {
 		}
 	}
 
+	active, err := a.apiClient.GetActiveTimeTracking(a.currentWorkspace.Slug)
+	if err != nil {
+		return fmt.Errorf("failed to check active tracking: %w", err)
+	}
+	if active != nil {
+		if err := a.apiClient.StopTimeTracking(
+			a.currentWorkspace.Slug,
+			active.ProjectID,
+			active.IssueID,
+			active.ID,
+		); err != nil {
+			return fmt.Errorf("failed to stop remote active tracking: %w", err)
+		}
+	}
+
 	worklog, err := a.apiClient.StartTimeTracking(
 		a.currentWorkspace.Slug,
 		issue.ProjectID,
@@ -207,6 +263,14 @@ func (a *App) startTrackingForIssue(issue *models.Issue) error {
 	}
 
 	if err := a.timerMgr.Start(worklog, issueTitle, issue.ProjectID); err != nil {
+		if stopErr := a.apiClient.StopTimeTracking(
+			a.currentWorkspace.Slug,
+			issue.ProjectID,
+			issue.ID,
+			worklog.ID,
+		); stopErr != nil {
+			log.Printf("Failed to rollback server worklog after local timer error: %v", stopErr)
+		}
 		return fmt.Errorf("failed to start local timer: %w", err)
 	}
 
@@ -268,7 +332,9 @@ func (a *App) UpdateConfig(cfg *config.Config) error {
 		return fmt.Errorf("config manager not initialized")
 	}
 
-	a.configMgr.Update(cfg)
+	if err := a.configMgr.Update(cfg); err != nil {
+		return err
+	}
 	return a.configMgr.Save()
 }
 
@@ -377,8 +443,9 @@ func (a *App) StopTracking() error {
 	}
 
 	state := a.timerMgr.GetState()
+	var backendErr error
 
-	// Stop on backend
+	// Stop on backend first; always clear the local timer so UI stays consistent.
 	if a.apiClient != nil && a.currentWorkspace != nil {
 		err := a.apiClient.StopTimeTracking(
 			a.currentWorkspace.Slug,
@@ -387,12 +454,12 @@ func (a *App) StopTracking() error {
 			state.WorklogID,
 		)
 		if err != nil {
-			return err
+			backendErr = err
+			log.Printf("Backend stop failed (stopping locally anyway): %v", err)
 		}
 	}
 
-	// Stop locally
 	a.timerMgr.Stop()
 
-	return nil
+	return backendErr
 }
