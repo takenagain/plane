@@ -1,18 +1,23 @@
 <script>
   import LoginWebview from "./components/LoginWebview.svelte";
   import WebsiteView from "./components/WebsiteView.svelte";
-  import IssueSelectionDialog from "./components/IssueSelectionDialog.svelte";
   import WorkItemTiles from "./components/WorkItemTiles.svelte";
+  import WorkItemCard from "./components/WorkItemCard.svelte";
+  import IssueSearchCombobox from "./components/IssueSearchCombobox.svelte";
   import {
     GetAuthState,
     GetConfig,
     GetTimerState,
     GetCurrentUser,
     GetCurrentWorkspace,
+    GetIssueTotalTime,
+    GetMyIssues,
     OpenLogin,
+    StartTrackingIssue,
     StopTracking,
   } from "../wailsjs/go/main/App.js";
   import { EventsOn } from "../wailsjs/runtime/runtime.js";
+  import { EMPTY_FILTERS, formatElapsed } from "./lib/issueUtils.js";
 
   const VIEW_STORAGE_KEY = "plane-desktop-active-view";
 
@@ -22,7 +27,12 @@
   let user = $state(null);
   let workspace = $state(null);
   let loadError = $state("");
-  let issueDialogOpen = $state(false);
+  let listFilters = $state({ ...EMPTY_FILTERS });
+  let selectedIssue = $state(null);
+  let activeIssue = $state(null);
+  let selectedTotalSeconds = $state(0);
+  let activeTotalSeconds = $state(0);
+  let sessionBusy = $state(false);
   let timerRefreshInterval = null;
 
   function loadSavedView() {
@@ -35,20 +45,88 @@
   const isAuthenticated = $derived(authState.status === "authenticated");
   const isTracking = $derived(Boolean(timerState?.is_active));
 
-  function formatElapsed(totalSeconds) {
-    const seconds = Math.max(0, totalSeconds || 0);
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+  async function loadIssueTotal(issue) {
+    if (!issue?.project_id || !issue?.id) {
+      return 0;
+    }
+    try {
+      return await GetIssueTotalTime(issue.project_id, issue.id);
+    } catch {
+      return issue.time_logged ?? 0;
+    }
   }
 
-  async function stopTracking() {
+  async function syncActiveIssue() {
+    if (!isTracking || !timerState?.issue_id) {
+      activeIssue = null;
+      activeTotalSeconds = 0;
+      return;
+    }
+
+    if (activeIssue?.id === timerState.issue_id) {
+      return;
+    }
+
     try {
-      await StopTracking();
+      const issues = await GetMyIssues({ ...EMPTY_FILTERS, limit: 100 });
+      const match = issues.find((issue) => issue.id === timerState.issue_id);
+      activeIssue = match ?? {
+        id: timerState.issue_id,
+        project_id: timerState.project_id,
+        name: timerState.issue_title,
+      };
+      activeTotalSeconds = await loadIssueTotal(activeIssue);
+    } catch {
+      activeIssue = {
+        id: timerState.issue_id,
+        project_id: timerState.project_id,
+        name: timerState.issue_title,
+      };
+      activeTotalSeconds = 0;
+    }
+  }
+
+  async function handleIssuePicked(issue) {
+    selectedIssue = issue;
+    selectedTotalSeconds = await loadIssueTotal(issue);
+  }
+
+  function clearSelectedIssue() {
+    selectedIssue = null;
+    selectedTotalSeconds = 0;
+  }
+
+  async function startSelectedTracking() {
+    if (!selectedIssue) {
+      return;
+    }
+
+    sessionBusy = true;
+    loadError = "";
+
+    try {
+      await StartTrackingIssue(selectedIssue);
+      clearSelectedIssue();
       await refresh();
     } catch (err) {
       loadError = String(err);
+    } finally {
+      sessionBusy = false;
+    }
+  }
+
+  async function stopTracking() {
+    sessionBusy = true;
+    loadError = "";
+
+    try {
+      await StopTracking();
+      clearSelectedIssue();
+      await refresh();
+    } catch (err) {
+      loadError = String(err);
+    } finally {
+      sessionBusy = false;
     }
   }
 
@@ -65,25 +143,10 @@
       user = await GetCurrentUser();
       workspace = await GetCurrentWorkspace();
       loadError = "";
+      await syncActiveIssue();
     } catch (err) {
       loadError = String(err);
     }
-  }
-
-  function openIssueDialog() {
-    if (!isAuthenticated) {
-      void showLogin();
-      return;
-    }
-    issueDialogOpen = true;
-  }
-
-  function closeIssueDialog() {
-    issueDialogOpen = false;
-  }
-
-  async function handleIssueSelected() {
-    await refresh();
   }
 
   async function showLogin() {
@@ -95,17 +158,15 @@
     void refresh();
 
     let cancelAuth = () => {};
-    let cancelIssueSelection = () => {};
 
     try {
       if (window.runtime?.EventsOnMultiple) {
-        cancelAuth = EventsOn("auth:state-changed", (state) => {
-          authState = state;
+        cancelAuth = EventsOn("auth:state-changed", () => {
           refresh();
         });
 
-        cancelIssueSelection = EventsOn("open-issue-selection", () => {
-          openIssueDialog();
+        EventsOn("open-issue-selection", () => {
+          setActiveView("timer");
         });
       } else {
         loadError = "Wails runtime not ready — restart the app.";
@@ -120,6 +181,7 @@
       }
       try {
         timerState = await GetTimerState();
+        await syncActiveIssue();
       } catch {
         // Ignore transient timer refresh errors.
       }
@@ -127,11 +189,17 @@
 
     return () => {
       cancelAuth();
-      cancelIssueSelection();
       if (timerRefreshInterval) {
         clearInterval(timerRefreshInterval);
       }
     };
+  });
+
+  $effect(() => {
+    if (isTracking) {
+      selectedIssue = null;
+      selectedTotalSeconds = 0;
+    }
   });
 </script>
 
@@ -178,37 +246,74 @@
 
           <section class="panel">
             <h2>Current session</h2>
-            {#if isTracking}
-              <p class="timer-display">{formatElapsed(timerState.elapsed_seconds)}</p>
-              <p class="tracking-title">{timerState.issue_title}</p>
-              <button class="btn stop" type="button" onclick={stopTracking}>
-                Stop tracking
-              </button>
-            {:else}
-              <p>No active tracking session.</p>
-              <button class="btn" type="button" onclick={openIssueDialog}>
-                Start tracking
-              </button>
-            {/if}
-            <button class="btn secondary" type="button" onclick={openIssueDialog}>
-              Search issues
-            </button>
 
-            <WorkItemTiles {timerState} onTrackingChange={refresh} />
+            {#if isTracking && activeIssue}
+              <WorkItemCard
+                issue={activeIssue}
+                totalSeconds={activeTotalSeconds}
+                elapsedSeconds={timerState.elapsed_seconds}
+                isActive={true}
+              />
+              <div class="session-actions">
+                <button
+                  class="btn stop"
+                  type="button"
+                  disabled={sessionBusy}
+                  onclick={stopTracking}
+                >
+                  Stop tracking
+                </button>
+              </div>
+            {:else if selectedIssue}
+              <WorkItemCard issue={selectedIssue} totalSeconds={selectedTotalSeconds} />
+              <div class="session-actions">
+                <button
+                  class="btn"
+                  type="button"
+                  disabled={sessionBusy}
+                  onclick={startSelectedTracking}
+                >
+                  Start tracking
+                </button>
+                <button
+                  class="btn secondary"
+                  type="button"
+                  disabled={sessionBusy}
+                  onclick={clearSelectedIssue}
+                >
+                  Clear
+                </button>
+              </div>
+            {:else}
+              <IssueSearchCombobox
+                {workspace}
+                disabled={sessionBusy}
+                onSelect={handleIssuePicked}
+              />
+              <div class="session-actions">
+                <button class="btn" type="button" disabled>
+                  Start tracking
+                </button>
+              </div>
+            {/if}
+
+            <WorkItemTiles
+              {timerState}
+              filters={listFilters}
+              onFiltersChange={(next) => {
+                listFilters = next;
+              }}
+              onTrackingChange={refresh}
+            />
           </section>
 
-          <button class="btn" type="button" onclick={refresh}>Refresh</button>
+          <button class="btn secondary refresh-all" type="button" onclick={refresh}>
+            Refresh
+          </button>
         </main>
       {/if}
     </div>
   </div>
-
-  <IssueSelectionDialog
-    open={issueDialogOpen}
-    {workspace}
-    onSelect={handleIssueSelected}
-    onClose={closeIssueDialog}
-  />
 {:else}
   <main class="login-fallback">
     {#if loadError}
@@ -280,7 +385,7 @@
 
   .shell {
     width: 100%;
-    max-width: 720px;
+    max-width: 820px;
     margin: 0 auto;
     padding: 1.5rem;
     color: #e2e8f0;
@@ -323,22 +428,16 @@
   }
 
   .panel h2 {
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.75rem;
     font-size: 1rem;
     color: #94a3b8;
   }
 
-  .timer-display {
-    margin: 0.25rem 0;
-    font-size: 2.25rem;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-
-  .tracking-title {
-    margin: 0 0 1rem;
-    color: #cbd5e1;
+  .session-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
   }
 
   .error {
@@ -352,28 +451,36 @@
     cursor: pointer;
     background: #3b82f6;
     color: white;
+    font: inherit;
+  }
+
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: default;
   }
 
   .btn.secondary {
-    margin-top: 0.75rem;
     background: #334155;
   }
 
   .btn.stop {
-    margin-top: 0.25rem;
     background: #dc2626;
   }
 
-  .btn.stop:hover {
+  .btn.stop:hover:not(:disabled) {
     background: #b91c1c;
   }
 
-  .btn:hover {
+  .btn:hover:not(:disabled) {
     background: #2563eb;
   }
 
-  .btn.secondary:hover {
+  .btn.secondary:hover:not(:disabled) {
     background: #475569;
+  }
+
+  .refresh-all {
+    margin-top: 0.25rem;
   }
 
   .login-fallback {

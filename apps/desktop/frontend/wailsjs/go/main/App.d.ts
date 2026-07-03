@@ -29,7 +29,11 @@ export function GetCurrentWorkspace(): Promise<models.Workspace>;
 
 export function SearchIssues(arg1: string): Promise<Array<models.Issue>>;
 
-export function GetMyIssues(): Promise<Array<models.Issue>>;
+export function GetMyIssues(arg1: models.IssueFilters): Promise<Array<models.Issue>>;
+
+export function GetFilterOptions(): Promise<models.FilterOptions>;
+
+export function GetIssueTotalTime(arg1: string, arg2: string): Promise<number>;
 
 export function StartTracking(arg1: string, arg2: string): Promise<void>;
 
@@ -92,9 +96,15 @@ export namespace models {
     project_id: string;
     sequence_id: number;
     state: string;
+    state_id: string;
     priority: string;
     project__identifier: string;
     workspace__slug: string;
+    target_date?: string;
+    cycle_id: string;
+    module_ids: Array<string>;
+    assignee_ids: Array<string>;
+    time_logged: number;
     state_detail?: State;
   }
 
@@ -103,5 +113,39 @@ export namespace models {
     name: string;
     color: string;
     group: string;
+  }
+
+  export class IssueFilters {
+    assignees: Array<string>;
+    project: string;
+    module: string;
+    cycle: string;
+    priority: Array<string>;
+    state_group: Array<string>;
+    labels: Array<string>;
+    search: string;
+    limit: number;
+    offset: number;
+  }
+
+  export class FilterOption {
+    id: string;
+    name: string;
+    project_id: string;
+  }
+
+  export class MemberOption {
+    id: string;
+    display_name: string;
+    email: string;
+  }
+
+  export class FilterOptions {
+    projects: Array<FilterOption>;
+    modules: Array<FilterOption>;
+    cycles: Array<FilterOption>;
+    members: Array<MemberOption>;
+    priorities: Array<string>;
+    state_groups: Array<string>;
   }
 }

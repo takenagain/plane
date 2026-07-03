@@ -1,30 +1,28 @@
 <script>
   import {
     GetMyIssues,
+    GetFilterOptions,
     StartTrackingIssue,
     StopTracking,
   } from "../../wailsjs/go/main/App.js";
+  import { EMPTY_FILTERS, issueIdentifier, issueStatus } from "../lib/issueUtils.js";
+  import WorkItemFilters from "./WorkItemFilters.svelte";
+  import ConfirmDialog from "./ConfirmDialog.svelte";
 
-  let { timerState = null, onTrackingChange = () => {} } = $props();
+  let {
+    timerState = null,
+    filters = EMPTY_FILTERS,
+    onFiltersChange = () => {},
+    onTrackingChange = () => {},
+  } = $props();
 
   let issues = $state([]);
+  let filterOptions = $state(null);
   let loading = $state(false);
   let error = $state("");
   let actionIssueId = $state("");
-
-  function issueIdentifier(issue) {
-    if (issue.project__identifier && issue.sequence_id) {
-      return `${issue.project__identifier}-${issue.sequence_id}`;
-    }
-    return issue.id;
-  }
-
-  function issueStatus(issue) {
-    if (issue.state_detail?.name) {
-      return issue.state_detail.name;
-    }
-    return issue.state || "";
-  }
+  let confirmOpen = $state(false);
+  let pendingIssue = $state(null);
 
   function isTrackingIssue(issue) {
     return Boolean(
@@ -34,12 +32,20 @@
     );
   }
 
+  async function loadFilterOptions() {
+    try {
+      filterOptions = await GetFilterOptions();
+    } catch (err) {
+      error = String(err);
+    }
+  }
+
   async function loadIssues() {
     loading = true;
     error = "";
 
     try {
-      const results = await GetMyIssues();
+      const results = await GetMyIssues(filters);
       issues = results ?? [];
     } catch (err) {
       issues = [];
@@ -49,24 +55,12 @@
     }
   }
 
-  async function handleToggle(issue) {
-    if (!issue?.id || !issue?.project_id) {
-      error = "Issue is missing required fields";
-      return;
-    }
-
+  async function startTracking(issue) {
     actionIssueId = issue.id;
     error = "";
 
     try {
-      if (isTrackingIssue(issue)) {
-        await StopTracking();
-      } else {
-        if (timerState?.is_active) {
-          await StopTracking();
-        }
-        await StartTrackingIssue(issue);
-      }
+      await StartTrackingIssue(issue);
       await onTrackingChange();
     } catch (err) {
       error = String(err);
@@ -75,7 +69,68 @@
     }
   }
 
+  async function stopTracking() {
+    error = "";
+    try {
+      await StopTracking();
+      await onTrackingChange();
+    } catch (err) {
+      error = String(err);
+    }
+  }
+
+  async function handleToggle(issue) {
+    if (!issue?.id || !issue?.project_id) {
+      error = "Issue is missing required fields";
+      return;
+    }
+
+    if (isTrackingIssue(issue)) {
+      await stopTracking();
+      return;
+    }
+
+    if (timerState?.is_active && timerState.issue_id !== issue.id) {
+      pendingIssue = issue;
+      confirmOpen = true;
+      return;
+    }
+
+    await startTracking(issue);
+  }
+
+  async function confirmSwitch() {
+    confirmOpen = false;
+    const issue = pendingIssue;
+    pendingIssue = null;
+    if (!issue) {
+      return;
+    }
+
+    try {
+      await StopTracking();
+      await StartTrackingIssue(issue);
+      await onTrackingChange();
+    } catch (err) {
+      error = String(err);
+    }
+  }
+
+  function cancelSwitch() {
+    confirmOpen = false;
+    pendingIssue = null;
+  }
+
+  function handleFiltersChange(nextFilters) {
+    onFiltersChange(nextFilters);
+  }
+
   $effect(() => {
+    void loadFilterOptions();
+  });
+
+  $effect(() => {
+    filters;
     void loadIssues();
   });
 </script>
@@ -88,12 +143,18 @@
     </button>
   </div>
 
+  <WorkItemFilters
+    options={filterOptions}
+    {filters}
+    onChange={handleFiltersChange}
+  />
+
   {#if error}
     <p class="status error">{error}</p>
   {:else if loading && issues.length === 0}
     <p class="status">Loading work items…</p>
   {:else if issues.length === 0}
-    <p class="status muted">No open assigned work items.</p>
+    <p class="status muted">No work items match your filters.</p>
   {:else}
     <div class="tile-grid">
       {#each issues as issue (issue.id)}
@@ -132,6 +193,16 @@
     </div>
   {/if}
 </div>
+
+<ConfirmDialog
+  open={confirmOpen}
+  title="Switch tracking?"
+  message="Stop the current session and start tracking the selected work item?"
+  confirmLabel="Switch"
+  cancelLabel="Keep current"
+  onConfirm={confirmSwitch}
+  onCancel={cancelSwitch}
+/>
 
 <style>
   .tiles-section {

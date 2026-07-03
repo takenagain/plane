@@ -58,8 +58,16 @@ export function SearchIssues(arg1) {
   return window["go"]["main"]["App"]["SearchIssues"](arg1);
 }
 
-export function GetMyIssues() {
-  return window["go"]["main"]["App"]["GetMyIssues"]();
+export function GetMyIssues(arg1) {
+  return window["go"]["main"]["App"]["GetMyIssues"](arg1);
+}
+
+export function GetFilterOptions() {
+  return window["go"]["main"]["App"]["GetFilterOptions"]();
+}
+
+export function GetIssueTotalTime(arg1, arg2) {
+  return window["go"]["main"]["App"]["GetIssueTotalTime"](arg1, arg2);
 }
 
 export function StartTracking(arg1, arg2) {
