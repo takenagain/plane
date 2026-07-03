@@ -72,7 +72,7 @@ func (m *Manager) Start(worklog *models.WorkLog, issueTitle, projectID string) e
 		IssueID:     worklog.IssueID,
 		IssueTitle:  issueTitle,
 		ProjectID:   projectID,
-		StartTime:   worklog.StartTime,
+		StartTime:   worklog.StartTime(),
 		ElapsedSecs: 0,
 		IsActive:    true,
 	}

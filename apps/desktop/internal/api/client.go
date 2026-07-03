@@ -21,6 +21,7 @@ type Client struct {
 	cookieManager   *cookie.Manager
 	onAuthError     func()
 	searchProjectID string
+	projectCache    map[string]models.Project
 }
 
 // NewClient creates a new Plane API client
@@ -31,6 +32,7 @@ func NewClient(baseURL string, cookieMgr *cookie.Manager) *Client {
 			Timeout: 30 * time.Second,
 		},
 		cookieManager: cookieMgr,
+		projectCache:  make(map[string]models.Project),
 	}
 }
 
@@ -38,6 +40,7 @@ func NewClient(baseURL string, cookieMgr *cookie.Manager) *Client {
 func (c *Client) SetAuthErrorHandler(handler func()) {
 	c.onAuthError = handler
 }
+
 func (c *Client) doRequest(method, path string, body interface{}) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
@@ -53,11 +56,9 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Plane Desktop/1.0")
 
-	// Add cookies
 	cookies := c.cookieManager.GetCookiesForRequest(req.URL.Host)
 	for _, cookie := range cookies {
 		req.AddCookie(cookie)
@@ -68,7 +69,6 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 
-	// Check for authentication errors
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		resp.Body.Close()
 		if c.onAuthError != nil {
@@ -80,23 +80,28 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 	return resp, nil
 }
 
+func decodeJSON(resp *http.Response, target interface{}) error {
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status: %d", resp.StatusCode)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	return nil
+}
+
 // GetCurrentUser fetches the currently authenticated user
 func (c *Client) GetCurrentUser() (*models.User, error) {
 	resp, err := c.doRequest("GET", "/api/users/me/", nil)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
-	}
 
 	var user models.User
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		return nil, fmt.Errorf("failed to decode user: %w", err)
+	if err := decodeJSON(resp, &user); err != nil {
+		return nil, err
 	}
-
 	return &user, nil
 }
 
@@ -106,61 +111,171 @@ func (c *Client) GetWorkspaces() ([]models.Workspace, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
-	}
 
 	var workspaces []models.Workspace
-	if err := json.NewDecoder(resp.Body).Decode(&workspaces); err != nil {
-		return nil, fmt.Errorf("failed to decode workspaces: %w", err)
+	if err := decodeJSON(resp, &workspaces); err != nil {
+		return nil, err
 	}
-
 	return workspaces, nil
 }
 
-// GetMyIssues fetches issues assigned to the current user
-func (c *Client) GetMyIssues(workspaceSlug string, filters models.IssueFilters) ([]models.Issue, error) {
-	// Build query parameters
+type apiIssue struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	ProjectID   string    `json:"project_id"`
+	SequenceID  int       `json:"sequence_id"`
+	Priority    string    `json:"priority"`
+	StateID     string    `json:"state_id"`
+	StateGroup  string    `json:"state__group"`
+	TargetDate  *string   `json:"target_date"`
+	CycleID     *string   `json:"cycle_id"`
+	ModuleIDs   []string  `json:"module_ids"`
+	AssigneeIDs []string  `json:"assignee_ids"`
+	TimeLogged  *float64  `json:"time_logged"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type paginatedIssuesResponse struct {
+	Results []apiIssue `json:"results"`
+}
+
+func parseAPIDate(value *string) *time.Time {
+	if value == nil || *value == "" {
+		return nil
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02"} {
+		if parsed, err := time.Parse(layout, *value); err == nil {
+			return &parsed
+		}
+	}
+	return nil
+}
+
+func (c *Client) convertAPIIssue(raw apiIssue) models.Issue {
+	issue := models.Issue{
+		ID:          raw.ID,
+		Name:        raw.Name,
+		ProjectID:   raw.ProjectID,
+		SequenceID:  raw.SequenceID,
+		Priority:    raw.Priority,
+		StateID:     raw.StateID,
+		StateGroup:  raw.StateGroup,
+		TargetDate:  parseAPIDate(raw.TargetDate),
+		ModuleIDs:   raw.ModuleIDs,
+		AssigneeIDs: raw.AssigneeIDs,
+		CreatedAt:   raw.CreatedAt,
+		UpdatedAt:   raw.UpdatedAt,
+	}
+	if raw.CycleID != nil {
+		issue.CycleID = *raw.CycleID
+	}
+	if raw.TimeLogged != nil {
+		issue.TimeLogged = int(*raw.TimeLogged)
+	}
+	if project, ok := c.projectCache[raw.ProjectID]; ok {
+		issue.ProjectIdentifier = project.Identifier
+	}
+	issue.NormalizeState()
+	return issue
+}
+
+func (c *Client) buildIssueFilterParams(filters models.IssueFilters) url.Values {
 	params := url.Values{}
-	if filters.AssignedTo != "" {
-		params.Add("assignees", filters.AssignedTo)
+
+	if len(filters.Assignees) > 0 {
+		params.Add("assignees", strings.Join(filters.Assignees, ","))
+	}
+	if filters.Project != "" {
+		params.Add("project", filters.Project)
+	}
+	if filters.Module != "" {
+		params.Add("module", filters.Module)
+	}
+	if filters.Cycle != "" {
+		params.Add("cycle", filters.Cycle)
+	}
+	if len(filters.Priority) > 0 {
+		params.Add("priority", strings.Join(filters.Priority, ","))
+	}
+	if len(filters.StateGroup) > 0 {
+		params.Add("state_group", strings.Join(filters.StateGroup, ","))
+	}
+	if len(filters.Labels) > 0 {
+		params.Add("labels", strings.Join(filters.Labels, ","))
 	}
 	if filters.Search != "" {
 		params.Add("search", filters.Search)
 	}
-	if filters.ProjectID != "" {
-		params.Add("project", filters.ProjectID)
-	}
-	if filters.Limit > 0 {
-		params.Add("limit", fmt.Sprintf("%d", filters.Limit))
-	}
 	if filters.Offset > 0 {
-		params.Add("offset", fmt.Sprintf("%d", filters.Offset))
+		params.Add("cursor", fmt.Sprintf("100:%d:0", filters.Offset))
 	}
 
-	path := fmt.Sprintf("/api/workspaces/%s/my-issues/", workspaceSlug)
-	if len(params) > 0 {
-		path += "?" + params.Encode()
+	params.Add("order_by", "target_date")
+
+	limit := filters.Limit
+	if limit <= 0 {
+		limit = 100
 	}
+	params.Add("per_page", fmt.Sprintf("%d", limit))
+
+	return params
+}
+
+// GetMyIssues fetches issues for a user via the workspace user-issues endpoint.
+func (c *Client) GetMyIssues(workspaceSlug, userID string, filters models.IssueFilters) ([]models.Issue, error) {
+	if err := c.ensureProjectCache(workspaceSlug); err != nil {
+		return nil, err
+	}
+
+	params := c.buildIssueFilterParams(filters)
+	path := fmt.Sprintf("/api/workspaces/%s/user-issues/%s/?%s", workspaceSlug, userID, params.Encode())
 
 	resp, err := c.doRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
+	var page paginatedIssuesResponse
+	if err := decodeJSON(resp, &page); err != nil {
+		return nil, err
 	}
 
-	var issues []models.Issue
-	if err := json.NewDecoder(resp.Body).Decode(&issues); err != nil {
-		return nil, fmt.Errorf("failed to decode issues: %w", err)
+	issues := make([]models.Issue, 0, len(page.Results))
+	for _, raw := range page.Results {
+		issues = append(issues, c.convertAPIIssue(raw))
 	}
-
 	return issues, nil
+}
+
+func (c *Client) ensureProjectCache(workspaceSlug string) error {
+	if len(c.projectCache) > 0 {
+		return nil
+	}
+
+	projects, err := c.GetProjects(workspaceSlug)
+	if err != nil {
+		return err
+	}
+	for _, project := range projects {
+		c.projectCache[project.ID] = project
+	}
+	return nil
+}
+
+// GetProjects lists workspace projects.
+func (c *Client) GetProjects(workspaceSlug string) ([]models.Project, error) {
+	path := fmt.Sprintf("/api/workspaces/%s/projects/", workspaceSlug)
+	resp, err := c.doRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var projects []models.Project
+	if err := decodeJSON(resp, &projects); err != nil {
+		return nil, err
+	}
+	return projects, nil
 }
 
 func (c *Client) getSearchProjectID(workspaceSlug string) (string, error) {
@@ -168,33 +283,22 @@ func (c *Client) getSearchProjectID(workspaceSlug string) (string, error) {
 		return c.searchProjectID, nil
 	}
 
-	path := fmt.Sprintf("/api/workspaces/%s/projects/", workspaceSlug)
-	resp, err := c.doRequest("GET", path, nil)
+	projects, err := c.GetProjects(workspaceSlug)
 	if err != nil {
 		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status: %d", resp.StatusCode)
-	}
-
-	var projects []struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
-		return "", fmt.Errorf("failed to decode projects: %w", err)
 	}
 	if len(projects) == 0 {
 		return "", fmt.Errorf("no projects in workspace")
 	}
 
 	c.searchProjectID = projects[0].ID
+	for _, project := range projects {
+		c.projectCache[project.ID] = project
+	}
 	return c.searchProjectID, nil
 }
 
 // SearchIssues searches open issues across the workspace matching a query.
-// Uses the app search-issues endpoint so state groups are available for filtering.
 func (c *Client) SearchIssues(workspaceSlug, query string) ([]models.Issue, error) {
 	projectID, err := c.getSearchProjectID(workspaceSlug)
 	if err != nil {
@@ -216,15 +320,10 @@ func (c *Client) SearchIssues(workspaceSlug, query string) ([]models.Issue, erro
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
-	}
 
 	var issues []models.Issue
-	if err := json.NewDecoder(resp.Body).Decode(&issues); err != nil {
-		return nil, fmt.Errorf("failed to decode search results: %w", err)
+	if err := decodeJSON(resp, &issues); err != nil {
+		return nil, err
 	}
 
 	for i := range issues {
@@ -232,6 +331,167 @@ func (c *Client) SearchIssues(workspaceSlug, query string) ([]models.Issue, erro
 	}
 
 	return models.FilterOpenIssues(issues), nil
+}
+
+// GetFilterOptions loads filter dimensions for the work items list.
+func (c *Client) GetFilterOptions(workspaceSlug string) (*models.FilterOptions, error) {
+	projects, err := c.GetProjects(workspaceSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, project := range projects {
+		c.projectCache[project.ID] = project
+	}
+
+	projectOptions := make([]models.FilterOption, 0, len(projects))
+	for _, project := range projects {
+		projectOptions = append(projectOptions, models.FilterOption{
+			ID:   project.ID,
+			Name: project.Name,
+		})
+	}
+
+	modules, err := c.getWorkspaceModules(workspaceSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	cycles, err := c.getWorkspaceCycles(workspaceSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := c.getWorkspaceMembers(workspaceSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.FilterOptions{
+		Projects: projectOptions,
+		Modules:  modules,
+		Cycles:   cycles,
+		Members:  members,
+		Priorities: []string{
+			"urgent", "high", "medium", "low", "none",
+		},
+		StateGroups: []string{
+			"backlog", "unstarted", "started", "completed", "cancelled",
+		},
+	}, nil
+}
+
+func (c *Client) getWorkspaceModules(workspaceSlug string) ([]models.FilterOption, error) {
+	path := fmt.Sprintf("/api/workspaces/%s/modules/", workspaceSlug)
+	resp, err := c.doRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var raw []struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		ProjectID string `json:"project_id"`
+	}
+	if err := decodeJSON(resp, &raw); err != nil {
+		return nil, err
+	}
+
+	options := make([]models.FilterOption, 0, len(raw))
+	for _, item := range raw {
+		options = append(options, models.FilterOption{
+			ID:        item.ID,
+			Name:      item.Name,
+			ProjectID: item.ProjectID,
+		})
+	}
+	return options, nil
+}
+
+func (c *Client) getWorkspaceCycles(workspaceSlug string) ([]models.FilterOption, error) {
+	path := fmt.Sprintf("/api/workspaces/%s/cycles/", workspaceSlug)
+	resp, err := c.doRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var raw []struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		ProjectID string `json:"project_id"`
+	}
+	if err := decodeJSON(resp, &raw); err != nil {
+		return nil, err
+	}
+
+	options := make([]models.FilterOption, 0, len(raw))
+	for _, item := range raw {
+		options = append(options, models.FilterOption{
+			ID:        item.ID,
+			Name:      item.Name,
+			ProjectID: item.ProjectID,
+		})
+	}
+	return options, nil
+}
+
+func (c *Client) getWorkspaceMembers(workspaceSlug string) ([]models.MemberOption, error) {
+	path := fmt.Sprintf("/api/workspaces/%s/members/", workspaceSlug)
+	resp, err := c.doRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var raw []struct {
+		Member struct {
+			ID          string `json:"id"`
+			Email       string `json:"email"`
+			DisplayName string `json:"display_name"`
+			FirstName   string `json:"first_name"`
+			LastName    string `json:"last_name"`
+		} `json:"member"`
+	}
+	if err := decodeJSON(resp, &raw); err != nil {
+		return nil, err
+	}
+
+	members := make([]models.MemberOption, 0, len(raw))
+	for _, item := range raw {
+		name := item.Member.DisplayName
+		if name == "" {
+			name = strings.TrimSpace(item.Member.FirstName + " " + item.Member.LastName)
+		}
+		if name == "" {
+			name = item.Member.Email
+		}
+		members = append(members, models.MemberOption{
+			ID:          item.Member.ID,
+			DisplayName: name,
+			Email:       item.Member.Email,
+		})
+	}
+	return members, nil
+}
+
+// GetIssueTotalTime returns total logged seconds for an issue.
+func (c *Client) GetIssueTotalTime(workspaceSlug, projectID, issueID string) (int, error) {
+	path := fmt.Sprintf(
+		"/api/workspaces/%s/projects/%s/issues/%s/worklogs/total/",
+		workspaceSlug, projectID, issueID,
+	)
+
+	resp, err := c.doRequest("GET", path, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	var result struct {
+		TotalDuration int `json:"total_duration"`
+	}
+	if err := decodeJSON(resp, &result); err != nil {
+		return 0, err
+	}
+	return result.TotalDuration, nil
 }
 
 // StartTimeTracking starts time tracking for an issue
@@ -258,10 +518,11 @@ func (c *Client) StartTimeTracking(workspaceSlug, projectID, issueID string) (*m
 	return &worklog, nil
 }
 
-// StopTimeTracking stops time tracking for a worklog
+// StopTimeTracking stops the active time tracking session for an issue.
+// worklogID is retained for caller context; the API stops the actor's active worklog.
 func (c *Client) StopTimeTracking(workspaceSlug, projectID, issueID, worklogID string) error {
-	path := fmt.Sprintf("/api/workspaces/%s/projects/%s/issues/%s/worklogs/%s/stop/",
-		workspaceSlug, projectID, issueID, worklogID)
+	path := fmt.Sprintf("/api/workspaces/%s/projects/%s/issues/%s/worklogs/stop/",
+		workspaceSlug, projectID, issueID)
 
 	resp, err := c.doRequest("POST", path, nil)
 	if err != nil {
@@ -288,7 +549,6 @@ func (c *Client) GetActiveTimeTracking(workspaceSlug string) (*models.WorkLog, e
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		// No active worklog
 		return nil, nil
 	}
 
@@ -308,4 +568,10 @@ func (c *Client) GetActiveTimeTracking(workspaceSlug string) (*models.WorkLog, e
 func (c *Client) TestConnection() error {
 	_, err := c.GetCurrentUser()
 	return err
+}
+
+// ClearProjectCache resets cached project metadata (e.g. on workspace change).
+func (c *Client) ClearProjectCache() {
+	c.projectCache = make(map[string]models.Project)
+	c.searchProjectID = ""
 }

@@ -14,7 +14,7 @@ func TestFilterOpenIssues(t *testing.T) {
 		{ID: "4", Name: "No detail"},
 	}
 
-	filtered := filterOpenIssues(issues)
+	filtered := models.FilterOpenIssues(issues)
 	if len(filtered) != 2 {
 		t.Fatalf("expected 2 open issues, got %d", len(filtered))
 	}
@@ -24,13 +24,16 @@ func TestFilterOpenIssues(t *testing.T) {
 }
 
 func TestIsClosedIssueState(t *testing.T) {
-	if isClosedIssueState(models.Issue{StateDetail: &models.State{Group: "started"}}) {
+	started := models.Issue{StateDetail: &models.State{Group: "started"}}
+	if started.IsClosed() {
 		t.Fatal("started should not be closed")
 	}
-	if !isClosedIssueState(models.Issue{StateDetail: &models.State{Group: "completed"}}) {
+	completed := models.Issue{StateDetail: &models.State{Group: "completed"}}
+	if !completed.IsClosed() {
 		t.Fatal("completed should be closed")
 	}
-	if !isClosedIssueState(models.Issue{StateDetail: &models.State{Group: "cancelled"}}) {
+	cancelled := models.Issue{StateDetail: &models.State{Group: "cancelled"}}
+	if !cancelled.IsClosed() {
 		t.Fatal("cancelled should be closed")
 	}
 }

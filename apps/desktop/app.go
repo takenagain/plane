@@ -106,9 +106,10 @@ func (a *App) authenticate() error {
 
 	workspaces, err := a.apiClient.GetWorkspaces()
 	if err != nil {
-		// Session is still valid; workspace list can be retried later.
-		log.Printf("Failed to load workspaces: %v", err)
-		return nil
+		return fmt.Errorf("failed to load workspaces: %w", err)
+	}
+	if len(workspaces) == 0 {
+		return fmt.Errorf("no workspaces available for this account")
 	}
 
 	// Set current workspace (use last workspace from config or first available)
@@ -119,7 +120,7 @@ func (a *App) authenticate() error {
 			break
 		}
 	}
-	if a.currentWorkspace == nil && len(workspaces) > 0 {
+	if a.currentWorkspace == nil {
 		a.currentWorkspace = &workspaces[0]
 		cfg.LastWorkspace = a.currentWorkspace.Slug
 		a.configMgr.Save()
@@ -135,22 +136,10 @@ func (a *App) handleStopTracking() {
 	}
 
 	state := a.timerMgr.GetState()
-
-	// Stop timer locally first
-	a.timerMgr.Stop()
-
-	// Stop on backend
-	if a.currentWorkspace != nil {
-		err := a.apiClient.StopTimeTracking(
-			a.currentWorkspace.Slug,
-			state.ProjectID,
-			state.IssueID,
-			state.WorklogID,
-		)
-		if err != nil {
-			log.Printf("Failed to stop tracking on backend: %v", err)
-			// TODO: Show error notification
-		}
+	if err := a.StopTracking(); err != nil {
+		log.Printf("Failed to stop tracking on backend: %v", err)
+		// TODO: Show error notification
+		return
 	}
 
 	// TODO: Show success notification
@@ -326,23 +315,45 @@ func (a *App) SearchIssues(query string) ([]models.Issue, error) {
 	return models.FilterOpenIssues(issues), nil
 }
 
-// GetMyIssues returns open work items assigned to the current user.
-func (a *App) GetMyIssues() ([]models.Issue, error) {
+// GetMyIssues returns open work items for the current user with optional filters.
+func (a *App) GetMyIssues(filters models.IssueFilters) ([]models.Issue, error) {
 	if a.apiClient == nil || a.currentWorkspace == nil || a.currentUser == nil {
 		return nil, fmt.Errorf("not authenticated")
 	}
 
-	filters := models.IssueFilters{
-		AssignedTo: a.currentUser.ID,
-		Limit:      50,
+	if len(filters.Assignees) == 0 {
+		filters.Assignees = []string{a.currentUser.ID}
+	}
+	if filters.Limit <= 0 {
+		filters.Limit = 100
 	}
 
-	issues, err := a.apiClient.GetMyIssues(a.currentWorkspace.Slug, filters)
+	issues, err := a.apiClient.GetMyIssues(a.currentWorkspace.Slug, a.currentUser.ID, filters)
 	if err != nil {
 		return nil, err
 	}
 
-	return models.FilterOpenIssues(issues), nil
+	open := models.FilterOpenIssues(issues)
+	models.SortIssues(open)
+	return open, nil
+}
+
+// GetFilterOptions returns available filter dimensions for the work items list.
+func (a *App) GetFilterOptions() (*models.FilterOptions, error) {
+	if a.apiClient == nil || a.currentWorkspace == nil {
+		return nil, fmt.Errorf("not authenticated")
+	}
+
+	return a.apiClient.GetFilterOptions(a.currentWorkspace.Slug)
+}
+
+// GetIssueTotalTime returns total logged seconds for an issue.
+func (a *App) GetIssueTotalTime(projectID, issueID string) (int, error) {
+	if a.apiClient == nil || a.currentWorkspace == nil {
+		return 0, fmt.Errorf("not authenticated")
+	}
+
+	return a.apiClient.GetIssueTotalTime(a.currentWorkspace.Slug, projectID, issueID)
 }
 
 // StartTracking starts tracking an issue by project and issue ID
