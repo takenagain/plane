@@ -161,7 +161,7 @@ jobs:
           chmod +x "${staging}/plane-desktop"
           echo "${{ steps.version.outputs.value }}" > "${staging}/VERSION"
           # Wails v2 does not emit AppImage; upload the native binary for Linux.
-          echo "Note: AppImage packaging is not produced by Wails v2; see apps/desktop/scripts/build-release.sh for local parity." \
+          echo "Note: AppImage packaging is not produced by Wails v2; see apps/desktop/build-release.sh for local parity." \
             > "${staging}/BUILD-NOTES.txt"
 
       - name: Stage Windows artifacts
