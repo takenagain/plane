@@ -1,0 +1,132 @@
+name: Staging RC release
+
+# Weekly release-candidate tags on `staging` when there are new commits since the last RC.
+#
+# Tag increment rules (VERSION_LINE, e.g. "0.1"):
+# - Only tags matching v{VERSION_LINE}.* or v{VERSION_LINE}.*-rc.* are considered (ignores upstream v1.x tags).
+# - Parse the latest such tag on staging; bump PATCH only for each new RC (v0.1.20-rc.2 → v0.1.21-rc.1).
+# - Manual official tags (e.g. v0.2.0 on preview) reset the line: bump VERSION_LINE to "0.2" in this file.
+# - RC format: vMAJOR.MINOR.PATCH-rc.N (N resets to 1 when PATCH increments).
+# - Skips if staging HEAD equals the latest RC tag (no new commits).
+
+on:
+  schedule:
+    # Fridays 09:00 UTC
+    - cron: "0 9 * * 5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: staging-rc-release
+  cancel-in-progress: false
+
+env:
+  VERSION_LINE: "0.1"
+
+jobs:
+  release-rc:
+    name: Tag and publish RC
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v6
+        with:
+          ref: staging
+          fetch-depth: 0
+
+      - name: Skip if no new commits since last RC
+        id: check
+        run: |
+          set -euo pipefail
+          VERSION_LINE="${{ env.VERSION_LINE }}"
+          PATTERN="^v${VERSION_LINE//./\\.}\\.[0-9]+(-rc\\.[0-9]+)?$"
+          LAST_TAG="$(git tag -l "v${VERSION_LINE}.*" --sort=-v:refname | grep -E "${PATTERN}" | head -1 || true)"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          if [ -n "${LAST_TAG}" ]; then
+            LAST_SHA="$(git rev-list -n 1 "${LAST_TAG}")"
+            if [ "${HEAD_SHA}" = "${LAST_SHA}" ]; then
+              echo "No new commits on staging since ${LAST_TAG}; skipping."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            RANGE="${LAST_TAG}..HEAD"
+          else
+            RANGE="HEAD"
+            LAST_TAG="(none)"
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "last_tag=${LAST_TAG}" >> "$GITHUB_OUTPUT"
+          echo "range=${RANGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute next RC tag
+        id: version
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          VERSION_LINE="${{ env.VERSION_LINE }}"
+          PATTERN="^v${VERSION_LINE//./\\.}\\.[0-9]+(-rc\\.[0-9]+)?$"
+          LAST_TAG="$(git tag -l "v${VERSION_LINE}.*" --sort=-v:refname | grep -E "${PATTERN}" | head -1 || true)"
+          MAJOR="${VERSION_LINE%%.*}"
+          MINOR="${VERSION_LINE#*.}"
+          PATCH=0
+          if [ -n "${LAST_TAG}" ]; then
+            BASE="${LAST_TAG%-rc.*}"
+            BASE="${BASE#v}"
+            IFS=. read -r _MAJ _MIN PATCH <<< "${BASE}.${MINOR}" || true
+            # Re-parse from tag (supports VERSION_LINE 0.1 → v0.1.PATCH)
+            IFS=. read -r MAJOR MINOR PATCH <<< "${BASE}"
+            PATCH=$((PATCH + 1))
+          else
+            PATCH=1
+          fi
+          NEXT_TAG="v${MAJOR}.${MINOR}.${PATCH}-rc.1"
+          echo "next_tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Next RC tag: ${NEXT_TAG} (after ${LAST_TAG:-none})"
+
+      - name: Build release notes
+        id: notes
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          RANGE="${{ steps.check.outputs.range }}"
+          if [ "${RANGE}" = "HEAD" ]; then
+            BODY="$(git log -15 --pretty=format:'- %h %s')"
+          else
+            BODY="$(git log "${RANGE}" --pretty=format:'- %h %s')"
+          fi
+          {
+            echo "body<<EOF"
+            echo "## Staging RC"
+            echo ""
+            echo "Commits since ${{ steps.check.outputs.last_tag }}:"
+            echo ""
+            echo "${BODY}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create annotated tag
+        id: tag
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.next_tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Staging RC ${TAG}"
+          git push origin "${TAG}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub prerelease
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --target staging \
+            --prerelease \
+            --title "Staging RC ${{ steps.tag.outputs.tag }}" \
+            --notes "${{ steps.notes.outputs.body }}"
