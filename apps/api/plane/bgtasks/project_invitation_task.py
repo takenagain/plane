@@ -27,7 +27,7 @@ def project_invitation(email, project_id, token, current_site, invitor):
         project = Project.objects.get(pk=project_id)
         project_member_invite = ProjectMemberInvite.objects.get(token=token, email=email)
 
-        relativelink = f"/project-invitations/?invitation_id={project_member_invite.id}&email={email}&slug={project.workspace.slug}&project_id={str(project_id)}"  # noqa: E501
+        relativelink = f"/project-invitations/?invitation_id={project_member_invite.id}&slug={project.workspace.slug}&project_id={str(project_id)}&token={token}"  # noqa: E501
         abs_url = current_site + relativelink
 
         subject = f"{user.first_name or user.display_name or user.email} invited you to join {project.name} on Plane"

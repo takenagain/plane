@@ -53,11 +53,7 @@ function WorkspaceInvitationPage() {
         token: token,
       })
       .then(() => {
-        if (invitationDetail.email === currentUser?.email) {
-          router.push(`/${invitationDetail.workspace.slug}`);
-        } else {
-          router.push("/");
-        }
+        router.push(`/${invitationDetail.workspace.slug}`);
       })
       .catch((err: unknown) => console.error(err));
   };

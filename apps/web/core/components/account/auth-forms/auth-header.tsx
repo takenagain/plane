@@ -66,7 +66,7 @@ const Titles = {
 const workSpaceService = new WorkspaceService();
 
 export const AuthHeader = observer(function AuthHeader(props: TAuthHeader) {
-  const { workspaceSlug, invitationId, invitationEmail, authMode, currentAuthStep } = props;
+  const { workspaceSlug, invitationId, authMode, currentAuthStep } = props;
   // plane imports
   const { t } = useTranslation();
 
@@ -82,10 +82,9 @@ export const AuthHeader = observer(function AuthHeader(props: TAuthHeader) {
   const getHeaderSubHeader = (
     step: EAuthSteps,
     mode: EAuthModes,
-    invitation: IWorkspaceMemberInvitation | undefined,
-    email: string | undefined
+    invitation: IWorkspaceMemberInvitation | undefined
   ) => {
-    if (invitation && email && invitation.email === email && invitation.workspace) {
+    if (invitation && invitation.workspace) {
       const workspace = invitation.workspace;
       return {
         header: (
@@ -105,7 +104,7 @@ export const AuthHeader = observer(function AuthHeader(props: TAuthHeader) {
     return Titles[mode][step];
   };
 
-  const { header, subHeader } = getHeaderSubHeader(currentAuthStep, authMode, invitation || undefined, invitationEmail);
+  const { header, subHeader } = getHeaderSubHeader(currentAuthStep, authMode, invitation || undefined);
 
   if (isLoading)
     return (

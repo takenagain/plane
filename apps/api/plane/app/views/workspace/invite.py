@@ -9,6 +9,7 @@ import jwt
 
 # Django imports
 from django.conf import settings
+from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils import timezone
@@ -188,8 +189,15 @@ class WorkspaceJoinEndpoint(BaseAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # If already responded then return error
-        if workspace_invite.responded_at is None:
+        with transaction.atomic():
+            workspace_invite = WorkspaceMemberInvite.objects.select_for_update().get(pk=pk, workspace__slug=slug)
+
+            if workspace_invite.responded_at is not None:
+                return Response(
+                    {"error": "You have already responded to the invitation request"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             workspace_invite.accepted = request.data.get("accepted", False)
             workspace_invite.responded_at = timezone.now()
             workspace_invite.save()
@@ -245,11 +253,6 @@ class WorkspaceJoinEndpoint(BaseAPIView):
                 {"message": "Workspace Invitation was not accepted"},
                 status=status.HTTP_200_OK,
             )
-
-        return Response(
-            {"error": "You have already responded to the invitation request"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
     def get(self, request, slug, pk):
         workspace_invitation = WorkspaceMemberInvite.objects.get(workspace__slug=slug, pk=pk)
