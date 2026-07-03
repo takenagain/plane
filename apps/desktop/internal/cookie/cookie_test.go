@@ -34,8 +34,9 @@ func TestFilterForHost(t *testing.T) {
 func TestManagerExtractFromWebview(t *testing.T) {
 	dir := t.TempDir()
 	manager := &Manager{
-		store: &Store{Cookies: make([]*http.Cookie, 0), UpdatedAt: time.Now()},
-		path:  dir + "/cookies.json",
+		store:  &Store{Cookies: make([]*http.Cookie, 0), UpdatedAt: time.Now()},
+		path:   dir + "/cookies.json",
+		secure: newEncryptedFileStore(dir),
 	}
 
 	err := manager.ExtractFromWebview("https://plane.example.com", []*http.Cookie{
@@ -191,5 +192,53 @@ func TestLoginProxyRewritesSecureCookies(t *testing.T) {
 	setCookie := resp.Header.Get("Set-Cookie")
 	if strings.Contains(setCookie, "Secure") {
 		t.Fatalf("expected Secure stripped from Set-Cookie, got %q", setCookie)
+	}
+}
+
+func TestLoginProxyRequiresSecretForCookieInjection(t *testing.T) {
+	backend := http.NewServeMux()
+	backend.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		if cookie, err := r.Cookie("session-id"); err != nil || cookie.Value != "stored" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	server := httptest.NewServer(backend)
+	defer server.Close()
+
+	proxy, err := NewLoginProxy(server.URL, nil)
+	if err != nil {
+		t.Fatalf("new proxy: %v", err)
+	}
+
+	proxy.SetRequestCookieInjector(func(req *http.Request) {
+		req.AddCookie(&http.Cookie{Name: "session-id", Value: "stored"})
+	})
+
+	proxyURL, err := proxy.Start()
+	if err != nil {
+		t.Fatalf("start proxy: %v", err)
+	}
+	defer proxy.Stop()
+
+	unauthorized, err := http.Get(proxyURL + "/api/me/")
+	if err != nil {
+		t.Fatalf("proxy request failed: %v", err)
+	}
+	unauthorized.Body.Close()
+	if unauthorized.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without secret, got %d", unauthorized.StatusCode)
+	}
+
+	authorizedURL := proxy.URLWithSecret("/api/me/")
+	authorized, err := http.Get(authorizedURL)
+	if err != nil {
+		t.Fatalf("authorized proxy request failed: %v", err)
+	}
+	authorized.Body.Close()
+	if authorized.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with secret, got %d", authorized.StatusCode)
 	}
 }

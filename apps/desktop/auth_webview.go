@@ -230,8 +230,8 @@ func (a *App) GetWebsiteURL() string {
 		log.Printf("Failed to ensure app proxy: %v", err)
 	}
 
-	if a.auth.loginURL != "" {
-		return a.auth.loginURL
+	if a.auth.loginProxy != nil {
+		return a.auth.loginProxy.URLWithSecret("/")
 	}
 
 	if a.configMgr != nil {
@@ -243,8 +243,8 @@ func (a *App) GetWebsiteURL() string {
 
 // GetLoginURL returns the URL the login iframe should load.
 func (a *App) GetLoginURL() string {
-	if a.auth.loginURL != "" {
-		return a.auth.loginURL + "/sign-in/"
+	if a.auth.loginProxy != nil {
+		return a.auth.loginProxy.URLWithSecret("/sign-in/")
 	}
 
 	if a.configMgr != nil {

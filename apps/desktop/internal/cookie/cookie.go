@@ -2,6 +2,7 @@ package cookie
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,8 +19,9 @@ type Store struct {
 
 // Manager handles cookie extraction and storage
 type Manager struct {
-	store *Store
-	path  string
+	store  *Store
+	path   string
+	secure SecureStore
 }
 
 // NewManager creates a new cookie manager
@@ -34,7 +36,8 @@ func NewManager() (*Manager, error) {
 			Cookies:   make([]*http.Cookie, 0),
 			UpdatedAt: time.Now(),
 		},
-		path: cookiePath,
+		path:   cookiePath,
+		secure: newSecureStore(storageDir(cookiePath)),
 	}, nil
 }
 
@@ -94,13 +97,11 @@ func (m *Manager) IsValid() bool {
 	return true
 }
 
-// SaveSecurely saves cookies to disk
-// TODO: Implement platform-specific secure storage (keychain, credential manager, etc.)
+// SaveSecurely persists cookies using OS keyring when available, otherwise AES-GCM
+// encryption with a machine-local key (see secure_store.go).
 func (m *Manager) SaveSecurely() error {
-	// Ensure directory exists
-	dir := filepath.Dir(m.path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return err
+	if m.secure == nil {
+		m.secure = newSecureStore(storageDir(m.path))
 	}
 
 	data, err := json.MarshalIndent(m.store, "", "  ")
@@ -108,19 +109,29 @@ func (m *Manager) SaveSecurely() error {
 		return err
 	}
 
-	// Write to temp file first, then rename (atomic operation)
-	tempPath := m.path + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0600); err != nil {
+	if err := m.secure.Save(data); err != nil {
 		return err
 	}
 
-	return os.Rename(tempPath, m.path)
+	// Remove legacy plaintext after successful secure save.
+	if err := os.Remove(m.path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
 }
 
-// LoadSecurely loads cookies from disk
-// TODO: Implement platform-specific secure storage (keychain, credential manager, etc.)
+// LoadSecurely loads cookies from secure storage, migrating legacy plaintext JSON if present.
 func (m *Manager) LoadSecurely() error {
-	// If cookie file doesn't exist, return empty store
+	if m.secure == nil {
+		m.secure = newSecureStore(storageDir(m.path))
+	}
+
+	if data, err := m.secure.Load(); err == nil {
+		return json.Unmarshal(data, m.store)
+	}
+
+	// Legacy plaintext migration path.
 	if _, err := os.Stat(m.path); os.IsNotExist(err) {
 		return nil
 	}
@@ -130,7 +141,12 @@ func (m *Manager) LoadSecurely() error {
 		return err
 	}
 
-	return json.Unmarshal(data, m.store)
+	if err := json.Unmarshal(data, m.store); err != nil {
+		return err
+	}
+
+	log.Printf("Migrating legacy plaintext cookie store (fingerprint %s)", legacyFingerprint(data))
+	return m.SaveSecurely()
 }
 
 // Clear removes all stored cookies
@@ -140,7 +156,12 @@ func (m *Manager) Clear() error {
 		UpdatedAt: time.Now(),
 	}
 
-	// Remove the cookie file
+	if m.secure != nil {
+		if err := m.secure.Delete(); err != nil {
+			return err
+		}
+	}
+
 	if err := os.Remove(m.path); err != nil && !os.IsNotExist(err) {
 		return err
 	}

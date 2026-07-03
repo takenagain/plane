@@ -63,8 +63,8 @@
     let cancelLoginURL = () => {};
     try {
       if (window.runtime?.EventsOnMultiple) {
-        cancelLoginURL = EventsOn("auth:login-url", (url) => {
-          iframeSrc = `${url}/sign-in/`;
+        cancelLoginURL = EventsOn("auth:login-url", async () => {
+          iframeSrc = await GetLoginURL();
         });
       }
     } catch (err) {

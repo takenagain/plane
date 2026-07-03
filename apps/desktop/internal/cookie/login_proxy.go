@@ -1,6 +1,9 @@
 package cookie
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
@@ -8,6 +11,15 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+)
+
+const (
+	// ProxySecretHeader must be sent on proxied requests that need stored session cookies.
+	ProxySecretHeader = "X-Plane-Desktop-Proxy-Secret"
+	// ProxySecretQuery is appended to iframe URLs; browsers cannot set custom headers on navigation.
+	ProxySecretQuery = "plane_desktop_proxy_secret"
+	// ProxySecretCookie is set by the proxy after a valid query-param bootstrap request.
+	ProxySecretCookie = "plane_desktop_proxy_secret"
 )
 
 // LoginProxy reverse-proxies the Plane web UI so Set-Cookie headers can be captured
@@ -19,8 +31,9 @@ type LoginProxy struct {
 	onCookies func([]*http.Cookie)
 	injectRequestCookies func(*http.Request)
 
-	mu      sync.Mutex
-	started bool
+	mu            sync.Mutex
+	started       bool
+	sessionSecret string
 }
 
 // SetRequestCookieInjector merges stored session cookies into proxied requests
@@ -78,6 +91,7 @@ func (p *LoginProxy) Start() (string, error) {
 	p.listener = listener
 	p.server = &http.Server{Handler: proxy}
 	p.started = true
+	p.sessionSecret = generateProxySecret()
 
 	go func() {
 		_ = p.server.Serve(listener)
@@ -116,6 +130,56 @@ func (p *LoginProxy) BaseURL() string {
 	return "http://" + p.listener.Addr().String()
 }
 
+// URLWithSecret returns a proxy URL with the per-session secret query parameter.
+func (p *LoginProxy) URLWithSecret(path string) string {
+	base := strings.TrimSuffix(p.BaseURL(), "/")
+	if base == "" || p.sessionSecret == "" {
+		return base + path
+	}
+
+	parsed, err := url.Parse(base + path)
+	if err != nil {
+		return base + path
+	}
+
+	query := parsed.Query()
+	query.Set(ProxySecretQuery, p.sessionSecret)
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
+}
+
+func generateProxySecret() string {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		panic(fmt.Sprintf("generate proxy secret: %v", err))
+	}
+	return base64.RawURLEncoding.EncodeToString(buf)
+}
+
+func (p *LoginProxy) validateProxySecret(req *http.Request) bool {
+	if req == nil || p.sessionSecret == "" {
+		return false
+	}
+
+	expected := []byte(p.sessionSecret)
+
+	if header := req.Header.Get(ProxySecretHeader); header != "" {
+		return subtle.ConstantTimeCompare([]byte(header), expected) == 1
+	}
+
+	if query := req.URL.Query().Get(ProxySecretQuery); query != "" {
+		return subtle.ConstantTimeCompare([]byte(query), expected) == 1
+	}
+
+	for _, cookie := range req.Cookies() {
+		if cookie.Name == ProxySecretCookie {
+			return subtle.ConstantTimeCompare([]byte(cookie.Value), expected) == 1
+		}
+	}
+
+	return false
+}
+
 func (p *LoginProxy) director(req *http.Request) {
 	target := p.target
 	req.URL.Scheme = target.Scheme
@@ -138,7 +202,7 @@ func (p *LoginProxy) director(req *http.Request) {
 		req.Header.Set("X-Forwarded-Host", target.Host)
 	}
 
-	if p.injectRequestCookies != nil {
+	if p.injectRequestCookies != nil && p.validateProxySecret(req) {
 		p.injectRequestCookies(req)
 	}
 }
@@ -164,6 +228,17 @@ func MergeRequestCookies(req *http.Request, cookies []*http.Cookie) {
 func (p *LoginProxy) modifyResponse(resp *http.Response) error {
 	if resp == nil {
 		return nil
+	}
+
+	if resp.Request != nil && p.validateProxySecret(resp.Request) {
+		proxyCookie := &http.Cookie{
+			Name:     ProxySecretCookie,
+			Value:    p.sessionSecret,
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		}
+		resp.Header.Add("Set-Cookie", proxyCookie.String())
 	}
 
 	// Plane sends X-Frame-Options: DENY; strip frame-blocking headers so the
