@@ -160,10 +160,16 @@ class UserProjectInvitationsViewset(BaseViewSet):
         workspace_role = workspace_member.role
         workspace = workspace_member.workspace
 
+        # Use the workspace-scoped, network-validated project IDs only.
+        # Raw project_ids may contain UUIDs from other workspaces; those are
+        # absent from the `projects` queryset and therefore bypass the SECRET
+        # network check above (GHSA-45hc-q4mw-jhxm).
+        validated_project_ids = [str(p.id) for p in projects]
+
         # If the user was already part of workspace
-        _ = ProjectMember.objects.filter(workspace__slug=slug, project_id__in=project_ids, member=request.user).update(
-            is_active=True
-        )
+        _ = ProjectMember.objects.filter(
+            workspace__slug=slug, project_id__in=validated_project_ids, member=request.user
+        ).update(is_active=True)
 
         ProjectMember.objects.bulk_create(
             [
@@ -174,7 +180,7 @@ class UserProjectInvitationsViewset(BaseViewSet):
                     workspace=workspace,
                     created_by=request.user,
                 )
-                for project_id in project_ids
+                for project_id in validated_project_ids
             ],
             ignore_conflicts=True,
         )
@@ -187,7 +193,7 @@ class UserProjectInvitationsViewset(BaseViewSet):
                     workspace=workspace,
                     created_by=request.user,
                 )
-                for project_id in project_ids
+                for project_id in validated_project_ids
             ],
             ignore_conflicts=True,
         )
@@ -211,8 +217,9 @@ class ProjectJoinEndpoint(BaseAPIView):
             )
 
         # Require an authenticated session — the accepting user must be the
-        # person who was invited. Without this check an attacker who registers
-        # with the invited address (email-squat) can steal the project membership.
+        # person who was invited.  Without this check an attacker who knows the
+        # invitee email and obtains the token can hijack the project membership
+        # (GHSA-g36h-p63v-g9c7).
         if not request.user.is_authenticated:
             return Response(
                 {"error": "Authentication required to accept project invitation"},
@@ -235,11 +242,19 @@ class ProjectJoinEndpoint(BaseAPIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            project_invite.accepted = request.data.get("accepted", False)
+            accepted = request.data.get("accepted", False)
+            if not isinstance(accepted, bool):
+                return Response(
+                    {"error": "`accepted` must be a boolean"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            project_invite.accepted = accepted
             project_invite.responded_at = timezone.now()
             project_invite.save()
 
             if project_invite.accepted:
+                # Use the authenticated user directly — they've already been
+                # validated as the invite recipient above.
                 user = request.user
 
                 # Check if user is a part of workspace

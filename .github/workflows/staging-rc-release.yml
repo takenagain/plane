@@ -92,19 +92,20 @@ jobs:
         run: |
           set -euo pipefail
           RANGE="${{ steps.check.outputs.range }}"
-          NOTES_FILE="${RUNNER_TEMP}/staging-rc-release-notes.md"
+          if [ "${RANGE}" = "HEAD" ]; then
+            BODY="$(git log -15 --pretty=format:'- %h %s')"
+          else
+            BODY="$(git log "${RANGE}" --pretty=format:'- %h %s')"
+          fi
           {
+            echo "body<<EOF"
             echo "## Staging RC"
             echo ""
             echo "Commits since ${{ steps.check.outputs.last_tag }}:"
             echo ""
-            if [ "${RANGE}" = "HEAD" ]; then
-              git log -15 --pretty=format:'- %h %s'
-            else
-              git log "${RANGE}" --pretty=format:'- %h %s'
-            fi
-          } > "${NOTES_FILE}"
-          echo "notes_file=${NOTES_FILE}" >> "$GITHUB_OUTPUT"
+            echo "${BODY}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create annotated tag
         id: tag
@@ -128,4 +129,4 @@ jobs:
             --target staging \
             --prerelease \
             --title "Staging RC ${{ steps.tag.outputs.tag }}" \
-            --notes-file "${{ steps.notes.outputs.notes_file }}"
+            --notes "${{ steps.notes.outputs.body }}"
