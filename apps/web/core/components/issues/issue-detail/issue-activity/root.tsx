@@ -21,6 +21,7 @@ import { CommentCreate } from "@/components/comments/comment-create";
 import { useProject } from "@/hooks/store/use-project";
 // plane web components
 import { ActivityFilterRoot } from "@/plane-web/components/issues/worklog/activity/filter-root";
+// local imports
 import { IssueActivityCommentRoot } from "./activity-comment-root";
 import { useWorkItemCommentOperations } from "./helper";
 import { ActivitySortRoot } from "./sort-root";
@@ -54,15 +55,15 @@ export const IssueActivity = observer(function IssueActivity(props: TIssueActivi
   // toggle filter
   const toggleFilter = (filter: TActivityFilters) => {
     if (!selectedFilters) return;
-    let _filters = [];
+    let nextFilters = [];
     if (selectedFilters.includes(filter)) {
       if (selectedFilters.length === 1) return selectedFilters; // Ensure at least one filter is applied
-      _filters = selectedFilters.filter((f) => f !== filter);
+      nextFilters = selectedFilters.filter((f) => f !== filter);
     } else {
-      _filters = [...selectedFilters, filter];
+      nextFilters = [...selectedFilters, filter];
     }
 
-    setFilterValue(uniq(_filters));
+    setFilterValue(uniq(nextFilters));
   };
 
   const toggleSortOrder = () => {

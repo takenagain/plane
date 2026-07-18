@@ -23,8 +23,6 @@ import { SettingsHeading } from "@/components/settings/heading";
 // hooks
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
-// plane web imports
-import { CustomAutomationsRoot } from "@/plane-web/components/automations/root";
 // local imports
 import type { Route } from "./+types/page";
 import { AutomationsProjectSettingsHeader } from "./header";
@@ -77,7 +75,6 @@ function AutomationSettingsPage({ params }: Route.ComponentProps) {
           <AutoTransferCycleIssues handleChange={handleChange} />
         </div>
       </section>
-      <CustomAutomationsRoot projectId={projectId} workspaceSlug={workspaceSlug} />
     </SettingsContentWrapper>
   );
 }

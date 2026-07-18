@@ -48,7 +48,7 @@ import { useUserPermissions } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 import useLocalStorage from "@/hooks/use-local-storage";
 // plane web imports
-import { CommonProjectBreadcrumbs } from "@/plane-web/components/breadcrumbs/common";
+import { CommonProjectBreadcrumbs } from "@/components/breadcrumbs/common";
 
 export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
   // refs
@@ -75,7 +75,7 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
 
   const { setValue, storedValue } = useLocalStorage("cycle_sidebar_collapsed", false);
 
-  const isSidebarCollapsed = storedValue ? (storedValue === true ? true : false) : false;
+  const isSidebarCollapsed = storedValue === true;
   const toggleSidebar = () => {
     setValue(!isSidebarCollapsed);
   };
@@ -114,12 +114,12 @@ export const CycleIssuesHeader = observer(function CycleIssuesHeader() {
 
   const switcherOptions = currentProjectCycleIds
     ?.map((id) => {
-      const _cycle = id === cycleId ? cycleDetails : getCycleById(id);
-      if (!_cycle) return;
+      const cycleData = id === cycleId ? cycleDetails : getCycleById(id);
+      if (!cycleData) return;
       return {
-        value: _cycle.id,
-        query: _cycle.name,
-        content: <SwitcherLabel name={_cycle.name} LabelIcon={CycleIcon} />,
+        value: cycleData.id,
+        query: cycleData.name,
+        content: <SwitcherLabel name={cycleData.name} LabelIcon={CycleIcon} />,
       };
     })
     .filter((option) => option !== undefined) as ICustomSearchSelectOption[];

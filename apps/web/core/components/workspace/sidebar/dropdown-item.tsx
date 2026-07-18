@@ -15,7 +15,6 @@ import { useTranslation } from "@plane/i18n";
 import { CheckIcon } from "@plane/propel/icons";
 import type { IWorkspace } from "@plane/types";
 import { cn, getFileURL, getUserRole } from "@plane/utils";
-// plane web imports
 
 type TProps = {
   workspace: IWorkspace;

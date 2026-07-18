@@ -32,7 +32,6 @@ import { WorkspaceViewQuickActions } from "@/components/workspace/views/quick-ac
 import { useGlobalView } from "@/hooks/store/use-global-view";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useAppRouter } from "@/hooks/use-app-router";
-import { GlobalViewLayoutSelection } from "@/plane-web/components/views/helper";
 
 export const GlobalIssuesHeader = observer(function GlobalIssuesHeader() {
   // states
@@ -75,20 +74,6 @@ export const GlobalIssuesHeader = observer(function GlobalIssuesHeader() {
     [workspaceSlug, updateFilters, globalViewId]
   );
 
-  const handleLayoutChange = useCallback(
-    (layout: EIssueLayoutTypes) => {
-      if (!workspaceSlug || !globalViewId) return;
-      updateFilters(
-        workspaceSlug.toString(),
-        undefined,
-        EIssueFilterType.DISPLAY_FILTERS,
-        { layout: layout },
-        globalViewId
-      );
-    },
-    [workspaceSlug, updateFilters, globalViewId]
-  );
-
   const isLocked = viewDetails?.is_locked;
 
   const isDefaultView = DEFAULT_GLOBAL_VIEWS_LIST.find((view) => view.key === globalViewId);
@@ -102,12 +87,12 @@ export const GlobalIssuesHeader = observer(function GlobalIssuesHeader() {
   }));
 
   const workspaceOptions = (currentWorkspaceViews || []).map((view) => {
-    const _view = getViewDetailsById(view);
-    if (!_view) return;
+    const viewDetails = getViewDetailsById(view);
+    if (!viewDetails) return;
     return {
-      value: _view.id,
-      query: _view.name,
-      content: <SwitcherLabel name={_view.name} LabelIcon={ViewsIcon} />,
+      value: viewDetails.id,
+      query: viewDetails.name,
+      content: <SwitcherLabel name={viewDetails.name} LabelIcon={ViewsIcon} />,
     };
   });
 
@@ -151,13 +136,6 @@ export const GlobalIssuesHeader = observer(function GlobalIssuesHeader() {
         </Header.LeftItem>
 
         <Header.RightItem className="items-center">
-          {!isLocked && (
-            <GlobalViewLayoutSelection
-              onChange={handleLayoutChange}
-              selectedLayout={activeLayout ?? EIssueLayoutTypes.SPREADSHEET}
-              workspaceSlug={workspaceSlug.toString()}
-            />
-          )}
           {globalViewId && <WorkItemFiltersToggle entityType={EIssuesStoreType.GLOBAL} entityId={globalViewId} />}
           {!isLocked && (
             <FiltersDropdown title={t("common.display")} placement="bottom-end">

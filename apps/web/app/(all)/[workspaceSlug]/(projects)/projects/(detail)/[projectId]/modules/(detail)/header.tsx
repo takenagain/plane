@@ -47,7 +47,7 @@ import { useIssuesActions } from "@/hooks/use-issues-actions";
 import useLocalStorage from "@/hooks/use-local-storage";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web imports
-import { CommonProjectBreadcrumbs } from "@/plane-web/components/breadcrumbs/common";
+import { CommonProjectBreadcrumbs } from "@/components/breadcrumbs/common";
 import { IconButton } from "@plane/propel/icon-button";
 
 export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
@@ -74,7 +74,7 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
   // local storage
   const { setValue, storedValue } = useLocalStorage("module_sidebar_collapsed", "false");
   // derived values
-  const isSidebarCollapsed = storedValue ? (storedValue === "true" ? true : false) : false;
+  const isSidebarCollapsed = storedValue ? storedValue === "true" : false;
   const activeLayout = issueFilters?.displayFilters?.layout;
   const moduleDetails = moduleId ? getModuleById(moduleId) : undefined;
   const canUserCreateIssue = allowPermissions(
@@ -113,12 +113,12 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
 
   const switcherOptions = projectModuleIds
     ?.map((id) => {
-      const _module = id === moduleId ? moduleDetails : getModuleById(id);
-      if (!_module) return;
+      const moduleData = id === moduleId ? moduleDetails : getModuleById(id);
+      if (!moduleData) return;
       return {
-        value: _module.id,
-        query: _module.name,
-        content: <SwitcherLabel name={_module.name} LabelIcon={ModuleIcon} />,
+        value: moduleData.id,
+        query: moduleData.name,
+        content: <SwitcherLabel name={moduleData.name} LabelIcon={ModuleIcon} />,
       };
     })
     .filter((option) => option !== undefined) as ICustomSearchSelectOption[];
