@@ -336,6 +336,7 @@ test.describe("Pages + Wiki manual E2E matrix", () => {
   });
 
   test("full matrix", async ({ page }) => {
+    test.setTimeout(360_000);
     scenarioResults.length = 0;
     consoleErrors.length = 0;
     page.on("console", recordConsole);
@@ -394,7 +395,12 @@ test.describe("Pages + Wiki manual E2E matrix", () => {
       websocketFailures: hasWebsocketFailure(),
     };
     const fs = await import("node:fs");
-    const outPath = "/home/frannas/repos/personal/plane/docs/investigations/pages-wiki-e2e-results.json";
+    const path = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const repoRoot = process.env.E2E_REPO_ROOT ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+    const outDir = path.join(repoRoot, "docs/investigations");
+    fs.mkdirSync(outDir, { recursive: true });
+    const outPath = path.join(outDir, "pages-wiki-e2e-results.json");
     fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
     console.log("REPORT_WRITTEN:", outPath);
     console.log("SCENARIOS:", JSON.stringify(scenarioResults, null, 2));

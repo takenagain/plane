@@ -11,6 +11,15 @@
 - `pnpm turbo run <command> --filter=<package>` - Target specific package/app
 - `pnpm --filter=@plane/ui storybook` - Start Storybook on port 6006
 
+## Never commit or push without tests
+
+**Hard rule for agents:** Do not `git commit` or `git push` until the full relevant test suite for the changed area has been run in this session and passed. Typecheck and lint alone are not enough.
+
+- Frontend (`apps/web`, `apps/live`, related packages, UI/stores): `pnpm --filter=web test:unit` (and live when applicable) **and** `pnpm test:e2e` must both pass. If the stack is down, bring it up (`docker compose -f docker-compose-local.yml -p wrrw-e2e up -d --build`, web on `:3000`) — do not skip e2e. Only ask the user if sudo is required.
+- Backend (`apps/api`): Docker pytest suite per below.
+
+If e2e cannot pass: **do not commit**. See `.cursor/rules/no-commit-without-tests.mdc`.
+
 ## Code Style
 
 - **Imports**: Use `workspace:*` for internal packages, `catalog:` for external deps

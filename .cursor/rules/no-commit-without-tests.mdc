@@ -1,0 +1,27 @@
+---
+description: Never commit or push without full unit + e2e suites passing
+alwaysApply: true
+---
+
+# No commit/push without tests
+
+## Hard rule (non-negotiable)
+
+**Never `git commit` or `git push` unless the full relevant test suite has been run in this session and passed.**
+
+For any change that touches frontend (`apps/web`, `apps/admin`, `apps/space`, `apps/live`, shared UI packages, agent UI, stores, or e2e itself):
+
+1. Unit suites must pass (`pnpm --filter=web test:unit`, plus live/codemods when applicable).
+2. **`pnpm test:e2e` must pass.** No exceptions for “e2e not runnable”, “docker down”, “only unit matters”, or “tsc/lint is enough”.
+3. If the local stack is down: **set it up** (`docker compose -f docker-compose-local.yml -p wrrw-e2e up -d --build`, start web on `:3000`, seed via global-setup) before committing. Only ask the user if **sudo** is required.
+4. Typecheck/lint alone are **never** sufficient.
+
+If e2e cannot pass, **do not commit**. Leave changes uncommitted (or soft-reset any mistaken commit). Do not push. Do not cherry-pick.
+
+## Backend
+
+When `apps/api` changes: run the Docker pytest suite per `AGENTS.md` before commit/push.
+
+## Exceptions
+
+Only skip tests if the user **explicitly** says to commit/push without running tests. Do not invent exceptions. “I’ll run them later” is not an exception.

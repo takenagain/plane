@@ -38,7 +38,10 @@ function resolveApiContainerName() {
     .split(/\r?\n/)
     .map((name) => name.trim())
     .filter(Boolean);
-  return { runtime, container: names.find((name) => name === "api" || name.endsWith("_api_1")) || "api" };
+  return {
+    runtime,
+    container: names.find((name) => name === "api" || name.endsWith("-api-1") || name.endsWith("_api_1")) || "api",
+  };
 }
 
 function runApiShell(script: string): string {

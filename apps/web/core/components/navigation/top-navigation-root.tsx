@@ -18,6 +18,7 @@ import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
 import { InboxIcon } from "@plane/propel/icons";
 import useSWR from "swr";
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
+import { WorkspaceAppSwitcher } from "@/plane-web/components/workspace/app-switcher";
 // local imports
 import { StarUsOnGitHubLink } from "@/app/(all)/[workspaceSlug]/(projects)/star-us-link";
 
@@ -34,7 +35,7 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
 
   // Fetch notification count
   useSWR(
-    workspaceSlug ? "WORKSPACE_UNREAD_NOTIFICATION_COUNT" : null,
+    workspaceSlug ? `WORKSPACE_UNREAD_NOTIFICATION_COUNT_${workspaceSlug.toString()}` : null,
     workspaceSlug ? () => getUnreadNotificationsCount(workspaceSlug.toString()) : null
   );
 
@@ -50,9 +51,10 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
         "px-2": !showLabel,
       })}
     >
-      {/* Workspace Menu */}
-      <div className="flex-1 shrink-0">
+      {/* Workspace Menu + Projects/Wiki switcher */}
+      <div className="flex flex-1 shrink-0 items-center gap-3">
         <WorkspaceMenuRoot variant="top-navigation" />
+        <WorkspaceAppSwitcher />
       </div>
       {/* Power K Search */}
       <div className="shrink-0">

@@ -29,7 +29,7 @@ function resolveApiContainerName(): { runtime: string; container: string } {
     .split(/\r?\n/)
     .map((name) => name.trim())
     .filter(Boolean);
-  const container = names.find((name) => name === "api" || name.endsWith("_api_1")) || "api";
+  const container = names.find((name) => name === "api" || name.endsWith("-api-1") || name.endsWith("_api_1")) || "api";
   return { runtime, container };
 }
 

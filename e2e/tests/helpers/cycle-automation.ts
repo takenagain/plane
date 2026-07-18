@@ -95,7 +95,7 @@ function resolveApiContainerName(): string {
       .split(/\r?\n/)
       .map((n) => n.trim())
       .filter(Boolean);
-    return names.find((n) => n === "api" || n.endsWith("_api_1")) ?? "api";
+    return names.find((n) => n === "api" || n.endsWith("-api-1") || n.endsWith("_api_1")) ?? "api";
   } catch {
     return "api";
   }

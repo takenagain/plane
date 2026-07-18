@@ -66,7 +66,9 @@ test.describe("Local 2FA — forced setup", () => {
     await page.waitForURL(/\/(onboarding|accounts\/setup-2fa)/, { timeout: 60_000 });
 
     // Exercise the forced-setup gate (same surface as post-onboarding MFA).
-    await page.goto("/accounts/setup-2fa/");
+    if (!page.url().includes("/accounts/setup-2fa")) {
+      await page.goto("/accounts/setup-2fa/");
+    }
     await enrollTotpOnSetupPage(page);
 
     const me = await page.request.get(`${API_BASE_URL}/api/users/me/`);

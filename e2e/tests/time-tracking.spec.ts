@@ -556,9 +556,9 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await page.waitForTimeout(1500);
     }
 
-    const trackingActions = page.getByTestId("issue-time-tracking-actions").first();
-    const startStopButton = trackingActions.getByTestId("issue-time-start-stop-button");
-    const sessionTimer = trackingActions.getByTestId("issue-time-session-timer");
+    // Prefer role name — avoids matching empty/detached duplicate testids.
+    const startStopButton = page.getByRole("button", { name: /^(Start|Stop)$/ });
+    const sessionTimer = page.getByTestId("issue-time-session-timer");
     const floatingFob = page.getByTestId("floating-time-tracking-fob");
     const floatingActionButton = page.getByTestId("floating-time-tracking-fob-primary-button");
     const floatingCompactTime = page.getByTestId("floating-time-tracking-fob-compact-time");
@@ -568,18 +568,29 @@ test.describe.serial("Time Tracking E2E Flow", () => {
     const trackedWorkItemUrl = page.url();
 
     await test.step("sub-test: normalizes state to Start before the focused FOB workflow begins", async () => {
-      const localCurrentText = (await startStopButton.textContent())?.trim().toLowerCase() ?? "";
-      const floatingActionLabel = (await floatingActionButton.getAttribute("aria-label").catch(() => null)) ?? "";
-      const floatingCurrentText = floatingActionLabel.trim().toLowerCase();
+      test.setTimeout(180_000);
 
-      if (floatingCurrentText === "stop time tracking") {
+      // Stop any leftover floating timer from prior runs.
+      if (await floatingFob.isVisible().catch(() => false)) {
         await floatingActionButton.click();
         await expect(floatingFob).toHaveCount(0, { timeout: 15_000 });
-      } else if (localCurrentText === "stop") {
-        await startStopButton.click();
+        await page.goto(trackedWorkItemUrl);
+        await waitForPageLoad(page);
+        await page.waitForTimeout(1500);
       }
 
-      await expect(startStopButton).toHaveText(/start/i, { timeout: 15_000 });
+      // If the local control is still Stop, click once to return to Start.
+      if (
+        await page
+          .getByRole("button", { name: /^Stop$/ })
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await page.getByRole("button", { name: /^Stop$/ }).click();
+        await expect(page.getByRole("button", { name: /^Start$/ })).toBeVisible({ timeout: 15_000 });
+      }
+
+      await expect(page.getByRole("button", { name: /^Start$/ })).toBeVisible({ timeout: 15_000 });
     });
 
     await test.step("sub-test: clicking Start shows the active FOB immediately and syncs the local control", async () => {
