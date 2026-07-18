@@ -1,6 +1,6 @@
 // helpers
 import { API_BASE_URL } from "@plane/constants";
-import type { IAgentConfig, IAgentChatSession, IAgentChatResponse } from "@plane/types";
+import type { IAgentConfig, IAgentChatSession, IAgentChatResponse, TAgentUIContext } from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
 
@@ -131,7 +131,12 @@ export class AgentService extends APIService {
   async sendMessage(
     workspaceSlug: string,
     sessionId: string,
-    data: { content: string; model?: string; project_id?: string | null }
+    data: {
+      content: string;
+      model?: string;
+      project_id?: string | null;
+      ui_context?: TAgentUIContext;
+    }
   ): Promise<IAgentChatResponse> {
     return this.post(`/api/workspaces/${workspaceSlug}/agent/sessions/${sessionId}/chat/`, data)
       .then((response) => response?.data)

@@ -1,8 +1,10 @@
 import re
 
-from django.db.models import Q
+from django.db import IntegrityError
+from django.db.models import Prefetch, Q
 
 from plane.db.models import (
+    EstimatePoint,
     Issue,
     IssueAssignee,
     IssueComment,
@@ -12,7 +14,24 @@ from plane.db.models import (
     ProjectMember,
     State,
 )
+from plane.db.models.issue_type import ProjectIssueType
 from plane.db.models.project import ROLE
+
+BULK_UPDATE_MAX_ISSUE_IDS = 50
+
+WORK_ITEM_SCALAR_FIELDS = frozenset(
+    {
+        "name",
+        "description",
+        "priority",
+        "state_id",
+        "start_date",
+        "target_date",
+        "parent_id",
+        "estimate_point_id",
+        "type_id",
+    }
+)
 
 
 def _can_access_project(request_user, project_id: str, *, write: bool = False) -> bool:
@@ -25,6 +44,133 @@ def _can_access_project(request_user, project_id: str, *, write: bool = False) -
     ).exists()
 
 
+def _issue_access_queryset(request_user, workspace_slug: str):
+    return Issue.issue_objects.filter(
+        workspace__slug=workspace_slug,
+        project__project_projectmember__member=request_user,
+        project__project_projectmember__is_active=True,
+    ).select_related("project", "state", "estimate_point", "type")
+
+
+def _serialize_work_item_summary(issue: Issue) -> dict:
+    return {
+        "id": str(issue.id),
+        "identifier": f"{issue.project.identifier}-{issue.sequence_id}",
+        "name": issue.name,
+        "priority": issue.priority,
+        "state": issue.state.name if issue.state else None,
+        "state_id": str(issue.state_id) if issue.state_id else None,
+        "start_date": issue.start_date.isoformat() if issue.start_date else None,
+        "target_date": issue.target_date.isoformat() if issue.target_date else None,
+        "assignees": [str(row.assignee_id) for row in issue.issue_assignee.all()],
+        "label_ids": [str(row.label_id) for row in issue.label_issue.all()],
+        "estimate_point_id": str(issue.estimate_point_id) if issue.estimate_point_id else None,
+        "type_id": str(issue.type_id) if issue.type_id else None,
+    }
+
+
+def _filter_assignee_ids(project_id: str, assignee_ids: list[str] | None) -> list:
+    if not assignee_ids:
+        return []
+    return list(
+        ProjectMember.objects.filter(
+            project_id=project_id,
+            role__gte=ROLE.MEMBER.value,
+            is_active=True,
+            member_id__in=assignee_ids,
+        ).values_list("member_id", flat=True)
+    )
+
+
+def _filter_label_ids(project_id: str, label_ids: list[str] | None) -> list:
+    if not label_ids:
+        return []
+    return list(Label.objects.filter(project_id=project_id, id__in=label_ids).values_list("id", flat=True))
+
+
+def _validate_state_id(project_id: str, state_id: str | None) -> str | None:
+    if not state_id:
+        return None
+    if not State.objects.filter(project_id=project_id, pk=state_id).exists():
+        raise ValueError("State is not valid please pass a valid state_id")
+    return state_id
+
+
+def _validate_parent_id(project_id: str, parent_id: str | None) -> str | None:
+    if not parent_id:
+        return None
+    if not Issue.objects.filter(project_id=project_id, pk=parent_id).exists():
+        raise ValueError("Parent is not valid issue_id please pass a valid issue_id")
+    return parent_id
+
+
+def _serialize_work_item_detail(issue: Issue) -> dict:
+    payload = _serialize_work_item_summary(issue)
+    payload.update(
+        {
+            "description": issue.description_html,
+            "labels": payload.pop("label_ids"),
+            "comments_count": issue.issue_comments.filter(deleted_at__isnull=True).count(),
+        }
+    )
+    return payload
+
+
+def _apply_work_item_updates(issue: Issue, fields: dict) -> None:
+    assignee_ids = fields.pop("assignee_ids", None)
+    label_ids = fields.pop("label_ids", None)
+    project_id = str(issue.project_id)
+
+    if "state_id" in fields and fields["state_id"] is not None:
+        fields["state_id"] = _validate_state_id(project_id, fields["state_id"])
+    if "parent_id" in fields and fields["parent_id"] is not None:
+        fields["parent_id"] = _validate_parent_id(project_id, fields["parent_id"])
+
+    updatable = {k: v for k, v in fields.items() if k in WORK_ITEM_SCALAR_FIELDS and v is not None}
+    if "description" in updatable:
+        updatable["description_html"] = updatable.pop("description")
+    for key, value in updatable.items():
+        setattr(issue, key, value)
+    if updatable:
+        issue.save()
+
+    if assignee_ids is not None:
+        IssueAssignee.objects.filter(issue=issue).delete()
+        valid_assignee_ids = _filter_assignee_ids(project_id, assignee_ids)
+        if valid_assignee_ids:
+            IssueAssignee.objects.bulk_create(
+                [
+                    IssueAssignee(
+                        assignee_id=assignee_id,
+                        issue=issue,
+                        project_id=issue.project_id,
+                        workspace_id=issue.workspace_id,
+                    )
+                    for assignee_id in valid_assignee_ids
+                ],
+                batch_size=10,
+                ignore_conflicts=True,
+            )
+
+    if label_ids is not None:
+        IssueLabel.objects.filter(issue=issue).delete()
+        valid_label_ids = _filter_label_ids(project_id, label_ids)
+        if valid_label_ids:
+            IssueLabel.objects.bulk_create(
+                [
+                    IssueLabel(
+                        label_id=label_id,
+                        issue=issue,
+                        project_id=issue.project_id,
+                        workspace_id=issue.workspace_id,
+                    )
+                    for label_id in valid_label_ids
+                ],
+                batch_size=10,
+                ignore_conflicts=True,
+            )
+
+
 def list_work_items(
     request_user,
     workspace_slug: str,
@@ -35,11 +181,10 @@ def list_work_items(
     limit: int = 20,
     **kwargs,
 ) -> dict:
-    qs = Issue.issue_objects.filter(
-        workspace__slug=workspace_slug,
-        project__project_projectmember__member=request_user,
-        project__project_projectmember__is_active=True,
-    ).select_related("state", "project")
+    qs = _issue_access_queryset(request_user, workspace_slug).prefetch_related(
+        Prefetch("issue_assignee"),
+        Prefetch("label_issue"),
+    )
     if project_id:
         qs = qs.filter(project_id=project_id)
     if state_id:
@@ -53,17 +198,7 @@ def list_work_items(
     issues = list(qs[:capped])
     return {
         "count": len(issues),
-        "issues": [
-            {
-                "id": str(i.id),
-                "identifier": f"{i.project.identifier}-{i.sequence_id}",
-                "name": i.name,
-                "priority": i.priority,
-                "state": i.state.name if i.state else None,
-                "assignees": [str(assignee.id) for assignee in i.assignees.all()],
-            }
-            for i in issues
-        ],
+        "issues": [_serialize_work_item_summary(i) for i in issues],
     }
 
 
@@ -74,11 +209,10 @@ def get_work_item(
     identifier: str | None = None,
     **kwargs,
 ) -> dict:
-    qs = Issue.issue_objects.filter(
-        workspace__slug=workspace_slug,
-        project__project_projectmember__member=request_user,
-        project__project_projectmember__is_active=True,
-    ).select_related("project", "state")
+    qs = _issue_access_queryset(request_user, workspace_slug).prefetch_related(
+        Prefetch("issue_assignee"),
+        Prefetch("label_issue"),
+    )
 
     issue = None
     if issue_id:
@@ -92,17 +226,7 @@ def get_work_item(
     if not issue:
         raise ValueError("Work item not found.")
 
-    return {
-        "id": str(issue.id),
-        "identifier": f"{issue.project.identifier}-{issue.sequence_id}",
-        "name": issue.name,
-        "description": issue.description_html,
-        "priority": issue.priority,
-        "state_id": str(issue.state_id) if issue.state_id else None,
-        "labels": [str(label.id) for label in issue.labels.all()],
-        "assignees": [str(assignee.id) for assignee in issue.assignees.all()],
-        "comments_count": issue.issue_comments.filter(deleted_at__isnull=True).count(),
-    }
+    return _serialize_work_item_detail(issue)
 
 
 def create_work_item(
@@ -118,6 +242,8 @@ def create_work_item(
     start_date: str | None = None,
     target_date: str | None = None,
     parent_id: str | None = None,
+    estimate_point_id: str | None = None,
+    type_id: str | None = None,
     **kwargs,
 ) -> dict:
     if not _can_access_project(request_user, project_id, write=True):
@@ -126,6 +252,20 @@ def create_work_item(
     project = Project.objects.filter(id=project_id, workspace__slug=workspace_slug).first()
     if not project:
         raise ValueError("Project not found.")
+
+    if estimate_point_id and not EstimatePoint.objects.filter(id=estimate_point_id, project_id=project_id).exists():
+        raise ValueError("Estimate point not found in project.")
+
+    if type_id and not ProjectIssueType.objects.filter(project_id=project_id, issue_type_id=type_id).exists():
+        raise ValueError("Issue type not found in project.")
+
+    if state_id:
+        state_id = _validate_state_id(project_id, state_id)
+    if parent_id:
+        parent_id = _validate_parent_id(project_id, parent_id)
+
+    valid_assignee_ids = _filter_assignee_ids(project_id, assignee_ids)
+    valid_label_ids = _filter_label_ids(project_id, label_ids)
 
     if not state_id:
         default_state = State.objects.filter(project_id=project_id, default=True).first() or State.objects.filter(
@@ -143,17 +283,19 @@ def create_work_item(
         start_date=start_date,
         target_date=target_date,
         parent_id=parent_id,
+        estimate_point_id=estimate_point_id,
+        type_id=type_id,
     )
 
-    for assignee_id in assignee_ids or []:
+    for assignee_id in valid_assignee_ids:
         IssueAssignee.objects.get_or_create(
             issue=issue,
             assignee_id=assignee_id,
             defaults={"workspace_id": issue.workspace_id, "project_id": issue.project_id},
         )
 
-    for label_id in label_ids or []:
-        label = Label.objects.filter(id=label_id, workspace_id=issue.workspace_id).first()
+    for label_id in valid_label_ids:
+        label = Label.objects.filter(id=label_id, project_id=project_id).first()
         if not label:
             continue
         IssueLabel.objects.get_or_create(
@@ -177,41 +319,47 @@ def update_work_item(request_user, workspace_slug: str, issue_id: str, **fields)
     if not _can_access_project(request_user, str(issue.project_id), write=True):
         raise PermissionError("You do not have permission to update this work item.")
 
-    assignee_ids = fields.pop("assignee_ids", None)
-    label_ids = fields.pop("label_ids", None)
-    updatable = {
-        k: v
-        for k, v in fields.items()
-        if k
-        in {"name", "description", "priority", "state_id", "start_date", "target_date", "parent_id"}
-        and v is not None
-    }
-    if "description" in updatable:
-        updatable["description_html"] = updatable.pop("description")
-    for key, value in updatable.items():
-        setattr(issue, key, value)
-    if updatable:
-        issue.save()
+    if fields.get("estimate_point_id") and not EstimatePoint.objects.filter(
+        id=fields["estimate_point_id"], project_id=issue.project_id
+    ).exists():
+        raise ValueError("Estimate point not found in project.")
 
-    if assignee_ids is not None:
-        IssueAssignee.objects.filter(issue=issue).exclude(assignee_id__in=assignee_ids).delete()
-        for assignee_id in assignee_ids:
-            IssueAssignee.objects.get_or_create(
-                issue=issue,
-                assignee_id=assignee_id,
-                defaults={"workspace_id": issue.workspace_id, "project_id": issue.project_id},
-            )
+    if fields.get("type_id") and not ProjectIssueType.objects.filter(
+        project_id=issue.project_id, issue_type_id=fields["type_id"]
+    ).exists():
+        raise ValueError("Issue type not found in project.")
 
-    if label_ids is not None:
-        IssueLabel.objects.filter(issue=issue).exclude(label_id__in=label_ids).delete()
-        for label_id in label_ids:
-            IssueLabel.objects.get_or_create(
-                issue=issue,
-                label_id=label_id,
-                defaults={"workspace_id": issue.workspace_id, "project_id": issue.project_id},
-            )
-
+    _apply_work_item_updates(issue, dict(fields))
     return {"updated": True, "id": str(issue.id)}
+
+
+def bulk_update_work_items(
+    request_user,
+    workspace_slug: str,
+    issue_ids: list[str],
+    **fields,
+) -> dict:
+    if not issue_ids:
+        raise ValueError("issue_ids is required and must not be empty.")
+    if len(issue_ids) > BULK_UPDATE_MAX_ISSUE_IDS:
+        raise ValueError(f"issue_ids cannot exceed {BULK_UPDATE_MAX_ISSUE_IDS} items.")
+
+    updated_ids: list[str] = []
+    errors: list[dict] = []
+    for issue_id in issue_ids:
+        try:
+            result = update_work_item(request_user, workspace_slug, issue_id, **fields)
+            updated_ids.append(result["id"])
+        except (ValueError, PermissionError, IntegrityError) as exc:
+            errors.append({"issue_id": issue_id, "error": str(exc)})
+        except Exception as exc:
+            errors.append({"issue_id": issue_id, "error": str(exc)})
+
+    return {
+        "updated_count": len(updated_ids),
+        "updated_ids": updated_ids,
+        "errors": errors,
+    }
 
 
 def delete_work_item(request_user, workspace_slug: str, issue_id: str, **kwargs) -> dict:

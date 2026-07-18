@@ -20,6 +20,7 @@ class AgentService:
         project_id: str | None,
         model_override: str | None,
         request_user,
+        ui_context: dict | None = None,
     ) -> list[AgentChatMessage]:
         config = self._get_config(session.workspace_id, project_id)
         if not config or not config.is_enabled:
@@ -50,6 +51,8 @@ class AgentService:
             project_id=project_id,
             user_display_name=request_user.display_name,
             custom_prompt=config.system_prompt,
+            ui_context=ui_context,
+            request_user=request_user,
         )
         tool_executor = ToolExecutor(
             request_user=request_user,

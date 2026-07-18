@@ -52,3 +52,48 @@ export interface IAgentChatResponse {
   session_id: string;
   messages: IAgentChatMessage[];
 }
+
+export type TAgentUIContextViewSurface =
+  | "project_issues"
+  | "cycle"
+  | "module"
+  | "project_view"
+  | "workspace_view"
+  | "browse"
+  | "other";
+
+export type TAgentUIContextViewLayout = "list" | "kanban" | "calendar" | "gantt_chart" | "spreadsheet" | null;
+
+export type TAgentUIContextWorkItemPresentation = "peek" | "full_page" | "browse";
+
+export type TAgentUIContext = {
+  workspace: { slug: string; name?: string; id?: string };
+  user: { id: string; display_name: string; email?: string };
+  projects: {
+    current_id: string | null;
+    available: Array<{ id: string; identifier: string; name: string; is_current: boolean }>;
+  };
+  current_project?: {
+    id: string;
+    identifier: string;
+    name: string;
+    description?: string;
+  } | null;
+  view?: {
+    surface: TAgentUIContextViewSurface;
+    layout: TAgentUIContextViewLayout;
+    cycle_id?: string;
+    module_id?: string;
+    view_id?: string;
+  } | null;
+  open_work_item?: {
+    presentation: TAgentUIContextWorkItemPresentation;
+    id?: string;
+    identifier?: string;
+    name?: string;
+    project_id?: string;
+    priority?: string | null;
+    state_id?: string | null;
+    assignees?: string[];
+  } | null;
+};

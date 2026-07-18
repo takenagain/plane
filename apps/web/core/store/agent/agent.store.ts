@@ -1,6 +1,6 @@
 import { AGENT_DEFAULT_MAX_STEPS, getAgentModelsForProvider, getDefaultAgentModelForProvider } from "@plane/constants";
 import { action, makeObservable, observable, runInAction } from "mobx";
-import type { IAgentChatMessage, IAgentChatSession, IAgentConfig } from "@plane/types";
+import type { IAgentChatMessage, IAgentChatSession, IAgentConfig, TAgentUIContext } from "@plane/types";
 import { AgentService, type TAgentHttpError } from "@/services/agent.service";
 
 const agentService = new AgentService();
@@ -37,7 +37,12 @@ export interface IAgentStore {
   fetchSessions: (workspaceSlug: string) => Promise<void>;
   loadSession: (workspaceSlug: string, sessionId: string) => Promise<void>;
   createSession: (workspaceSlug: string, projectId?: string) => Promise<IAgentChatSession>;
-  sendMessage: (workspaceSlug: string, content: string, projectId?: string) => Promise<void>;
+  sendMessage: (
+    workspaceSlug: string,
+    content: string,
+    projectId?: string,
+    uiContext?: TAgentUIContext
+  ) => Promise<void>;
   setSelectedModel: (model: string) => void;
   setActiveSession: (sessionId: string | null) => void;
   setActiveMessages: (messages: IAgentChatMessage[]) => void;
@@ -205,7 +210,7 @@ export class AgentStore implements IAgentStore {
     return session;
   };
 
-  sendMessage = async (workspaceSlug: string, content: string, projectId?: string) => {
+  sendMessage = async (workspaceSlug: string, content: string, projectId?: string, uiContext?: TAgentUIContext) => {
     if (!content.trim()) return;
     this.error = null;
     if (!this.activeSessionId) {
@@ -232,6 +237,7 @@ export class AgentStore implements IAgentStore {
         content,
         model,
         project_id: projectId,
+        ui_context: uiContext,
       });
 
       runInAction(() => {

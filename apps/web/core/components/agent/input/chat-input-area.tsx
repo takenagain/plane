@@ -2,6 +2,7 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import { useRouterParams } from "@/hooks/store/use-router-params";
 import { useAgent } from "@/hooks/store/use-agent";
+import { useAgentUIContext } from "@/components/agent/utils/build-agent-ui-context";
 import { ModelSelector } from "./model-selector";
 import { SendButton } from "./send-button";
 
@@ -10,13 +11,16 @@ type Props = { workspaceSlug: string };
 export const ChatInputArea = observer(function ChatInputArea({ workspaceSlug }: Props) {
   const agent = useAgent();
   const router = useRouterParams();
+  const uiContext = useAgentUIContext(workspaceSlug);
   const [content, setContent] = useState("");
+
+  const projectId = uiContext?.projects?.current_id ?? router.projectId;
 
   const submit = async () => {
     const value = content.trim();
     if (!value || agent.isLoading) return;
     setContent("");
-    await agent.sendMessage(workspaceSlug, value, router.projectId);
+    await agent.sendMessage(workspaceSlug, value, projectId ?? undefined, uiContext);
   };
 
   return (

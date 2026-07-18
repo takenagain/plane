@@ -17,7 +17,9 @@
 # Notes:
 # - Postgres / Valkey / RabbitMQ / MinIO start with health checks; the test
 #   runner only starts once each dependency is healthy.
-# - Data dirs are tmpfs so every run begins from a clean state.
+# - Data dirs for Postgres/Valkey/MinIO are tmpfs (mode=1777 for rootless).
+#   RabbitMQ recreates .erlang.cookie as the rabbitmq user so rootless Podman
+#   compose volume copy-up does not leave an unreadable cookie.
 # - Env vars come from apps/api/.env (the same file the local stack uses); tests
 #   use plane.settings.test, which inherits from common and reads DATABASE_URL,
 #   REDIS_URL, RABBITMQ_* etc. from the environment.
@@ -34,7 +36,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-plane}
       POSTGRES_DB: ${POSTGRES_DB:-plane}
     tmpfs:
-      - /var/lib/postgresql/data
+      # mode=1777: rootless Podman mounts tmpfs as root; services that drop
+      # privileges still need write access (Docker is more permissive by default).
+      - /var/lib/postgresql/data:mode=1777
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-plane} -d ${POSTGRES_DB:-plane}"]
       interval: 5s
@@ -46,7 +50,7 @@ services:
     networks:
       - test_env
     tmpfs:
-      - /data
+      - /data:mode=1777
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -63,8 +67,20 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-plane}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-plane}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-plane}
-    tmpfs:
-      - /var/lib/rabbitmq
+      # Keep in sync with the cookie written in entrypoint below.
+      RABBITMQ_ERLANG_COOKIE: plane-test-erlang-cookie
+    # Rootless Podman + docker compose copies the image VOLUME such that
+    # .erlang.cookie is owned by the host user; Erlang then fails with eacces
+    # after rabbitmq drops privileges. Recreate the cookie as the rabbitmq user.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        rm -f /var/lib/rabbitmq/.erlang.cookie
+        chown -R rabbitmq:rabbitmq /var/lib/rabbitmq
+        su-exec rabbitmq sh -c 'printf %s plane-test-erlang-cookie > /var/lib/rabbitmq/.erlang.cookie && chmod 600 /var/lib/rabbitmq/.erlang.cookie'
+        exec docker-entrypoint.sh rabbitmq-server
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -90,7 +106,7 @@ services:
       tail -f /dev/null
       "
     tmpfs:
-      - /export
+      - /export:mode=1777
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
