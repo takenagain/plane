@@ -24,6 +24,7 @@ from .views import get_view, list_views
 from .wiki import create_wiki_page, delete_wiki_page, get_wiki_page, list_wiki_pages, update_wiki_page
 from .work_items import (
     add_work_item_comment,
+    bulk_update_work_items,
     create_work_item,
     delete_work_item,
     get_work_item,
@@ -37,6 +38,7 @@ TOOL_REGISTRY: dict[str, callable] = {
     "get_work_item": get_work_item,
     "create_work_item": create_work_item,
     "update_work_item": update_work_item,
+    "bulk_update_work_items": bulk_update_work_items,
     "delete_work_item": delete_work_item,
     "add_work_item_comment": add_work_item_comment,
     "list_cycles": list_cycles,
@@ -94,6 +96,28 @@ def _tool_schema(name: str, description: str, properties: dict, required: list[s
     }
 
 
+_WORK_ITEM_MUTABLE_PROPERTIES = {
+    "name": {"type": "string", "description": "Title of the issue."},
+    "description": {"type": "string", "description": "HTML description of the issue."},
+    "priority": {"type": "string", "enum": ["urgent", "high", "medium", "low", "none"]},
+    "state_id": {"type": "string", "description": "UUID of the state."},
+    "assignee_ids": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "List of user UUIDs. Use list_members to find valid IDs.",
+    },
+    "label_ids": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "List of label UUIDs. Use list_labels to find valid IDs.",
+    },
+    "start_date": {"type": "string", "description": "ISO date YYYY-MM-DD."},
+    "target_date": {"type": "string", "description": "ISO date YYYY-MM-DD."},
+    "estimate_point_id": {"type": "string", "description": "UUID of an estimate point for the project."},
+    "type_id": {"type": "string", "description": "UUID of the issue type."},
+}
+
+
 TOOL_DEFINITIONS = [
     _tool_schema(
         "list_work_items",
@@ -113,11 +137,37 @@ TOOL_DEFINITIONS = [
     ),
     _tool_schema(
         "create_work_item",
-        "Create a work item.",
-        {"project_id": {"type": "string"}, "name": {"type": "string"}},
+        "Create a new work item (issue) in a project.",
+        {
+            "project_id": {"type": "string", "description": "UUID of the project."},
+            **_WORK_ITEM_MUTABLE_PROPERTIES,
+            "parent_id": {"type": "string", "description": "UUID of parent issue for sub-issues."},
+        },
         ["name"],
     ),
-    _tool_schema("update_work_item", "Update a work item.", {"issue_id": {"type": "string"}}, ["issue_id"]),
+    _tool_schema(
+        "update_work_item",
+        "Update fields on an existing work item.",
+        {
+            "issue_id": {"type": "string", "description": "UUID of the issue to update."},
+            **_WORK_ITEM_MUTABLE_PROPERTIES,
+            "parent_id": {"type": "string", "description": "UUID of parent issue for sub-issues."},
+        },
+        ["issue_id"],
+    ),
+    _tool_schema(
+        "bulk_update_work_items",
+        "Update the same fields on multiple work items at once.",
+        {
+            "issue_ids": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "UUIDs of issues to update.",
+            },
+            **_WORK_ITEM_MUTABLE_PROPERTIES,
+        },
+        ["issue_ids"],
+    ),
     _tool_schema("delete_work_item", "Delete a work item.", {"issue_id": {"type": "string"}}, ["issue_id"]),
     _tool_schema(
         "add_work_item_comment",

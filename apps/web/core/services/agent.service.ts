@@ -1,6 +1,6 @@
 // helpers
 import { API_BASE_URL } from "@plane/constants";
-import type { IAgentConfig, IAgentChatSession, IAgentChatResponse } from "@plane/types";
+import type { IAgentConfig, IAgentChatSession, IAgentChatResponse, TAgentUIContext } from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
 
@@ -13,13 +13,15 @@ export const getAgentErrorMessage = (error: unknown, fallback = "Request failed.
     const payload = error as Record<string, unknown>;
     if (typeof payload.error === "string" && payload.error) return payload.error;
     if (typeof payload.detail === "string" && payload.detail) return payload.detail;
-    const fieldMessages = Object.entries(payload)
-      .filter(([key]) => key !== "error" && key !== "detail")
-      .flatMap(([field, value]) => {
-        if (Array.isArray(value)) return value.map((message) => `${field}: ${String(message)}`);
-        if (typeof value === "string") return [`${field}: ${value}`];
-        return [];
-      });
+    const fieldMessages: string[] = [];
+    for (const [field, value] of Object.entries(payload)) {
+      if (field === "error" || field === "detail") continue;
+      if (Array.isArray(value)) {
+        for (const message of value) fieldMessages.push(`${field}: ${String(message)}`);
+      } else if (typeof value === "string") {
+        fieldMessages.push(`${field}: ${value}`);
+      }
+    }
     if (fieldMessages.length > 0) return fieldMessages.join(" ");
   }
   return fallback;
@@ -131,7 +133,12 @@ export class AgentService extends APIService {
   async sendMessage(
     workspaceSlug: string,
     sessionId: string,
-    data: { content: string; model?: string; project_id?: string | null }
+    data: {
+      content: string;
+      model?: string;
+      project_id?: string | null;
+      ui_context?: TAgentUIContext;
+    }
   ): Promise<IAgentChatResponse> {
     return this.post(`/api/workspaces/${workspaceSlug}/agent/sessions/${sessionId}/chat/`, data)
       .then((response) => response?.data)
