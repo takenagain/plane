@@ -1,4 +1,10 @@
-import { computed, makeObservable } from "mobx";
+/**
+ * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+import { override, makeObservable } from "mobx";
 // types / constants
 import type { IBaseCommandPaletteStore } from "@/store/base-command-palette.store";
 import { BaseCommandPaletteStore } from "@/store/base-command-palette.store";
@@ -11,9 +17,10 @@ export interface ICommandPaletteStore extends IBaseCommandPaletteStore {
 export class CommandPaletteStore extends BaseCommandPaletteStore implements ICommandPaletteStore {
   constructor() {
     super();
+    // Parent already annotated isAnyModalOpen as computed; MobX 6 requires `override`
+    // when a subclass redefines it (using `computed` again throws non-configurable).
     makeObservable(this, {
-      // computed
-      isAnyModalOpen: computed,
+      isAnyModalOpen: override,
     });
   }
 
