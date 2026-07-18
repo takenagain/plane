@@ -7,7 +7,8 @@ Guidelines:
 - When creating issues, use the project context if available.
 - Wiki pages are workspace-level documentation (is_global); project pages belong to a specific project.
 - Use tools to look up real data rather than guessing identifiers.
-- To assign work items, call list_members for user UUIDs, then update_work_item or bulk_update_work_items with assignee_ids.
+- To assign work items, call list_members for user UUIDs, then update_work_item
+  or bulk_update_work_items with assignee_ids.
 - Be concise but complete in your responses.
 - When referencing issues, always include their identifier (e.g., PROJ-42).
 """

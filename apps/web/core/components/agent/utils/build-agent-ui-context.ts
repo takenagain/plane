@@ -41,90 +41,6 @@ const buildWorkItemIdentifier = (projectIdentifier: string | undefined, issue: T
   return issue.id;
 };
 
-const resolveOpenWorkItem = (
-  workspaceSlug: string,
-  router: ReturnType<typeof useRouterParams>,
-  peekIssue: ReturnType<typeof useIssueDetail>["peekIssue"],
-  getIssueById: (issueId: string) => TIssue | undefined,
-  getIssueIdByIdentifier: (issueIdentifier: string) => string | undefined,
-  getProjectById: ReturnType<typeof useProject>["getProjectById"]
-): TAgentUIContext["open_work_item"] => {
-  const workItemParam = router.query?.workItem?.toString();
-
-  if (peekIssue?.issueId && peekIssue.workspaceSlug === workspaceSlug) {
-    const issue = getIssueById(peekIssue.issueId);
-    if (issue) {
-      const project = getProjectById(issue.project_id);
-      return {
-        presentation: "peek",
-        id: issue.id,
-        identifier: buildWorkItemIdentifier(project?.identifier, issue),
-        name: issue.name,
-        project_id: issue.project_id ?? peekIssue.projectId,
-        priority: issue.priority,
-        state_id: issue.state_id,
-        assignees: issue.assignee_ids?.length ? issue.assignee_ids : undefined,
-      };
-    }
-    return {
-      presentation: "peek",
-      id: peekIssue.issueId,
-      project_id: peekIssue.projectId ?? "",
-    };
-  }
-
-  if (workItemParam) {
-    const issueId = getIssueIdByIdentifier(workItemParam);
-    const issue = issueId ? getIssueById(issueId) : undefined;
-    if (issue) {
-      const project = getProjectById(issue.project_id);
-      return {
-        presentation: "browse",
-        id: issue.id,
-        identifier: buildWorkItemIdentifier(project?.identifier, issue),
-        name: issue.name,
-        project_id: issue.project_id ?? "",
-        priority: issue.priority,
-        state_id: issue.state_id,
-        assignees: issue.assignee_ids?.length ? issue.assignee_ids : undefined,
-      };
-    }
-    return {
-      presentation: "browse",
-      identifier: workItemParam,
-      ...(router.projectId ? { project_id: router.projectId } : {}),
-    };
-  }
-
-  if (router.issueId) {
-    const issue = getIssueById(router.issueId);
-    if (!issue) return null;
-    const project = getProjectById(issue.project_id);
-    return {
-      presentation: "full_page",
-      id: issue.id,
-      identifier: buildWorkItemIdentifier(project?.identifier, issue),
-      name: issue.name,
-      project_id: issue.project_id ?? router.projectId ?? "",
-      priority: issue.priority,
-      state_id: issue.state_id,
-      assignees: issue.assignee_ids?.length ? issue.assignee_ids : undefined,
-    };
-  }
-
-  return null;
-};
-
-const resolveViewSurface = (router: ReturnType<typeof useRouterParams>): TAgentUIContextViewSurface => {
-  if (router.query?.workItem) return "browse";
-  if (router.cycleId) return "cycle";
-  if (router.moduleId) return "module";
-  if (router.viewId) return "project_view";
-  if (router.globalViewId) return "workspace_view";
-  if (router.projectId) return "project_issues";
-  return "other";
-};
-
 const issueIdentityKey = (issue: TIssue | undefined): string =>
   issue
     ? [
@@ -137,6 +53,111 @@ const issueIdentityKey = (issue: TIssue | undefined): string =>
         issue.assignee_ids?.join(","),
       ].join("|")
     : "";
+
+type TOpenWorkItemInputs = {
+  workspaceSlug: string;
+  routerProjectId: string | undefined;
+  routerIssueId: string | undefined;
+  routerWorkItemParam: string | undefined;
+  peekIssueId: string | undefined;
+  peekIssueProjectId: string | undefined;
+  peekIssueWorkspaceSlug: string | undefined;
+  peekIssueRecord: TIssue | undefined;
+  browseIssueRecord: TIssue | undefined;
+  routeIssueRecord: TIssue | undefined;
+  peekIssueProjectIdentifier: string | undefined;
+  browseIssueProjectIdentifier: string | undefined;
+  routeIssueProjectIdentifier: string | undefined;
+};
+
+const resolveOpenWorkItem = ({
+  workspaceSlug,
+  routerProjectId,
+  routerIssueId,
+  routerWorkItemParam,
+  peekIssueId,
+  peekIssueProjectId,
+  peekIssueWorkspaceSlug,
+  peekIssueRecord,
+  browseIssueRecord,
+  routeIssueRecord,
+  peekIssueProjectIdentifier,
+  browseIssueProjectIdentifier,
+  routeIssueProjectIdentifier,
+}: TOpenWorkItemInputs): TAgentUIContext["open_work_item"] => {
+  if (peekIssueId && peekIssueWorkspaceSlug === workspaceSlug) {
+    if (peekIssueRecord) {
+      return {
+        presentation: "peek",
+        id: peekIssueRecord.id,
+        identifier: buildWorkItemIdentifier(peekIssueProjectIdentifier, peekIssueRecord),
+        name: peekIssueRecord.name,
+        project_id: peekIssueRecord.project_id ?? peekIssueProjectId ?? "",
+        priority: peekIssueRecord.priority,
+        state_id: peekIssueRecord.state_id,
+        assignees: peekIssueRecord.assignee_ids?.length ? peekIssueRecord.assignee_ids : undefined,
+      };
+    }
+    return {
+      presentation: "peek",
+      id: peekIssueId,
+      project_id: peekIssueProjectId ?? "",
+    };
+  }
+
+  if (routerWorkItemParam) {
+    if (browseIssueRecord) {
+      return {
+        presentation: "browse",
+        id: browseIssueRecord.id,
+        identifier: buildWorkItemIdentifier(browseIssueProjectIdentifier, browseIssueRecord),
+        name: browseIssueRecord.name,
+        project_id: browseIssueRecord.project_id ?? "",
+        priority: browseIssueRecord.priority,
+        state_id: browseIssueRecord.state_id,
+        assignees: browseIssueRecord.assignee_ids?.length ? browseIssueRecord.assignee_ids : undefined,
+      };
+    }
+    return {
+      presentation: "browse",
+      identifier: routerWorkItemParam,
+      ...(routerProjectId ? { project_id: routerProjectId } : {}),
+    };
+  }
+
+  if (routerIssueId) {
+    if (!routeIssueRecord) return null;
+    return {
+      presentation: "full_page",
+      id: routeIssueRecord.id,
+      identifier: buildWorkItemIdentifier(routeIssueProjectIdentifier, routeIssueRecord),
+      name: routeIssueRecord.name,
+      project_id: routeIssueRecord.project_id ?? routerProjectId ?? "",
+      priority: routeIssueRecord.priority,
+      state_id: routeIssueRecord.state_id,
+      assignees: routeIssueRecord.assignee_ids?.length ? routeIssueRecord.assignee_ids : undefined,
+    };
+  }
+
+  return null;
+};
+
+const resolveViewSurface = (args: {
+  routerWorkItemParam: string | undefined;
+  routerCycleId: string | undefined;
+  routerModuleId: string | undefined;
+  routerViewId: string | undefined;
+  routerGlobalViewId: string | undefined;
+  routerProjectId: string | undefined;
+}): TAgentUIContextViewSurface => {
+  if (args.routerWorkItemParam) return "browse";
+  if (args.routerCycleId) return "cycle";
+  if (args.routerModuleId) return "module";
+  if (args.routerViewId) return "project_view";
+  if (args.routerGlobalViewId) return "workspace_view";
+  if (args.routerProjectId) return "project_issues";
+  return "other";
+};
 
 export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | undefined => {
   const router = useRouterParams();
@@ -169,10 +190,24 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
   const routeIssueRecord = routerIssueId ? getIssueById(routerIssueId) : undefined;
 
   const workspace = getWorkspaceBySlug(workspaceSlug) ?? currentWorkspace;
-  const peekProjectIdForWorkspace = peekIssueWorkspaceSlug === workspaceSlug ? peekIssueProjectId : undefined;
-  const currentProjectId =
-    routerProjectId ?? peekProjectIdForWorkspace ?? browseIssueRecord?.project_id ?? currentProjectDetails?.id ?? null;
-  const currentProject = currentProjectId ? getProjectById(currentProjectId) : undefined;
+  const workspaceId = workspace?.id;
+  const workspaceName = workspace?.name;
+
+  const userId = currentUser?.id;
+  const userDisplayName = currentUser?.display_name;
+  const userEmail = currentUser?.email;
+
+  const peekIssueIdentity = issueIdentityKey(peekIssueRecord);
+  const browseIssueIdentity = issueIdentityKey(browseIssueRecord);
+  const routeIssueIdentity = issueIdentityKey(routeIssueRecord);
+
+  const peekIssueProject = peekIssueRecord?.project_id ? getProjectById(peekIssueRecord.project_id) : undefined;
+  const browseIssueProject = browseIssueRecord?.project_id ? getProjectById(browseIssueRecord.project_id) : undefined;
+  const routeIssueProject = routeIssueRecord?.project_id ? getProjectById(routeIssueRecord.project_id) : undefined;
+
+  const peekIssueProjectIdentifier = peekIssueProject?.identifier;
+  const browseIssueProjectIdentifier = browseIssueProject?.identifier;
+  const routeIssueProjectIdentifier = routeIssueProject?.identifier;
 
   const projectIssuesLayout = routerProjectId
     ? projectIssuesFilter.getIssueFilters(routerProjectId)?.displayFilters?.layout
@@ -187,10 +222,6 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
     ? projectViewIssuesFilter.getIssueFilters(routerViewId)?.displayFilters?.layout
     : undefined;
 
-  const peekIssueProject = peekIssueRecord?.project_id ? getProjectById(peekIssueRecord.project_id) : undefined;
-  const browseIssueProject = browseIssueRecord?.project_id ? getProjectById(browseIssueRecord.project_id) : undefined;
-  const routeIssueProject = routeIssueRecord?.project_id ? getProjectById(routeIssueRecord.project_id) : undefined;
-
   const joinedProjectsIdentityKey = joinedProjectIds
     .map((id) => {
       const p = getProjectById(id);
@@ -198,19 +229,28 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
     })
     .join("|");
 
+  const currentProjectDetailsId = currentProjectDetails?.id;
+
   return useMemo(() => {
-    if (!isAuthenticated || !currentUser) return undefined;
+    if (!isAuthenticated || !userId || !userDisplayName) return undefined;
 
-    const openWorkItem = resolveOpenWorkItem(
+    const openWorkItem = resolveOpenWorkItem({
       workspaceSlug,
-      router,
-      peekIssue,
-      getIssueById,
-      getIssueIdByIdentifier,
-      getProjectById
-    );
+      routerProjectId,
+      routerIssueId,
+      routerWorkItemParam,
+      peekIssueId,
+      peekIssueProjectId,
+      peekIssueWorkspaceSlug,
+      peekIssueRecord,
+      browseIssueRecord,
+      routeIssueRecord,
+      peekIssueProjectIdentifier,
+      browseIssueProjectIdentifier,
+      routeIssueProjectIdentifier,
+    });
 
-    const resolvedCurrentProjectId = routerProjectId ?? openWorkItem?.project_id ?? currentProjectDetails?.id ?? null;
+    const resolvedCurrentProjectId = routerProjectId ?? openWorkItem?.project_id ?? currentProjectDetailsId ?? null;
 
     const availableProjects = joinedProjectIds
       .slice(0, MAX_AVAILABLE_PROJECTS)
@@ -228,9 +268,16 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
 
     const resolvedCurrentProject = resolvedCurrentProjectId ? getProjectById(resolvedCurrentProjectId) : undefined;
 
-    const surface = resolveViewSurface(router);
-    let layout: TAgentUIContextViewLayout = null;
+    const surface = resolveViewSurface({
+      routerWorkItemParam,
+      routerCycleId,
+      routerModuleId,
+      routerViewId,
+      routerGlobalViewId,
+      routerProjectId,
+    });
 
+    let layout: TAgentUIContextViewLayout = null;
     if (surface === "project_issues" && routerProjectId) {
       layout = toLayout(projectIssuesLayout);
     } else if (surface === "cycle" && routerCycleId) {
@@ -252,13 +299,13 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
     return {
       workspace: {
         slug: workspaceSlug,
-        ...(workspace?.name ? { name: workspace.name } : {}),
-        ...(workspace?.id ? { id: workspace.id } : {}),
+        ...(workspaceName ? { name: workspaceName } : {}),
+        ...(workspaceId ? { id: workspaceId } : {}),
       },
       user: {
-        id: currentUser.id,
-        display_name: currentUser.display_name,
-        email: currentUser.email,
+        id: userId,
+        display_name: userDisplayName,
+        ...(userEmail ? { email: userEmail } : {}),
       },
       projects: {
         current_id: resolvedCurrentProjectId,
@@ -277,14 +324,15 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
       view,
       open_work_item: openWorkItem,
     };
+    // MobX getters/records are read via primitive identity keys in the dependency list.
   }, [
     isAuthenticated,
-    currentUser?.id,
-    currentUser?.display_name,
-    currentUser?.email,
+    userId,
+    userDisplayName,
+    userEmail,
     workspaceSlug,
-    workspace?.id,
-    workspace?.name,
+    workspaceId,
+    workspaceName,
     routerProjectId,
     routerIssueId,
     routerCycleId,
@@ -295,22 +343,22 @@ export const useAgentUIContext = (workspaceSlug: string): TAgentUIContext | unde
     peekIssueId,
     peekIssueProjectId,
     peekIssueWorkspaceSlug,
-    browseIssueId,
-    issueIdentityKey(peekIssueRecord),
-    issueIdentityKey(browseIssueRecord),
-    issueIdentityKey(routeIssueRecord),
-    peekIssueProject?.identifier,
-    browseIssueProject?.identifier,
-    routeIssueProject?.identifier,
+    peekIssueIdentity,
+    browseIssueIdentity,
+    routeIssueIdentity,
+    peekIssueProjectIdentifier,
+    browseIssueProjectIdentifier,
+    routeIssueProjectIdentifier,
     joinedProjectsIdentityKey,
-    currentProjectDetails?.id,
-    currentProject?.id,
-    currentProject?.identifier,
-    currentProject?.name,
-    currentProject?.description,
+    joinedProjectIds,
+    currentProjectDetailsId,
     projectIssuesLayout,
     cycleIssuesLayout,
     moduleIssuesLayout,
     projectViewIssuesLayout,
+    getProjectById,
+    peekIssueRecord,
+    browseIssueRecord,
+    routeIssueRecord,
   ]);
 };
