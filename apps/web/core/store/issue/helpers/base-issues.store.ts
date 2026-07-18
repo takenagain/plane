@@ -30,7 +30,6 @@ import { EIssueServiceType, EIssueLayoutTypes } from "@plane/types";
 // helpers
 import { convertToISODateString } from "@plane/utils";
 // plane web imports
-import { workItemSortWithOrderByExtended } from "@/plane-web/store/issue/helpers/base-issue.store";
 // services
 import { CycleService } from "@/services/cycle.service";
 import { IssueArchiveService, IssueService } from "@/services/issue";
@@ -333,6 +332,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
   // The Issue Property corresponding to the order by value
   get orderByKey() {
+    // oxlint-disable-next-line no-shadow
     const orderBy = this.orderBy;
     if (!orderBy) return;
 
@@ -541,6 +541,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     this.addIssue(response, shouldUpdateList);
 
     // If shouldUpdateList is true, call fetchParentStats
+    // oxlint-disable-next-line no-unused-expressions
     shouldUpdateList && (await this.fetchParentStats(workspaceSlug, projectId));
 
     return response;
@@ -766,6 +767,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     try {
       const getIssueById = this.rootIssueStore.issues.getIssueById;
       runInAction(() => {
+        // oxlint-disable-next-line no-shadow
         for (const update of updates) {
           const dates: Partial<TIssue> = {};
           if (update.start_date) dates.start_date = update.start_date;
@@ -788,6 +790,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       await this.issueService.updateIssueDates(workspaceSlug, projectId, updates);
     } catch (e) {
       runInAction(() => {
+        // oxlint-disable-next-line no-shadow
         for (const update of issueDatesBeforeChange) {
           const dates: Partial<TIssue> = {};
           if (update.start_date) dates.start_date = update.start_date;
@@ -862,6 +865,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
     runInAction(() => {
       // If cycle Id is the current cycle Id, then, remove issue from list of issueIds
+      // oxlint-disable-next-line no-unused-expressions
       this.cycleId === cycleId && this.removeIssueFromList(issueId);
     });
 
@@ -992,6 +996,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
     runInAction(() => {
       // if module Id is the current Module Id, then, add issue to list of issueIds
+      // oxlint-disable-next-line no-unused-expressions
       this.moduleId === moduleId && issueIds.forEach((issueId) => this.addIssueToList(issueId));
     });
 
@@ -1020,6 +1025,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
     runInAction(() => {
       // if module Id is the current Module Id, then remove issue from list of issueIds
+      // oxlint-disable-next-line no-unused-expressions
       this.moduleId === moduleId && issueIds.forEach((issueId) => this.removeIssueFromList(issueId));
     });
 
@@ -1093,6 +1099,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
         // remove the new issue id to the module issues
         removeModuleIds.forEach((moduleId) => {
           // If module Id is equal to current module Id, them remove Issue from List
+          // oxlint-disable-next-line no-unused-expressions
           this.moduleId === moduleId && this.removeIssueFromList(issueId);
           currentModuleIds = pull(currentModuleIds, moduleId);
         });
@@ -1200,6 +1207,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   updateIssueList(
     issue?: TIssue,
     issueBeforeUpdate?: TIssue,
+    // oxlint-disable-next-line no-shadow
     action?: EIssueGroupedAction.ADD | EIssueGroupedAction.DELETE
   ) {
     if (!issue && !issueBeforeUpdate) return;
@@ -1383,6 +1391,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     set(this.groupedIssueCount, [ALL_ISSUES], groupedIssueCount[ALL_ISSUES]);
 
     // loop through the groups of groupedIssues.
+    // oxlint-disable-next-line no-shadow
     for (const groupId in groupedIssues) {
       const issueGroup = groupedIssues[groupId];
       const issueGroupCount = groupedIssueCount[groupId];
@@ -1396,6 +1405,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       if (storeUpdated) continue;
 
       // if issueGroup is not a string, loop through the sub group Issues
+      // oxlint-disable-next-line no-shadow
       for (const subGroupId in issueGroup) {
         const issueSubGroup = (issueGroup as TGroupedIssues)[subGroupId];
         const issueSubGroupCount = groupedIssueCount[getGroupKey(groupId, subGroupId)];
@@ -1440,6 +1450,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   accumulateIssueUpdates(
     accumulator: { [key: string]: EIssueGroupedAction },
     path: string[],
+    // oxlint-disable-next-line no-shadow
     action: EIssueGroupedAction
   ) {
     const [groupId, subGroupId] = path;
@@ -1474,6 +1485,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   updateUpdateAccumulator(
     accumulator: { [key: string]: EIssueGroupedAction },
     key: string,
+    // oxlint-disable-next-line no-shadow
     action: EIssueGroupedAction
   ) {
     // if the key for accumulator is undefined, they update it with the action
@@ -1498,6 +1510,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   updateIssueCount(accumulatedUpdatesForCount: { [key: string]: EIssueGroupedAction }) {
     const updateKeys = Object.keys(accumulatedUpdatesForCount);
     for (const updateKey of updateKeys) {
+      // oxlint-disable-next-line no-shadow
       const update = accumulatedUpdatesForCount[updateKey];
       if (!update) continue;
 
@@ -1519,6 +1532,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   getUpdateDetails = (
     issue?: Partial<TIssue>,
     issueBeforeUpdate?: Partial<TIssue>,
+    // oxlint-disable-next-line no-shadow
     action?: EIssueGroupedAction.ADD | EIssueGroupedAction.DELETE
   ): { path: string[]; action: EIssueGroupedAction }[] => {
     // check the before and after states to return if there needs to be a re-sorting of issueId list if the issue property that orderBy  depends on has changed
@@ -1966,7 +1980,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
         );
 
       default:
-        return workItemSortWithOrderByExtended(array, key);
+        return getIssueIds(array);
     }
   };
 

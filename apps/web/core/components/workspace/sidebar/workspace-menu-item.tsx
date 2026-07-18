@@ -17,6 +17,7 @@ import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useUserPermissions } from "@/hooks/store/user";
+
 export type SidebarWorkspaceMenuItemProps = {
   item: {
     labelTranslationKey: string;

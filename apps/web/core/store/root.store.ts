@@ -22,6 +22,8 @@ import { StateStore } from "@/plane-web/store/state.store";
 import { WorkspaceRootStore } from "@/plane-web/store/workspace";
 import type { IAgentStore } from "./agent";
 import { AgentStore } from "./agent";
+import type { ITimelineStore } from "./timeline/timeline.store";
+import { TimeLineStore } from "./timeline/timeline.store";
 // stores
 import type { ICycleStore } from "./cycle.store";
 import { CycleStore } from "./cycle.store";
@@ -106,29 +108,30 @@ export class CoreRootStore {
   workItemFilters: IWorkItemFilterStore;
   powerK: IPowerKStore;
   agent: IAgentStore;
+  timelineStore: ITimelineStore;
 
   constructor() {
     this.router = new RouterStore();
     this.commandPalette = new CommandPaletteStore();
     this.instance = new InstanceStore();
-    this.user = new UserStore(this as unknown as RootStore);
+    this.user = new UserStore(this);
     this.theme = new ThemeStore();
-    this.workspaceRoot = new WorkspaceRootStore(this as unknown as RootStore);
+    this.workspaceRoot = new WorkspaceRootStore(this);
     this.projectRoot = new ProjectRootStore(this);
-    this.memberRoot = new MemberRootStore(this as unknown as RootStore);
+    this.memberRoot = new MemberRootStore(this);
     this.cycle = new CycleStore(this);
     this.cycleFilter = new CycleFilterStore(this);
     this.module = new ModulesStore(this);
     this.moduleFilter = new ModuleFilterStore(this);
     this.projectView = new ProjectViewStore(this);
     this.globalView = new GlobalViewStore(this);
-    this.issue = new IssueRootStore(this as unknown as RootStore);
-    this.state = new StateStore(this as unknown as RootStore);
+    this.issue = new IssueRootStore(this);
+    this.state = new StateStore(this);
     this.label = new LabelStore(this);
     this.dashboard = new DashboardStore(this);
     this.multipleSelect = new MultipleSelectStore();
     this.projectInbox = new ProjectInboxStore(this);
-    this.projectPages = new ProjectPageStore(this as unknown as RootStore);
+    this.projectPages = new ProjectPageStore(this);
     this.wikiPages = new WikiPageStore(this as unknown as RootStore);
     this.projectEstimate = new ProjectEstimateStore(this);
     this.workspaceNotification = new WorkspaceNotificationStore(this);
@@ -139,6 +142,7 @@ export class CoreRootStore {
     this.workItemFilters = new WorkItemFilterStore();
     this.powerK = new PowerKStore();
     this.agent = new AgentStore();
+    this.timelineStore = new TimeLineStore(this);
   }
 
   resetOnSignOut() {
@@ -148,22 +152,22 @@ export class CoreRootStore {
     this.router = new RouterStore();
     this.commandPalette = new CommandPaletteStore();
     this.instance = new InstanceStore();
-    this.user = new UserStore(this as unknown as RootStore);
-    this.workspaceRoot = new WorkspaceRootStore(this as unknown as RootStore);
+    this.user = new UserStore(this);
+    this.workspaceRoot = new WorkspaceRootStore(this);
     this.projectRoot = new ProjectRootStore(this);
-    this.memberRoot = new MemberRootStore(this as unknown as RootStore);
+    this.memberRoot = new MemberRootStore(this);
     this.cycle = new CycleStore(this);
     this.cycleFilter = new CycleFilterStore(this);
     this.module = new ModulesStore(this);
     this.moduleFilter = new ModuleFilterStore(this);
     this.projectView = new ProjectViewStore(this);
     this.globalView = new GlobalViewStore(this);
-    this.issue = new IssueRootStore(this as unknown as RootStore);
-    this.state = new StateStore(this as unknown as RootStore);
+    this.issue = new IssueRootStore(this);
+    this.state = new StateStore(this);
     this.label = new LabelStore(this);
     this.dashboard = new DashboardStore(this);
     this.projectInbox = new ProjectInboxStore(this);
-    this.projectPages = new ProjectPageStore(this as unknown as RootStore);
+    this.projectPages = new ProjectPageStore(this);
     this.wikiPages = new WikiPageStore(this as unknown as RootStore);
     this.multipleSelect = new MultipleSelectStore();
     this.projectEstimate = new ProjectEstimateStore(this);
@@ -174,5 +178,8 @@ export class CoreRootStore {
     this.workItemFilters = new WorkItemFilterStore();
     this.powerK = new PowerKStore();
     this.agent = new AgentStore();
+    this.timelineStore = new TimeLineStore(this);
   }
 }
+
+export { CoreRootStore as RootStore };

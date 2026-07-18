@@ -10,11 +10,14 @@ import { useParams } from "next/navigation";
 // plane imports
 import type { EIssuesStoreType, TIssue } from "@plane/types";
 import { EIssuesStoreType as EStoreType } from "@plane/types";
-// plane web imports
+// helpers
 import { extractIssueDefaultsFromRichFilters } from "@/helpers/work-item-defaults";
+// hooks
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { useIssues } from "@/hooks/store/use-issues";
+// plane web imports
 import { IssueModalProvider } from "@/plane-web/components/issues/issue-modal/provider";
+// local imports
 import { CreateUpdateIssueModalBase } from "./base";
 
 export interface IssuesModalProps {

@@ -36,7 +36,6 @@ import { useParseEditorContent } from "@/hooks/use-parse-editor-content";
 // plane web imports
 import type { TCustomEventHandlers } from "@/hooks/use-realtime-page-events";
 import { useRealtimePageEvents } from "@/hooks/use-realtime-page-events";
-import { EditorAIMenu } from "@/plane-web/components/pages";
 import type { TExtendedEditorExtensionsConfig } from "@/hooks/pages";
 import type { EPageStoreType } from "@/hooks/store";
 import { useEditorFlagging } from "@/hooks/use-editor-flagging";
@@ -46,6 +45,7 @@ import type { TPageInstance } from "@/store/pages/base-page";
 import { PageContentLoader } from "../loaders/page-content-loader";
 import { PageEditorHeaderRoot } from "./header";
 import { PageContentBrowser } from "./summary";
+import { EditorAIMenu } from "./ai";
 
 export type TEditorBodyConfig = {
   fileHandler: TFileHandler;
@@ -268,8 +268,10 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
           <div className="page-summary-container absolute top-[64px] right-0 z-[5] h-full">
             <div className="sticky top-[72px]">
               <div className="group/page-toc relative px-page-x">
+                {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events */}
                 <div
                   className="max-h-[50vh] !cursor-pointer overflow-hidden"
+                  // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role
                   role="button"
                   tabIndex={0}
                   aria-label={t("page_navigation_pane.outline_floating_button")}

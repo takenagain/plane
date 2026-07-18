@@ -30,7 +30,6 @@ import { EIssueLayoutTypes } from "@plane/types";
 import { getComputedDisplayFilters, getComputedDisplayProperties } from "@plane/utils";
 // lib
 import { storage } from "@/lib/local-storage";
-import { getEnabledDisplayFilters } from "@/plane-web/store/issue/helpers/filter-utils";
 
 interface ILocalStoreIssueFilters {
   key: EIssuesStoreType;
@@ -68,6 +67,7 @@ export interface IIssueFilterHelperStore {
 }
 
 export class IssueFilterHelperStore implements IIssueFilterHelperStore {
+  // oxlint-disable-next-line no-useless-constructor
   constructor() {}
 
   /**
@@ -105,11 +105,11 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
 
     const issueFiltersParams: Partial<Record<TIssueParams, boolean | string>> = {};
     Object.keys(computedDisplayFilters).forEach((key) => {
-      const _key = key as TIssueParams;
-      const _value: string | boolean | string[] | undefined = computedDisplayFilters[_key];
-      const nonEmptyArrayValue = Array.isArray(_value) && _value.length === 0 ? undefined : _value;
-      if (nonEmptyArrayValue != undefined && acceptableParamsByLayout.includes(_key))
-        issueFiltersParams[_key] = Array.isArray(nonEmptyArrayValue)
+      const paramKey = key as TIssueParams;
+      const paramValue: string | boolean | string[] | undefined = computedDisplayFilters[paramKey];
+      const nonEmptyArrayValue = Array.isArray(paramValue) && paramValue.length === 0 ? undefined : paramValue;
+      if (nonEmptyArrayValue != undefined && acceptableParamsByLayout.includes(paramKey))
+        issueFiltersParams[paramKey] = Array.isArray(nonEmptyArrayValue)
           ? nonEmptyArrayValue.join(",")
           : nonEmptyArrayValue;
     });
@@ -185,7 +185,7 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
     defaultValues?: IIssueDisplayFilterOptions
   ): IIssueDisplayFilterOptions => {
     const computedFilters = getComputedDisplayFilters(displayFilters, defaultValues);
-    return getEnabledDisplayFilters(computedFilters);
+    return computedFilters;
   };
 
   /**
@@ -198,8 +198,8 @@ export class IssueFilterHelperStore implements IIssueFilterHelperStore {
 
   handleIssuesLocalFilters = {
     fetchFiltersFromStorage: () => {
-      const _filters = storage.get("issue_local_filters");
-      return _filters ? JSON.parse(_filters) : [];
+      const storedFilters = storage.get("issue_local_filters");
+      return storedFilters ? JSON.parse(storedFilters) : [];
     },
 
     get: (
