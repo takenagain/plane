@@ -68,6 +68,33 @@ install_linux_deps() {
   fi
 }
 
+configure_linux_webkit() {
+  if ! command -v pkg-config >/dev/null 2>&1; then
+    echo "pkg-config is required to detect the installed WebKitGTK API." >&2
+    exit 1
+  fi
+
+  # Wails defaults to WebKitGTK 4.0. Newer distributions only ship 4.1,
+  # which is selected by the webkit2_41 build tag. Prefer 4.1 when both
+  # APIs are installed; Ubuntu 22.04 and other 4.0-only systems keep the
+  # Wails default.
+  if pkg-config --exists webkit2gtk-4.1; then
+    case ",${WAILS_BUILD_TAGS:-}," in
+      *,webkit2_41,*) ;;
+      *) WAILS_BUILD_TAGS="${WAILS_BUILD_TAGS:+${WAILS_BUILD_TAGS},}webkit2_41" ;;
+    esac
+    export WAILS_BUILD_TAGS
+    return 0
+  fi
+
+  if pkg-config --exists webkit2gtk-4.0; then
+    return 0
+  fi
+
+  echo "WebKitGTK development files were not found (need webkit2gtk-4.1 or webkit2gtk-4.0)." >&2
+  exit 1
+}
+
 stage_artifact() {
   local artifact_name="$1"
   local staging="dist/${artifact_name}"
@@ -78,6 +105,7 @@ stage_artifact() {
 
 build_linux_amd64() {
   install_linux_deps
+  configure_linux_webkit
   install_wails
   local args=(-platform linux/amd64 -o plane-desktop)
   [[ "${CLEAN}" == "true" ]] && args=(-clean "${args[@]}")
