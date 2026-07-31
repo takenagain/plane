@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 # Module import
+from plane.agent.catalog import MODEL_CATALOG
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import ProjectLiteSerializer, WorkspaceLiteSerializer
 from plane.db.models import Project, Workspace
@@ -40,31 +41,27 @@ class LLMProvider:
 
 
 class OpenAIProvider(LLMProvider):
-    name = "OpenAI"
-    models = ["gpt-5.5", "gpt-5.5-mini", "gpt-5.5-nano", "gpt-5.5-pro"]
-    default_model = "gpt-5.5"
+    name = MODEL_CATALOG["openai"].name
+    models = [model.id for model in MODEL_CATALOG["openai"].models]
+    default_model = MODEL_CATALOG["openai"].default_model
 
 
 class AnthropicProvider(LLMProvider):
-    name = "Anthropic"
-    models = [
-        "claude-opus-4-7",
-        "claude-sonnet-4-6",
-        "claude-haiku-4-5-20251001",
-    ]
-    default_model = "claude-sonnet-4-6"
+    name = MODEL_CATALOG["anthropic"].name
+    models = [model.id for model in MODEL_CATALOG["anthropic"].models]
+    default_model = MODEL_CATALOG["anthropic"].default_model
 
 
 class GeminiProvider(LLMProvider):
-    name = "Gemini"
-    models = ["gemini-3.5-flash", "gemini-3.1-pro-preview"]
-    default_model = "gemini-3.5-flash"
+    name = MODEL_CATALOG["gemini"].name
+    models = [model.id for model in MODEL_CATALOG["gemini"].models]
+    default_model = MODEL_CATALOG["gemini"].default_model
 
 
 class MistralProvider(LLMProvider):
-    name = "Mistral"
-    models = ["mistral-medium-3.5", "mistral-small-4", "mistral-large-3-2512"]
-    default_model = "mistral-small-4"
+    name = MODEL_CATALOG["mistral"].name
+    models = [model.id for model in MODEL_CATALOG["mistral"].models]
+    default_model = MODEL_CATALOG["mistral"].default_model
 
 
 SUPPORTED_PROVIDERS = {

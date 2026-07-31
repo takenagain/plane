@@ -1,13 +1,33 @@
+export type TAgentModelLifecycle = "stable" | "preview" | "previous";
+
+export interface IAgentModel {
+  id: string;
+  name: string;
+  input_price: number;
+  output_price: number;
+  lifecycle: TAgentModelLifecycle;
+  pricing_note: string;
+}
+
+export interface IAgentProvider {
+  id: string;
+  name: string;
+  default_model: string;
+  models: IAgentModel[];
+}
+
 export interface IAgentConfig {
   id: string;
   provider: string;
   api_key_set: boolean;
   model: string;
+  default_model: string;
   max_steps: number;
   reasoning_level: "none" | "low" | "medium" | "high";
   is_enabled: boolean;
   system_prompt: string;
   available_models: string[];
+  available_model_details: IAgentModel[];
 }
 
 export interface IAgentChatSession {

@@ -1,5 +1,6 @@
 import json
 
+from plane.agent.catalog import normalize_model
 from plane.db.models import AgentChatMessage, AgentChatSession, AgentConfiguration
 from plane.license.utils.encryption import decrypt_data
 
@@ -30,7 +31,7 @@ class AgentService:
         if not api_key:
             raise AgentDisabledError("Agent API key is not configured.")
 
-        model = model_override or config.model
+        model = normalize_model(config.provider, model_override or config.model)
         max_steps = config.max_steps or 25
 
         user_msg = AgentChatMessage.objects.create(
@@ -157,8 +158,7 @@ class AgentService:
                 session=session,
                 role="assistant",
                 content=(
-                    "I reached the configured maximum steps for this task. "
-                    "Please refine the request and try again."
+                    "I reached the configured maximum steps for this task. Please refine the request and try again."
                 ),
                 is_error=True,
                 step_index=step,

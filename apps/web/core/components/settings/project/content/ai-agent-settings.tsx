@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  AGENT_DEFAULT_MAX_STEPS,
-  AGENT_PROVIDERS,
-  getAgentModelsForProvider,
-  getDefaultAgentModelForProvider,
-} from "@plane/constants";
+import { AGENT_DEFAULT_MAX_STEPS } from "@plane/constants";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
-import type { IAgentConfig } from "@plane/types";
-import { AgentService, getAgentErrorMessage } from "@/services/agent.service";
+import type { IAgentConfig, IAgentProvider } from "@plane/types";
+import { AgentModelSelect } from "@/components/agent/model-select";
+import { AgentService, getAgentErrorMessage, type TAgentHttpError } from "@/services/agent.service";
 import { SettingsHeading } from "@/components/settings/heading";
-
-type TProvider = (typeof AGENT_PROVIDERS)[number];
 
 type Props = {
   workspaceSlug: string;
@@ -20,22 +14,55 @@ type Props = {
 
 const agentService = new AgentService();
 
-const createOverrideFromWorkspace = (workspaceConfig: IAgentConfig): IAgentConfig => {
-  const provider = (workspaceConfig.provider as TProvider) ?? "openai";
-  const models = getAgentModelsForProvider(provider);
-  const model =
-    workspaceConfig.model && models.includes(workspaceConfig.model)
-      ? workspaceConfig.model
-      : models[0] || getDefaultAgentModelForProvider(provider);
+const getOptionalConfig = async (request: Promise<IAgentConfig>): Promise<IAgentConfig | null> => {
+  try {
+    return await request;
+  } catch (error) {
+    if ((error as TAgentHttpError).status === 404) return null;
+    throw error;
+  }
+};
+
+const applyProviderCatalog = (config: IAgentConfig, providers: IAgentProvider[]): IAgentConfig => {
+  const provider = providers.find((item) => item.id === config.provider) ?? providers[0];
+  if (!provider) return config;
+
+  const model = provider.models.some((item) => item.id === config.model) ? config.model : provider.default_model;
 
   return {
-    ...workspaceConfig,
-    provider,
+    ...config,
+    provider: provider.id,
     model,
-    max_steps: workspaceConfig.max_steps || AGENT_DEFAULT_MAX_STEPS,
-    available_models: models,
+    default_model: provider.default_model,
+    available_models: provider.models.map((item) => item.id),
+    available_model_details: provider.models,
   };
 };
+
+const createDefaultOverride = (providers: IAgentProvider[]): IAgentConfig | null => {
+  const provider = providers[0];
+  if (!provider) return null;
+
+  return {
+    id: "",
+    provider: provider.id,
+    api_key_set: false,
+    model: provider.default_model,
+    default_model: provider.default_model,
+    max_steps: AGENT_DEFAULT_MAX_STEPS,
+    reasoning_level: "medium",
+    is_enabled: true,
+    system_prompt: "",
+    available_models: provider.models.map((item) => item.id),
+    available_model_details: provider.models,
+  };
+};
+
+const createOverrideFromWorkspace = (workspaceConfig: IAgentConfig, providers: IAgentProvider[]): IAgentConfig => ({
+  ...applyProviderCatalog(workspaceConfig, providers),
+  id: "",
+  api_key_set: false,
+});
 
 function WorkspaceConfigSummary({ config }: { config: IAgentConfig }) {
   return (
@@ -48,7 +75,7 @@ function WorkspaceConfigSummary({ config }: { config: IAgentConfig }) {
         </div>
         <div>
           <dt className="text-xs text-tertiary">Model</dt>
-          <dd>{config.model}</dd>
+          <dd>{config.available_model_details.find((model) => model.id === config.model)?.name ?? config.model}</dd>
         </div>
         <div>
           <dt className="text-xs text-tertiary">API key</dt>
@@ -66,6 +93,7 @@ function WorkspaceConfigSummary({ config }: { config: IAgentConfig }) {
 export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [providers, setProviders] = useState<IAgentProvider[]>([]);
   const [useWorkspaceConfig, setUseWorkspaceConfig] = useState(true);
   const [workspaceConfig, setWorkspaceConfig] = useState<IAgentConfig | null>(null);
   const [projectConfig, setProjectConfig] = useState<IAgentConfig | null>(null);
@@ -75,13 +103,25 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
     const load = async () => {
       setLoading(true);
       try {
-        const [wsConfig, prConfig] = await Promise.all([
-          agentService.getWorkspaceConfig(workspaceSlug).catch(() => null),
-          agentService.getProjectConfig(workspaceSlug, projectId).catch(() => null),
+        const [catalog, workspaceData, projectData] = await Promise.all([
+          agentService.getProviderCatalog(workspaceSlug),
+          getOptionalConfig(agentService.getWorkspaceConfig(workspaceSlug)),
+          getOptionalConfig(agentService.getProjectConfig(workspaceSlug, projectId)),
         ]);
-        setWorkspaceConfig(wsConfig);
-        setProjectConfig(prConfig);
-        setUseWorkspaceConfig(!prConfig);
+
+        setProviders(catalog);
+        setWorkspaceConfig(workspaceData ? applyProviderCatalog(workspaceData, catalog) : null);
+        setProjectConfig(projectData ? applyProviderCatalog(projectData, catalog) : null);
+        setUseWorkspaceConfig(!projectData);
+      } catch (error) {
+        setProviders([]);
+        setWorkspaceConfig(null);
+        setProjectConfig(null);
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: "Error",
+          message: getAgentErrorMessage(error, "Unable to load project AI Agent settings."),
+        });
       } finally {
         setLoading(false);
       }
@@ -90,26 +130,34 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
   }, [workspaceSlug, projectId]);
 
   const editableConfig = projectConfig;
-  const providerModels = useMemo(
-    () => (editableConfig ? getAgentModelsForProvider(editableConfig.provider as TProvider) : []),
-    [editableConfig?.provider]
+  const providerDefinition = useMemo(
+    () => providers.find((provider) => provider.id === editableConfig?.provider),
+    [editableConfig?.provider, providers]
   );
+  const providerModels = providerDefinition?.models ?? [];
 
   const selectedModel = useMemo(() => {
     if (!editableConfig) return "";
-    if (editableConfig.model && providerModels.includes(editableConfig.model)) return editableConfig.model;
-    return providerModels[0] || "";
-  }, [editableConfig, providerModels]);
+    if (editableConfig.model && providerModels.some((model) => model.id === editableConfig.model)) {
+      return editableConfig.model;
+    }
+    return providerDefinition?.default_model ?? providerModels[0]?.id ?? "";
+  }, [editableConfig, providerDefinition, providerModels]);
 
-  const onProviderChange = (provider: TProvider) => {
-    const models = getAgentModelsForProvider(provider);
+  const onProviderChange = (providerId: string) => {
+    const provider = providers.find((item) => item.id === providerId);
+    if (!provider || editableConfig?.provider === providerId) return;
+
     setProjectConfig((prev) =>
       prev
         ? {
             ...prev,
-            provider,
-            model: models[0] || "",
-            available_models: models,
+            provider: provider.id,
+            model: provider.default_model,
+            default_model: provider.default_model,
+            api_key_set: false,
+            available_models: provider.models.map((item) => item.id),
+            available_model_details: provider.models,
           }
         : prev
     );
@@ -146,8 +194,10 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
     }
 
     setUseWorkspaceConfig(false);
-    if (!projectConfig && workspaceConfig) {
-      setProjectConfig(createOverrideFromWorkspace(workspaceConfig));
+    if (!projectConfig) {
+      setProjectConfig(
+        workspaceConfig ? createOverrideFromWorkspace(workspaceConfig, providers) : createDefaultOverride(providers)
+      );
     }
   };
 
@@ -165,7 +215,7 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
       };
       if (apiKey.trim()) payload.api_key = apiKey.trim();
       const saved = await agentService.saveProjectConfig(workspaceSlug, projectId, payload);
-      setProjectConfig(saved);
+      setProjectConfig(applyProviderCatalog(saved, providers));
       setUseWorkspaceConfig(false);
       setToast({
         type: TOAST_TYPE.SUCCESS,
@@ -208,37 +258,33 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
             <div className="space-y-2">
               <p className="text-xs font-medium text-secondary">Provider</p>
               <div className="flex flex-wrap gap-2">
-                {AGENT_PROVIDERS.map((provider) => (
+                {providers.map((provider) => (
                   <button
-                    key={provider}
+                    key={provider.id}
                     type="button"
-                    onClick={() => onProviderChange(provider)}
+                    onClick={() => onProviderChange(provider.id)}
                     className={`text-xs rounded-md border px-2 py-1 ${
-                      editableConfig.provider === provider
+                      editableConfig.provider === provider.id
                         ? "border-custom-primary-100 bg-custom-primary-100/10 text-custom-primary-100"
                         : "border-subtle text-secondary"
                     }`}
                   >
-                    {provider}
+                    {provider.name}
                   </button>
                 ))}
               </div>
             </div>
 
-            <label className="block space-y-1">
+            <div className="space-y-1">
               <span className="text-xs font-medium text-secondary">Model</span>
-              <select
+              <AgentModelSelect
+                models={providerModels}
                 value={selectedModel}
-                onChange={(event) => setProjectConfig((prev) => (prev ? { ...prev, model: event.target.value } : prev))}
-                className="text-sm w-full rounded-md border border-subtle bg-surface-2 px-2 py-1.5"
-              >
-                {providerModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={(model) => setProjectConfig((prev) => (prev ? { ...prev, model } : prev))}
+                disabled={loading}
+                className="w-full"
+              />
+            </div>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-secondary">Max steps</span>
               <input
@@ -277,7 +323,9 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
               </select>
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-secondary">API key (optional override)</span>
+              <span className="text-xs font-medium text-secondary">
+                {editableConfig.api_key_set ? "API key (optional replacement)" : "API key (required)"}
+              </span>
               <input
                 type="password"
                 value={apiKey}
@@ -308,7 +356,10 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
               />
             </label>
             <div className="flex justify-end">
-              <Button onClick={() => void saveProjectConfig()} disabled={loading || saving}>
+              <Button
+                onClick={() => void saveProjectConfig()}
+                disabled={loading || saving || !selectedModel || (!editableConfig.api_key_set && !apiKey.trim())}
+              >
                 {saving ? "Saving..." : "Save override"}
               </Button>
             </div>

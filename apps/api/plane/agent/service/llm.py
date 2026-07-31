@@ -11,6 +11,7 @@ from any_llm.exceptions import (
     RateLimitError,
 )
 
+from plane.agent.catalog import get_model
 from plane.utils.exception_logger import log_exception
 
 
@@ -23,6 +24,52 @@ class LLMResponse:
     reasoning_tokens: int = 0
     latency_ms: int = 0
     finish_reason: str = "stop"
+
+
+def _build_completion_kwargs(
+    *,
+    messages: list[dict],
+    tools: list[dict],
+    provider: str,
+    model: str,
+    reasoning_level: str,
+) -> dict:
+    kwargs: dict = {
+        "model": model,
+        "messages": messages,
+        "timeout": 30,
+    }
+
+    if tools:
+        kwargs["tools"] = tools
+        kwargs["tool_choice"] = "auto"
+
+    if provider == "openai" and (
+        model.startswith("gpt-5") or any(model.startswith(prefix) for prefix in ("o1", "o3", "o4"))
+    ):
+        if reasoning_level != "none":
+            kwargs["reasoning_effort"] = reasoning_level
+
+    elif provider == "anthropic":
+        kwargs["max_tokens"] = 8192
+        model_definition = get_model(provider, model)
+        reasoning_mode = model_definition.reasoning_mode if model_definition else "none"
+
+        if reasoning_level != "none" and reasoning_mode == "adaptive":
+            kwargs["thinking"] = {"type": "adaptive"}
+            kwargs["output_config"] = {"effort": reasoning_level}
+        elif reasoning_level != "none" and reasoning_mode == "manual":
+            budget_by_level = {
+                "low": 1024,
+                "medium": 4096,
+                "high": 8000,
+            }
+            kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": budget_by_level.get(reasoning_level, 4096),
+            }
+
+    return kwargs
 
 
 def call_llm(
@@ -41,10 +88,10 @@ def call_llm(
     The `provider` and `model` fields from AgentConfiguration map directly —
     no string concatenation required:
 
-        provider="openai",    model="gpt-5.5"
-        provider="anthropic", model="claude-sonnet-4-6"
-        provider="gemini",    model="gemini-3.5-flash"
-        provider="mistral",   model="mistral-small-4"
+        provider="openai",    model="gpt-5.6-sol"
+        provider="anthropic", model="claude-sonnet-5"
+        provider="gemini",    model="gemini-3.6-flash"
+        provider="mistral",   model="mistral-small-2603"
 
     See https://docs.mozilla.ai/any-llm/providers/ for all supported provider IDs.
     """
@@ -53,27 +100,13 @@ def call_llm(
     llm = AnyLLM.create(provider, api_key=api_key)
     start = time.monotonic()
 
-    kwargs: dict = {
-        "model": model,
-        "messages": messages,
-        "timeout": 30,
-    }
-
-    if tools:
-        kwargs["tools"] = tools
-        kwargs["tool_choice"] = "auto"
-
-    # Provider-specific reasoning parameters
-    if provider == "openai" and (
-        model.startswith("gpt-5") or any(model.startswith(p) for p in ("o1", "o3", "o4"))
-    ):
-        if reasoning_level != "none":
-            kwargs["reasoning_effort"] = reasoning_level
-
-    elif provider == "anthropic":
-        kwargs["max_tokens"] = 8192
-        if reasoning_level == "high":
-            kwargs["thinking"] = {"type": "enabled", "budget_tokens": 8000}
+    kwargs = _build_completion_kwargs(
+        messages=messages,
+        tools=tools,
+        provider=provider,
+        model=model,
+        reasoning_level=reasoning_level,
+    )
 
     try:
         response = llm.completion(**kwargs)

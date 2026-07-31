@@ -1,5 +1,10 @@
 from .chat import AgentChatView
-from .configuration import EffectiveAgentConfigView, ProjectAgentConfigView, WorkspaceAgentConfigView
+from .configuration import (
+    AgentProviderCatalogView,
+    EffectiveAgentConfigView,
+    ProjectAgentConfigView,
+    WorkspaceAgentConfigView,
+)
 from .session import AgentSessionDetailView, AgentSessionListCreateView
 
 __all__ = [
@@ -9,4 +14,5 @@ __all__ = [
     "AgentSessionListCreateView",
     "AgentSessionDetailView",
     "AgentChatView",
+    "AgentProviderCatalogView",
 ]

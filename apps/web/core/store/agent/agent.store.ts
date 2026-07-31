@@ -1,4 +1,4 @@
-import { AGENT_DEFAULT_MAX_STEPS, getAgentModelsForProvider, getDefaultAgentModelForProvider } from "@plane/constants";
+import { AGENT_DEFAULT_MAX_STEPS } from "@plane/constants";
 import { action, makeObservable, observable, runInAction } from "mobx";
 import type { IAgentChatMessage, IAgentChatSession, IAgentConfig, TAgentUIContext } from "@plane/types";
 import { AgentService, type TAgentHttpError } from "@/services/agent.service";
@@ -7,14 +7,16 @@ const agentService = new AgentService();
 
 const getDisabledAgentConfig = (): IAgentConfig => ({
   id: "",
-  provider: "openai",
+  provider: "",
   api_key_set: false,
-  model: getDefaultAgentModelForProvider("openai"),
+  model: "",
+  default_model: "",
   max_steps: AGENT_DEFAULT_MAX_STEPS,
   reasoning_level: "medium",
   is_enabled: false,
   system_prompt: "",
-  available_models: getAgentModelsForProvider("openai"),
+  available_models: [],
+  available_model_details: [],
 });
 
 export interface IAgentStore {
@@ -113,13 +115,17 @@ export class AgentStore implements IAgentStore {
   };
 
   private applyConfig = (config: IAgentConfig) => {
+    const availableModels = new Set((config.available_model_details ?? []).map((model) => model.id));
+    const selectedModel =
+      config.model && availableModels.has(config.model)
+        ? config.model
+        : availableModels.has(config.default_model)
+          ? config.default_model
+          : "";
+
     runInAction(() => {
       this.config = config;
-      if (config.model) {
-        this.selectedModel = config.model;
-      } else if (!this.selectedModel) {
-        this.selectedModel = getDefaultAgentModelForProvider(config.provider);
-      }
+      this.selectedModel = selectedModel;
       this.error = null;
     });
   };
@@ -131,6 +137,7 @@ export class AgentStore implements IAgentStore {
     if (status === 404) {
       runInAction(() => {
         this.config = getDisabledAgentConfig();
+        this.selectedModel = "";
         this.error = null;
       });
       return;
@@ -183,14 +190,13 @@ export class AgentStore implements IAgentStore {
     this.error = null;
     try {
       const data = await agentService.getSession(workspaceSlug, sessionId);
+      const availableModels = new Set((this.config?.available_model_details ?? []).map((model) => model.id));
+      const fallbackModel = this.selectedModel;
       runInAction(() => {
         this.activeSessionId = sessionId;
         this.activeSessionMessages = data.messages ?? [];
-        if (data.selected_model) {
-          this.selectedModel = data.selected_model;
-        } else if (this.config?.model) {
-          this.selectedModel = this.config.model;
-        }
+        this.selectedModel =
+          data.selected_model && availableModels.has(data.selected_model) ? data.selected_model : fallbackModel;
       });
     } finally {
       runInAction(() => {

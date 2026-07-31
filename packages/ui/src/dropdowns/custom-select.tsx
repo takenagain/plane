@@ -24,6 +24,7 @@ const DropdownContext = createContext<() => void>(() => {});
 
 function CustomSelect(props: ICustomSelectProps) {
   const {
+    ariaLabel,
     customButtonClassName = "",
     buttonClassName = "",
     placement,
@@ -86,6 +87,7 @@ function CustomSelect(props: ICustomSelectProps) {
               as="button"
               ref={setReferenceElement}
               type="button"
+              aria-label={ariaLabel}
               className={`flex items-center justify-between gap-1 rounded text-11 ${
                 disabled ? "cursor-not-allowed text-secondary" : "cursor-pointer hover:bg-layer-transparent-hover"
               } ${customButtonClassName}`}
@@ -98,6 +100,7 @@ function CustomSelect(props: ICustomSelectProps) {
               as="button"
               ref={setReferenceElement}
               type="button"
+              aria-label={ariaLabel}
               className={cn(
                 "flex w-full items-center justify-between gap-1 rounded border border-strong",
                 {

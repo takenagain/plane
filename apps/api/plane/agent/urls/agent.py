@@ -2,6 +2,7 @@ from django.urls import path
 
 from plane.agent.views import (
     AgentChatView,
+    AgentProviderCatalogView,
     AgentSessionDetailView,
     AgentSessionListCreateView,
     EffectiveAgentConfigView,
@@ -10,6 +11,11 @@ from plane.agent.views import (
 )
 
 urlpatterns = [
+    path(
+        "workspaces/<str:slug>/agent/providers/",
+        AgentProviderCatalogView.as_view(),
+        name="agent-provider-catalog",
+    ),
     path("workspaces/<str:slug>/agent/config/", WorkspaceAgentConfigView.as_view(), name="agent-workspace-config"),
     path(
         "workspaces/<str:slug>/agent/effective-config/",

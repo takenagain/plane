@@ -1,6 +1,12 @@
 // helpers
 import { API_BASE_URL } from "@plane/constants";
-import type { IAgentConfig, IAgentChatSession, IAgentChatResponse, TAgentUIContext } from "@plane/types";
+import type {
+  IAgentConfig,
+  IAgentChatSession,
+  IAgentChatResponse,
+  IAgentProvider,
+  TAgentUIContext,
+} from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
 
@@ -40,6 +46,14 @@ const toAgentHttpError = (error: unknown, fallbackMessage: string): TAgentHttpEr
 export class AgentService extends APIService {
   constructor() {
     super(API_BASE_URL);
+  }
+
+  async getProviderCatalog(workspaceSlug: string): Promise<IAgentProvider[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/agent/providers/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw toAgentHttpError(error, "Unable to load AI Agent providers.");
+      });
   }
 
   async getWorkspaceConfig(workspaceSlug: string): Promise<IAgentConfig> {

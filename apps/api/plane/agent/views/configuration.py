@@ -1,11 +1,18 @@
 from rest_framework import status
 from rest_framework.response import Response
 
+from plane.agent.catalog import get_public_catalog
 from plane.db.models import AgentConfiguration, Project, ProjectMember, Workspace, WorkspaceMember
 from plane.db.models.project import ROLE
 
 from .base import AgentBaseView
 from ..serializers import AgentConfigSerializer
+
+
+class AgentProviderCatalogView(AgentBaseView):
+    def get(self, request, slug):
+        self.check_workspace_member(slug, request.user)
+        return Response(get_public_catalog(), status=status.HTTP_200_OK)
 
 
 class WorkspaceAgentConfigView(AgentBaseView):

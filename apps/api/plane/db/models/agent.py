@@ -20,7 +20,7 @@ class AgentConfiguration(BaseModel):
     )
     provider = models.CharField(max_length=50, default="openai")
     api_key_encrypted = models.TextField(blank=True, default="")
-    model = models.CharField(max_length=100, default="gpt-5.5")
+    model = models.CharField(max_length=100, default="gpt-5.6-sol")
     max_steps = models.PositiveSmallIntegerField(default=25)
     reasoning_level = models.CharField(max_length=20, default="medium")
     is_enabled = models.BooleanField(default=True)

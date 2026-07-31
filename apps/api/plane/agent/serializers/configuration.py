@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from plane.app.views.external.base import SUPPORTED_PROVIDERS
+from plane.agent.catalog import get_default_model, get_model, get_provider
 from plane.db.models import AgentConfiguration
 from plane.license.utils.encryption import encrypt_data
 
@@ -8,7 +8,9 @@ from plane.license.utils.encryption import encrypt_data
 class AgentConfigSerializer(serializers.ModelSerializer):
     api_key = serializers.CharField(write_only=True, required=False, allow_blank=False)
     api_key_set = serializers.SerializerMethodField()
+    default_model = serializers.SerializerMethodField()
     available_models = serializers.SerializerMethodField()
+    available_model_details = serializers.SerializerMethodField()
 
     class Meta:
         model = AgentConfiguration
@@ -27,16 +29,37 @@ class AgentConfigSerializer(serializers.ModelSerializer):
     def get_api_key_set(self, instance: AgentConfiguration) -> bool:
         return bool(instance.api_key_encrypted)
 
+    def get_default_model(self, instance: AgentConfiguration) -> str:
+        return get_default_model(instance.provider)
+
     def get_available_models(self, instance: AgentConfiguration) -> list[str]:
-        provider_cls = SUPPORTED_PROVIDERS.get(instance.provider)
-        if not provider_cls:
+        provider = get_provider(instance.provider)
+        if not provider:
             return []
-        return list(getattr(provider_cls, "models", []) or [])
+        return [model.id for model in provider.models]
+
+    def get_available_model_details(self, instance: AgentConfiguration) -> list[dict]:
+        provider = get_provider(instance.provider)
+        if not provider:
+            return []
+        return [model.to_public_dict() for model in provider.models]
 
     def validate_provider(self, value: str) -> str:
-        if value not in SUPPORTED_PROVIDERS:
+        if not get_provider(value):
             raise serializers.ValidationError(f"Unsupported provider: {value}")
         return value
+
+    def validate(self, attrs):
+        provider = attrs.get("provider", getattr(self.instance, "provider", "openai"))
+        model = attrs.get(
+            "model",
+            getattr(self.instance, "model", get_default_model(provider)),
+        )
+        if self.instance is None and "model" not in attrs:
+            attrs["model"] = model
+        if not get_model(provider, model):
+            raise serializers.ValidationError({"model": f"Model is not supported by {provider}."})
+        return attrs
 
     def validate_max_steps(self, value: int | None) -> int | None:
         if value is None:

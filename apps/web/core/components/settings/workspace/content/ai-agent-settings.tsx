@@ -1,19 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  AGENT_DEFAULT_MAX_STEPS,
-  AGENT_PROVIDERS,
-  getAgentModelsForProvider,
-  getDefaultAgentModelForProvider,
-} from "@plane/constants";
+import { AGENT_DEFAULT_MAX_STEPS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
-import type { IAgentConfig } from "@plane/types";
+import type { IAgentConfig, IAgentProvider } from "@plane/types";
+import { AgentModelSelect } from "@/components/agent/model-select";
 import { useAgent } from "@/hooks/store/use-agent";
-import { AgentService, getAgentErrorMessage } from "@/services/agent.service";
+import { AgentService, getAgentErrorMessage, type TAgentHttpError } from "@/services/agent.service";
 import { SettingsHeading } from "@/components/settings/heading";
-
-type TProvider = (typeof AGENT_PROVIDERS)[number];
 
 type Props = {
   workspaceSlug: string;
@@ -22,7 +16,7 @@ type Props = {
 const agentService = new AgentService();
 
 type TAgentFormConfig = {
-  provider: TProvider;
+  provider: string;
   model: string;
   max_steps: number;
   reasoning_level: IAgentConfig["reasoning_level"];
@@ -31,12 +25,21 @@ type TAgentFormConfig = {
 };
 
 const DEFAULT_CONFIG: TAgentFormConfig = {
-  provider: "openai",
-  model: getDefaultAgentModelForProvider("openai"),
+  provider: "",
+  model: "",
   max_steps: AGENT_DEFAULT_MAX_STEPS,
   reasoning_level: "medium",
   is_enabled: true,
   system_prompt: "",
+};
+
+const getOptionalWorkspaceConfig = async (workspaceSlug: string): Promise<IAgentConfig | null> => {
+  try {
+    return await agentService.getWorkspaceConfig(workspaceSlug);
+  } catch (error) {
+    if ((error as TAgentHttpError).status === 404) return null;
+    throw error;
+  }
 };
 
 export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
@@ -44,60 +47,78 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
   const agent = useAgent();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [providers, setProviders] = useState<IAgentProvider[]>([]);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
-  const [savedProvider, setSavedProvider] = useState<TProvider>("openai");
+  const [savedProvider, setSavedProvider] = useState("");
   const [apiKeySet, setApiKeySet] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
 
-  const providerModels = useMemo(() => getAgentModelsForProvider(config.provider), [config.provider]);
-  const providerChanged = config.provider !== savedProvider;
+  const providerDefinition = useMemo(
+    () => providers.find((provider) => provider.id === config.provider),
+    [config.provider, providers]
+  );
+  const providerModels = providerDefinition?.models ?? [];
+  const providerChanged = Boolean(savedProvider) && config.provider !== savedProvider;
 
   const selectedModel = useMemo(() => {
-    if (config.model && providerModels.includes(config.model)) return config.model;
-    return providerModels[0] || "";
-  }, [config.model, providerModels]);
-
-  const loadConfig = async () => {
-    setLoading(true);
-    try {
-      const data = await agentService.getWorkspaceConfig(workspaceSlug);
-      const provider = (data.provider as TProvider) ?? "openai";
-      const models = getAgentModelsForProvider(provider);
-      const model =
-        data.model && models.includes(data.model) ? data.model : models[0] || getDefaultAgentModelForProvider(provider);
-
-      setConfig({
-        provider,
-        model,
-        max_steps: data.max_steps || AGENT_DEFAULT_MAX_STEPS,
-        reasoning_level: data.reasoning_level ?? "medium",
-        is_enabled: data.is_enabled ?? true,
-        system_prompt: data.system_prompt ?? "",
-      });
-      setSavedProvider(provider);
-      setApiKeySet(data.api_key_set);
-      setApiKey("");
-      setApiKeyError(null);
-    } catch {
-      setConfig(DEFAULT_CONFIG);
-      setSavedProvider("openai");
-      setApiKeySet(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (config.model && providerModels.some((model) => model.id === config.model)) return config.model;
+    return providerDefinition?.default_model ?? providerModels[0]?.id ?? "";
+  }, [config.model, providerDefinition, providerModels]);
 
   useEffect(() => {
+    const loadConfig = async () => {
+      setLoading(true);
+      try {
+        const [catalog, data] = await Promise.all([
+          agentService.getProviderCatalog(workspaceSlug),
+          getOptionalWorkspaceConfig(workspaceSlug),
+        ]);
+        const provider = catalog.find((item) => item.id === data?.provider) ?? catalog[0];
+        if (!provider) throw new Error("No AI Agent providers are available.");
+
+        const model =
+          data?.model && provider.models.some((item) => item.id === data.model) ? data.model : provider.default_model;
+
+        setProviders(catalog);
+        setConfig({
+          provider: provider.id,
+          model,
+          max_steps: data?.max_steps || AGENT_DEFAULT_MAX_STEPS,
+          reasoning_level: data?.reasoning_level ?? "medium",
+          is_enabled: data?.is_enabled ?? true,
+          system_prompt: data?.system_prompt ?? "",
+        });
+        setSavedProvider(data?.provider ?? provider.id);
+        setApiKeySet(data?.api_key_set ?? false);
+        setApiKey("");
+        setApiKeyError(null);
+      } catch (error) {
+        setProviders([]);
+        setConfig(DEFAULT_CONFIG);
+        setSavedProvider("");
+        setApiKeySet(false);
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: "Error",
+          message: getAgentErrorMessage(error, "Unable to load AI Agent settings."),
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     void loadConfig();
   }, [workspaceSlug]);
 
-  const onProviderChange = (provider: TProvider) => {
-    const models = getAgentModelsForProvider(provider);
+  const onProviderChange = (providerId: string) => {
+    const provider = providers.find((item) => item.id === providerId);
+    if (!provider) return;
+
     setConfig((prev) => ({
       ...prev,
-      provider,
-      model: models[0] || "",
+      provider: provider.id,
+      model: provider.default_model,
     }));
     setApiKey("");
     setApiKeyError(null);
@@ -123,6 +144,7 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
       if (apiKey.trim()) payload.api_key = apiKey.trim();
 
       const response = await agentService.saveWorkspaceConfig(workspaceSlug, payload);
+      setConfig((prev) => ({ ...prev, model: response.model }));
       setApiKey("");
       setApiKeySet(response.api_key_set);
       setSavedProvider(config.provider);
@@ -154,18 +176,18 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
         <div className="space-y-2">
           <p className="text-xs font-medium text-secondary">Provider</p>
           <div className="flex flex-wrap gap-2">
-            {AGENT_PROVIDERS.map((provider) => (
+            {providers.map((provider) => (
               <button
-                key={provider}
+                key={provider.id}
                 type="button"
-                onClick={() => onProviderChange(provider)}
+                onClick={() => onProviderChange(provider.id)}
                 className={`text-xs rounded-md border px-2 py-1 ${
-                  config.provider === provider
+                  config.provider === provider.id
                     ? "border-custom-primary-100 bg-custom-primary-100/10 text-custom-primary-100"
                     : "border-subtle text-secondary"
                 }`}
               >
-                {provider}
+                {provider.name}
               </button>
             ))}
           </div>
@@ -191,7 +213,7 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
           />
           {providerChanged && (
             <p className="text-xs text-amber-600">
-              Provider changed — enter a new API key for {config.provider} before saving.
+              Provider changed — enter a new API key for {providerDefinition?.name ?? config.provider} before saving.
             </p>
           )}
           {apiKeyError && <p className="text-xs text-red-500">{apiKeyError}</p>}
@@ -203,20 +225,16 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
         </label>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <label className="space-y-1">
+          <div className="space-y-1">
             <span className="text-xs font-medium text-secondary">Model</span>
-            <select
+            <AgentModelSelect
+              models={providerModels}
               value={selectedModel}
-              onChange={(event) => setConfig((prev) => ({ ...prev, model: event.target.value }))}
-              className="text-sm w-full rounded-md border border-subtle bg-surface-2 px-2 py-1.5"
-            >
-              {providerModels.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(model) => setConfig((prev) => ({ ...prev, model }))}
+              disabled={loading}
+              className="w-full"
+            />
+          </div>
 
           <label className="space-y-1">
             <span className="text-xs font-medium text-secondary">Max steps</span>
@@ -275,7 +293,7 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
         </label>
 
         <div className="flex justify-end">
-          <Button onClick={() => void onSave()} disabled={loading || saving}>
+          <Button onClick={() => void onSave()} disabled={loading || saving || !selectedModel}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>

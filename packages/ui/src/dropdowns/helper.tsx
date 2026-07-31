@@ -22,6 +22,7 @@ type Placement =
   | "right-end";
 
 export interface IDropdownProps {
+  ariaLabel?: string;
   customButtonClassName?: string;
   customButtonTabIndex?: number;
   buttonClassName?: string;
