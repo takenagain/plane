@@ -4,16 +4,34 @@
 
 ## Executive summary
 
-| Priority      | Finding                                                                                              | Recommended action                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Immediate     | Production uses a known placeholder `SECRET_KEY`                                                     | Rotate to a unique random secret during a maintenance window. Expect existing sessions and signed links to be invalidated.                |
-| High          | Celery receives the unregistered task `plane.license.bgtasks.tracer.instance_traces` every six hours | Inspect the database-backed schedule and disable the stale entry unless the matching task is restored in the deployed image.              |
-| High          | Celery workers run as root                                                                           | Rebuild or configure worker containers to use a dedicated unprivileged UID/GID after verifying volume ownership.                          |
-| Medium        | Valkey starts with `vm.overcommit_memory=0`                                                          | Set `vm.overcommit_memory=1` on the Docker host and persist it through sysctl configuration.                                              |
-| Planned       | RabbitMQ reports deprecated features                                                                 | Determine which features are actually used, then migrate metrics, QoS, and transient queue behavior before a broker upgrade removes them. |
-| Informational | Valkey uses its default configuration                                                                | Add an explicit configuration only when persistence, memory, or eviction requirements are defined.                                        |
-| Informational | RabbitMQ rebuilds indices and a connection closes during container recreation                        | Treat as expected during a controlled restart unless it repeats after the stack is healthy.                                               |
-| Informational | Caddy skips HTTP/2 and HTTP/3 on an internal cleartext listener                                      | No action when TLS terminates elsewhere; HTTP/2 and HTTP/3 require TLS in the normal Caddy configuration.                                 |
+| Priority      | Finding                                                                                              | Recommended action                                                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Resolved      | Production used a known placeholder `SECRET_KEY`                                                     | The key was securely rotated, affected services were recreated, and the environment file is now owner-readable only.                  |
+| Resolved      | Celery received the unregistered task `plane.license.bgtasks.tracer.instance_traces` every six hours | The exact stale database-backed schedule was disabled reversibly.                                                                     |
+| Resolved      | Celery workers ran as root                                                                           | Worker and beat now run as the image-provided unprivileged UID/GID, with only their log volumes ownership-adjusted.                   |
+| Resolved      | Valkey started with `vm.overcommit_memory=0`                                                         | The host now uses and persists `vm.overcommit_memory=1`.                                                                              |
+| In rollout    | RabbitMQ reports deprecated features                                                                 | Celery is configured for quorum task queues, per-consumer QoS detection, and exclusive temporary queues; apply after queue migration. |
+| Resolved      | Valkey used its default configuration                                                                | A reviewed configuration matching the effective prior behavior is mounted explicitly.                                                 |
+| In rollout    | Production models did not match migration state                                                      | Migration `0132_sync_production_model_state` reconciles the schema and a production-settings regression test prevents recurrence.     |
+| Informational | RabbitMQ rebuilds indices and a connection closes during container recreation                        | Treat as expected during a controlled restart unless it repeats after the stack is healthy.                                           |
+| Informational | Caddy skips HTTP/2 and HTTP/3 on an internal cleartext listener                                      | No action when TLS terminates elsewhere; HTTP/2 and HTTP/3 require TLS in the normal Caddy configuration.                             |
+
+## Remediation record
+
+The following production changes were applied on 2026-08-01 before the application-image rollout:
+
+- Created a protected configuration backup and a validated PostgreSQL custom-format dump.
+- Rotated `SECRET_KEY` without printing it, restricted `plane.env` to mode `0600`, recreated all consumers, and confirmed the placeholder warning stopped.
+- Disabled only the stale `instance_traces` periodic-task row; the row was retained for rollback and audit purposes.
+- Recreated worker and beat as UID/GID `65534:65534`, set their home to `/tmp`, and confirmed their restart counts remained zero without permission errors.
+- Persisted `vm.overcommit_memory=1` in `/etc/sysctl.d/99-plane-valkey.conf`, mounted an explicit `valkey.conf`, recovered the existing RDB data, and confirmed `PING` succeeds.
+
+The application rollout adds two safeguards:
+
+- Celery declares the default task queue as a quorum queue with publisher confirms and automatic quorum detection, eliminating global QoS use. Event and control queues remain temporary but are exclusive, eliminating transient non-exclusive queues.
+- Django migration `0132_sync_production_model_state` captures the previously uncommitted production model state. A smoke test now runs `makemigrations --check --dry-run` with production settings.
+
+The RabbitMQ queue-type change requires a controlled cutover because RabbitMQ cannot redeclare an existing classic queue as quorum. Stop API, worker, and beat only after the `celery` queue has no ready or unacknowledged messages; delete that exact empty queue; run migrations; and then start the new API and workers so Celery declares it as quorum. Verify queue type and worker consumption before denying the deprecated broker features.
 
 ## Safe operating sequence
 
