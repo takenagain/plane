@@ -7,6 +7,7 @@ export interface IAgentModel {
   output_price: number;
   lifecycle: TAgentModelLifecycle;
   pricing_note: string;
+  supports_reasoning_with_tools: boolean;
 }
 
 export interface IAgentProvider {

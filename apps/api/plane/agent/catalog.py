@@ -10,6 +10,7 @@ class ModelDefinition:
     lifecycle: str = "stable"
     pricing_note: str = ""
     reasoning_mode: str = "none"
+    supports_reasoning_with_tools: bool = True
 
     def to_public_dict(self) -> dict:
         data = asdict(self)
@@ -41,7 +42,13 @@ MODEL_CATALOG: dict[str, ProviderDefinition] = {
         models=(
             ModelDefinition(id="gpt-5.6-sol", name="GPT-5.6 Sol", input_price=5, output_price=30),
             ModelDefinition(id="gpt-5.6-terra", name="GPT-5.6 Terra", input_price=2, output_price=12),
-            ModelDefinition(id="gpt-5.6-luna", name="GPT-5.6 Luna", input_price=0.2, output_price=1.2),
+            ModelDefinition(
+                id="gpt-5.6-luna",
+                name="GPT-5.6 Luna",
+                input_price=0.2,
+                output_price=1.2,
+                supports_reasoning_with_tools=False,
+            ),
             ModelDefinition(
                 id="gpt-5.5",
                 name="GPT-5.5",
@@ -223,6 +230,17 @@ def get_default_model(provider: str) -> str:
 
 def get_public_catalog() -> list[dict]:
     return [provider.to_public_dict() for provider in MODEL_CATALOG.values()]
+
+
+def get_model_configuration_error(provider: str, model_id: str, reasoning_level: str) -> str | None:
+    model = get_model(provider, model_id)
+    if not model or reasoning_level == "none" or model.supports_reasoning_with_tools:
+        return None
+
+    return (
+        f"{model.name} does not support reasoning together with the function tools used by Plane. "
+        "Set Reasoning to none or choose another model."
+    )
 
 
 def normalize_model(provider: str, model_id: str | None) -> str:

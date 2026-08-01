@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from plane.agent.catalog import get_default_model, get_model, get_provider
+from plane.agent.catalog import get_default_model, get_model, get_model_configuration_error, get_provider
 from plane.db.models import AgentConfiguration
 from plane.license.utils.encryption import encrypt_data
 
@@ -59,6 +59,14 @@ class AgentConfigSerializer(serializers.ModelSerializer):
             attrs["model"] = model
         if not get_model(provider, model):
             raise serializers.ValidationError({"model": f"Model is not supported by {provider}."})
+
+        reasoning_level = attrs.get(
+            "reasoning_level",
+            getattr(self.instance, "reasoning_level", "medium"),
+        )
+        configuration_error = get_model_configuration_error(provider, model, reasoning_level)
+        if configuration_error:
+            raise serializers.ValidationError({"reasoning_level": configuration_error})
         return attrs
 
     def validate_max_steps(self, value: int | None) -> int | None:

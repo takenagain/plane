@@ -53,7 +53,12 @@ function createFreshIssue(): { workspaceSlug: string; projectId: string; issueId
       .split(/\r?\n/)
       .map((n) => n.trim())
       .filter(Boolean);
-    return names.find((n) => n === "api" || n.endsWith("-api-1") || n.endsWith("_api_1")) || "api";
+    return (
+      names.find((n) => n === "api") ||
+      names.find((n) => n.endsWith("-api-1")) ||
+      names.find((n) => n.endsWith("_api_1")) ||
+      "api"
+    );
   })();
 
   const script = `

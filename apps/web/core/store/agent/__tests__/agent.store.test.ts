@@ -4,11 +4,13 @@ import { AgentStore } from "../agent.store";
 
 const mocks = vi.hoisted(() => ({
   getEffectiveConfig: vi.fn(),
+  sendMessage: vi.fn(),
   getSession: vi.fn(),
 }));
 
 vi.mock("@/services/agent.service", () => ({
   AgentService: class {
+    sendMessage = mocks.sendMessage;
     getEffectiveConfig = mocks.getEffectiveConfig;
     getSession = mocks.getSession;
   },
@@ -33,6 +35,7 @@ const staleAnthropicConfig: IAgentConfig = {
       output_price: 50,
       lifecycle: "stable",
       pricing_note: "",
+      supports_reasoning_with_tools: true,
     },
     {
       id: "claude-sonnet-5",
@@ -41,6 +44,7 @@ const staleAnthropicConfig: IAgentConfig = {
       output_price: 10,
       lifecycle: "stable",
       pricing_note: "",
+      supports_reasoning_with_tools: true,
     },
   ],
 };
@@ -78,5 +82,27 @@ describe("AgentStore model selection", () => {
     await store.loadSession("acme", "session-1");
 
     expect(store.selectedModel).toBe("claude-sonnet-5");
+  });
+
+  it("keeps a provider error visible after reconciling the failed message", async () => {
+    mocks.sendMessage.mockRejectedValue(new Error("Provider error from 'openai': request rejected"));
+    mocks.getSession.mockResolvedValue({
+      selected_model: "",
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          content: "Hello",
+          created_at: "2026-08-01T00:00:00Z",
+        },
+      ],
+    });
+    const store = new AgentStore();
+    store.setActiveSession("session-1");
+
+    await store.sendMessage("acme", "Hello");
+
+    expect(store.activeSessionMessages.map((message) => message.id)).toEqual(["user-1"]);
+    expect(store.error).toBe("Provider error from 'openai': request rejected");
   });
 });

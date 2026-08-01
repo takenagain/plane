@@ -36,8 +36,9 @@ function resolveApiContainer(): string {
 
   return (
     (preferred && names.find((name) => name === preferred)) ||
+    names.find((name) => name === "api") ||
     names.find((name) => name.endsWith("-api-1")) ||
-    names.find((name) => name === "api" || name.endsWith("-api-1") || name.endsWith("_api_1")) ||
+    names.find((name) => name.endsWith("_api_1")) ||
     "api"
   );
 }

@@ -8,6 +8,7 @@ import { AgentModelSelect } from "@/components/agent/model-select";
 import { useAgent } from "@/hooks/store/use-agent";
 import { AgentService, getAgentErrorMessage, type TAgentHttpError } from "@/services/agent.service";
 import { SettingsHeading } from "@/components/settings/heading";
+import { getAgentModelConfigurationError } from "@/components/settings/agent-config-validation";
 
 type Props = {
   workspaceSlug: string;
@@ -65,6 +66,8 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
     if (config.model && providerModels.some((model) => model.id === config.model)) return config.model;
     return providerDefinition?.default_model ?? providerModels[0]?.id ?? "";
   }, [config.model, providerDefinition, providerModels]);
+  const selectedModelDefinition = providerModels.find((model) => model.id === selectedModel);
+  const configurationError = getAgentModelConfigurationError(selectedModelDefinition, config.reasoning_level);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -125,6 +128,8 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
   };
 
   const onSave = async () => {
+    if (configurationError) return;
+
     if (providerChanged && !apiKey.trim()) {
       setApiKeyError("A new API key is required when changing provider.");
       return;
@@ -273,6 +278,12 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
           </label>
         </div>
 
+        {configurationError && (
+          <p role="alert" className="text-xs text-red-500">
+            {configurationError}
+          </p>
+        )}
+
         <label className="text-sm flex items-center gap-2 text-secondary">
           <input
             type="checkbox"
@@ -293,7 +304,7 @@ export function WorkspaceAIAgentSettings({ workspaceSlug }: Props) {
         </label>
 
         <div className="flex justify-end">
-          <Button onClick={() => void onSave()} disabled={loading || saving || !selectedModel}>
+          <Button onClick={() => void onSave()} disabled={loading || saving || !selectedModel || !!configurationError}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>

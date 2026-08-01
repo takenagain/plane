@@ -58,7 +58,7 @@ vi.mock("@/components/settings/heading", () => ({
   SettingsHeading: () => null,
 }));
 
-const providers: IAgentProvider[] = [
+const providers = [
   {
     id: "openai",
     name: "OpenAI",
@@ -71,6 +71,16 @@ const providers: IAgentProvider[] = [
         output_price: 30,
         lifecycle: "stable",
         pricing_note: "",
+        supports_reasoning_with_tools: true,
+      },
+      {
+        id: "gpt-5.6-luna",
+        name: "GPT-5.6 Luna",
+        input_price: 0.2,
+        output_price: 1.2,
+        lifecycle: "stable",
+        pricing_note: "",
+        supports_reasoning_with_tools: false,
       },
     ],
   },
@@ -86,10 +96,11 @@ const providers: IAgentProvider[] = [
         output_price: 10,
         lifecycle: "stable",
         pricing_note: "",
+        supports_reasoning_with_tools: true,
       },
     ],
   },
-];
+] as IAgentProvider[];
 
 const workspaceConfig: IAgentConfig = {
   id: "config-1",
@@ -124,6 +135,28 @@ describe("ProjectAIAgentSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Anthropic" }));
 
     expect(screen.getByRole("combobox", { name: "Model" })).toHaveValue("claude-sonnet-5");
+  });
+
+  it("blocks an unsupported model and reasoning combination", async () => {
+    render(<ProjectAIAgentSettings workspaceSlug="acme" projectId="project-1" />);
+
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Use workspace configuration" }));
+
+    fireEvent.change(screen.getByLabelText("API key (required)"), { target: { value: "sk-project-key" } });
+
+    const modelSelect = await screen.findByRole("combobox", { name: "Model" });
+    fireEvent.change(modelSelect, { target: { value: "gpt-5.6-luna" } });
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent(
+      "GPT-5.6 Luna does not support reasoning together with the function tools used by Plane."
+    );
+    expect(screen.getByRole("button", { name: "Save override" })).toBeDisabled();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Reasoning" }), { target: { value: "none" } });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save override" })).toBeEnabled();
   });
 
   it("requires a project-specific API key before saving a new override", async () => {

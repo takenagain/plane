@@ -6,6 +6,7 @@ import type { IAgentConfig, IAgentProvider } from "@plane/types";
 import { AgentModelSelect } from "@/components/agent/model-select";
 import { AgentService, getAgentErrorMessage, type TAgentHttpError } from "@/services/agent.service";
 import { SettingsHeading } from "@/components/settings/heading";
+import { getAgentModelConfigurationError } from "@/components/settings/agent-config-validation";
 
 type Props = {
   workspaceSlug: string;
@@ -143,6 +144,11 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
     }
     return providerDefinition?.default_model ?? providerModels[0]?.id ?? "";
   }, [editableConfig, providerDefinition, providerModels]);
+  const selectedModelDefinition = providerModels.find((model) => model.id === selectedModel);
+  const configurationError = getAgentModelConfigurationError(
+    selectedModelDefinition,
+    editableConfig?.reasoning_level ?? "none"
+  );
 
   const onProviderChange = (providerId: string) => {
     const provider = providers.find((item) => item.id === providerId);
@@ -203,6 +209,7 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
 
   const saveProjectConfig = async () => {
     if (!editableConfig) return;
+    if (configurationError) return;
     setSaving(true);
     try {
       const payload: Partial<IAgentConfig> & { api_key?: string } = {
@@ -322,6 +329,13 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
                 <option value="high">high</option>
               </select>
             </label>
+
+            {configurationError && (
+              <p role="alert" className="text-xs text-red-500">
+                {configurationError}
+              </p>
+            )}
+
             <label className="block space-y-1">
               <span className="text-xs font-medium text-secondary">
                 {editableConfig.api_key_set ? "API key (optional replacement)" : "API key (required)"}
@@ -358,7 +372,13 @@ export function ProjectAIAgentSettings({ workspaceSlug, projectId }: Props) {
             <div className="flex justify-end">
               <Button
                 onClick={() => void saveProjectConfig()}
-                disabled={loading || saving || !selectedModel || (!editableConfig.api_key_set && !apiKey.trim())}
+                disabled={
+                  loading ||
+                  saving ||
+                  !selectedModel ||
+                  !!configurationError ||
+                  (!editableConfig.api_key_set && !apiKey.trim())
+                }
               >
                 {saving ? "Saving..." : "Save override"}
               </Button>

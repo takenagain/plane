@@ -37,6 +37,15 @@ class TestAgentModelCatalog:
         assert gemini.lifecycle == "preview"
         assert "above 200k" in gemini.pricing_note
 
+    def test_exposes_reasoning_with_tools_capability(self):
+        luna = get_model("openai", "gpt-5.6-luna")
+        sol = get_model("openai", "gpt-5.6-sol")
+
+        assert luna is not None
+        assert luna.supports_reasoning_with_tools is False
+        assert sol is not None
+        assert sol.supports_reasoning_with_tools is True
+
     def test_excludes_deprecated_models(self):
         assert get_model("anthropic", "claude-opus-4-7") is None
         assert get_model("mistral", "mistral-small-2506") is None
@@ -64,4 +73,5 @@ class TestAgentModelCatalog:
             "input_price": 5,
             "output_price": 30,
             "pricing_note": "",
+            "supports_reasoning_with_tools": True,
         }

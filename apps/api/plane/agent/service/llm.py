@@ -72,6 +72,16 @@ def _build_completion_kwargs(
     return kwargs
 
 
+def _get_provider_error_message(provider: str, exc: Exception, api_key: str) -> str:
+    detail = " ".join(str(exc).split())
+    if api_key:
+        detail = detail.replace(api_key, "[redacted]")
+    detail = detail[:1000].strip()
+    if not detail:
+        detail = "The provider request failed."
+    return f"Provider error from '{provider}': {detail}"
+
+
 def call_llm(
     *,
     messages: list[dict],
@@ -117,10 +127,10 @@ def call_llm(
     except ContextLengthExceededError as exc:
         raise ValueError(f"Context length exceeded for provider '{provider}'.") from exc
     except ProviderError as exc:
-        raise ValueError(f"Provider error from '{provider}': {exc}") from exc
+        raise ValueError(_get_provider_error_message(provider, exc, api_key)) from exc
     except Exception as exc:
         log_exception(exc)
-        raise
+        raise ValueError(_get_provider_error_message(provider, exc, api_key)) from exc
 
     elapsed = int((time.monotonic() - start) * 1000)
     choice = response.choices[0]

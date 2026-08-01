@@ -63,7 +63,7 @@ vi.mock("@/components/settings/heading", () => ({
   SettingsHeading: () => null,
 }));
 
-const providers: IAgentProvider[] = [
+const providers = [
   {
     id: "openai",
     name: "OpenAI",
@@ -76,7 +76,18 @@ const providers: IAgentProvider[] = [
         output_price: 30,
         lifecycle: "stable",
         pricing_note: "",
+        supports_reasoning_with_tools: true,
       },
+      {
+        id: "gpt-5.6-luna",
+        name: "GPT-5.6 Luna",
+        input_price: 0.2,
+        output_price: 1.2,
+        lifecycle: "stable",
+        pricing_note: "",
+        supports_reasoning_with_tools: false,
+      },
+
       {
         id: "gpt-5.5",
         name: "GPT-5.5",
@@ -84,6 +95,7 @@ const providers: IAgentProvider[] = [
         output_price: 30,
         lifecycle: "previous",
         pricing_note: "",
+        supports_reasoning_with_tools: true,
       },
     ],
   },
@@ -99,10 +111,11 @@ const providers: IAgentProvider[] = [
         output_price: 0.6,
         lifecycle: "stable",
         pricing_note: "",
+        supports_reasoning_with_tools: true,
       },
     ],
   },
-];
+] as IAgentProvider[];
 
 const workspaceConfig: IAgentConfig = {
   id: "config-1",
@@ -133,6 +146,24 @@ describe("WorkspaceAIAgentSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mistral" }));
 
     expect(screen.getByRole("combobox", { name: "Model" })).toHaveValue("mistral-small-2603");
+  });
+
+  it("blocks an unsupported model and reasoning combination", async () => {
+    render(<WorkspaceAIAgentSettings workspaceSlug="acme" />);
+
+    const modelSelect = await screen.findByRole("combobox", { name: "Model" });
+    fireEvent.change(modelSelect, { target: { value: "gpt-5.6-luna" } });
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent(
+      "GPT-5.6 Luna does not support reasoning together with the function tools used by Plane."
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Reasoning" }), { target: { value: "none" } });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
   });
 
   it("uses the settings error path when the provider catalog cannot load", async () => {

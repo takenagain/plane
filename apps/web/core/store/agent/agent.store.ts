@@ -257,9 +257,6 @@ export class AgentStore implements IAgentStore {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to send message.";
-      runInAction(() => {
-        this.error = message;
-      });
       try {
         await this.loadSession(workspaceSlug, sessionId);
       } catch {
@@ -267,6 +264,9 @@ export class AgentStore implements IAgentStore {
           this.activeSessionMessages = this.activeSessionMessages.filter((m) => m.id !== optimisticMsg.id);
         });
       }
+      runInAction(() => {
+        this.error = message;
+      });
     } finally {
       runInAction(() => {
         this.isLoading = false;

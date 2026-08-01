@@ -31,6 +31,7 @@ class TestIssueGroupByAllowlist:
             "created_by",
             "target_date",
             "start_date",
+            "time_logged",
         }
         assert ISSUE_GROUP_BY_ALLOWLIST == frozenset(expected)
 

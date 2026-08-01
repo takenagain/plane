@@ -63,7 +63,10 @@ function resolveApiContainerName(): string {
       .map((n: string) => n.trim())
       .filter(Boolean);
     return (
-      (names as string[]).find((n: string) => n === "api" || n.endsWith("-api-1") || n.endsWith("_api_1")) ?? "api"
+      (names as string[]).find((n: string) => n === "api") ??
+      (names as string[]).find((n: string) => n.endsWith("-api-1")) ??
+      (names as string[]).find((n: string) => n.endsWith("_api_1")) ??
+      "api"
     );
   } catch {
     return "api";

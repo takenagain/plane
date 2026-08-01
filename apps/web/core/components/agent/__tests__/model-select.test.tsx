@@ -38,6 +38,7 @@ const models: IAgentModel[] = [
     output_price: 12,
     lifecycle: "preview",
     pricing_note: "$4 in · $18 out / 1M for prompts above 200k tokens.",
+    supports_reasoning_with_tools: true,
   },
   {
     id: "gemini-2.5-pro",
@@ -46,6 +47,7 @@ const models: IAgentModel[] = [
     output_price: 10,
     lifecycle: "previous",
     pricing_note: "",
+    supports_reasoning_with_tools: true,
   },
 ];
 

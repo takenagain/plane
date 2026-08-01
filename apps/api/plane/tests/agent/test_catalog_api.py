@@ -42,6 +42,7 @@ class TestAgentCatalogConfiguration:
             "input_price": 5,
             "output_price": 30,
             "pricing_note": "",
+            "supports_reasoning_with_tools": True,
         }
 
     def test_rejects_model_outside_selected_provider(self, session_client, workspace):

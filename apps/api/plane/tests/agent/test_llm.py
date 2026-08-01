@@ -1,6 +1,8 @@
+from unittest.mock import patch
+
 import pytest
 
-from plane.agent.service.llm import _build_completion_kwargs
+from plane.agent.service.llm import _build_completion_kwargs, call_llm
 
 
 @pytest.mark.unit
@@ -52,3 +54,23 @@ class TestBuildCompletionKwargs:
         )
 
         assert kwargs["reasoning_effort"] == "medium"
+
+    @patch("plane.agent.service.llm.AnyLLM.create")
+    def test_normalizes_raw_provider_errors_without_exposing_the_api_key(self, mock_create):
+        mock_create.return_value.completion.side_effect = RuntimeError(
+            "request rejected for key sk-secret\ninvalid reasoning"
+        )
+
+        with pytest.raises(ValueError) as exc_info:
+            call_llm(
+                messages=[],
+                tools=[],
+                provider="openai",
+                model="gpt-5.6-luna",
+                api_key="sk-secret",
+                reasoning_level="medium",
+            )
+
+        assert (
+            str(exc_info.value) == "Provider error from 'openai': request rejected for key [redacted] invalid reasoning"
+        )

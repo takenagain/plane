@@ -1,6 +1,6 @@
 import json
 
-from plane.agent.catalog import normalize_model
+from plane.agent.catalog import get_model_configuration_error, normalize_model
 from plane.db.models import AgentChatMessage, AgentChatSession, AgentConfiguration
 from plane.license.utils.encryption import decrypt_data
 
@@ -33,19 +33,31 @@ class AgentService:
 
         model = normalize_model(config.provider, model_override or config.model)
         max_steps = config.max_steps or 25
+        configuration_error = get_model_configuration_error(config.provider, model, config.reasoning_level)
 
         user_msg = AgentChatMessage.objects.create(
             session=session,
             role="user",
             content=user_content,
         )
+        created_messages: list[AgentChatMessage] = [user_msg]
 
         if not session.title:
             session.title = user_content[:60]
             session.selected_model = model
             session.save(update_fields=["title", "selected_model", "updated_at"])
 
-        created_messages: list[AgentChatMessage] = [user_msg]
+        if configuration_error:
+            error_msg = AgentChatMessage.objects.create(
+                session=session,
+                role="assistant",
+                content=configuration_error,
+                is_error=True,
+                step_index=0,
+            )
+            created_messages.append(error_msg)
+            return created_messages
+
         history = self._build_history(session)
         system_prompt = build_system_prompt(
             workspace_slug=session.workspace.slug,

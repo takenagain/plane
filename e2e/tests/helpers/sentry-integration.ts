@@ -40,7 +40,11 @@ function resolveApiContainerName() {
     .filter(Boolean);
   return {
     runtime,
-    container: names.find((name) => name === "api" || name.endsWith("-api-1") || name.endsWith("_api_1")) || "api",
+    container:
+      names.find((name) => name === "api") ||
+      names.find((name) => name.endsWith("-api-1")) ||
+      names.find((name) => name.endsWith("_api_1")) ||
+      "api",
   };
 }
 

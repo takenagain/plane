@@ -26,17 +26,6 @@ from plane.utils.path_validator import sanitize_filename
 from plane.bgtasks.storage_metadata_task import get_asset_object_metadata
 from plane.throttles.asset import AssetRateThrottle
 
-# Entity types created and served via ProjectAssetEndpoint — not workspace-scoped routes.
-_PROJECT_SCOPED_ENTITY_TYPES = (
-    FileAsset.EntityTypeContext.ISSUE_ATTACHMENT,
-    FileAsset.EntityTypeContext.ISSUE_DESCRIPTION,
-    FileAsset.EntityTypeContext.COMMENT_DESCRIPTION,
-    FileAsset.EntityTypeContext.PAGE_DESCRIPTION,
-    FileAsset.EntityTypeContext.DRAFT_ISSUE_ATTACHMENT,
-    FileAsset.EntityTypeContext.DRAFT_ISSUE_DESCRIPTION,
-)
-
-
 def _entity_id_value_for_asset(asset):
     if asset.entity_type == FileAsset.EntityTypeContext.WORKSPACE_LOGO:
         return asset.workspace_id
@@ -292,10 +281,6 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
 
     def get_workspace_asset(self, asset_id, slug):
         asset = FileAsset.objects.get(id=asset_id, workspace__slug=slug)
-
-        if asset.entity_type in _PROJECT_SCOPED_ENTITY_TYPES:
-            raise FileAsset.DoesNotExist
-
         entity_id = _entity_id_value_for_asset(asset)
         entity_filters = self.get_entity_id_field(entity_type=asset.entity_type, entity_id=entity_id)
         if entity_filters:
