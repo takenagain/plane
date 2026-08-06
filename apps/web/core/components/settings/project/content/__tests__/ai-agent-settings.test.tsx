@@ -80,6 +80,15 @@ const providers = [
         output_price: 1.2,
         lifecycle: "stable",
         pricing_note: "",
+        supports_reasoning_with_tools: true,
+      },
+      {
+        id: "unsupported-reasoning-tools-model",
+        name: "Unsupported reasoning/tools model",
+        input_price: 0,
+        output_price: 0,
+        lifecycle: "stable",
+        pricing_note: "",
         supports_reasoning_with_tools: false,
       },
     ],
@@ -145,11 +154,11 @@ describe("ProjectAIAgentSettings", () => {
     fireEvent.change(screen.getByLabelText("API key (required)"), { target: { value: "sk-project-key" } });
 
     const modelSelect = await screen.findByRole("combobox", { name: "Model" });
-    fireEvent.change(modelSelect, { target: { value: "gpt-5.6-luna" } });
+    fireEvent.change(modelSelect, { target: { value: "unsupported-reasoning-tools-model" } });
 
     const error = await screen.findByRole("alert");
     expect(error).toHaveTextContent(
-      "GPT-5.6 Luna does not support reasoning together with the function tools used by Plane."
+      "Unsupported reasoning/tools model does not support reasoning together with the function tools used by Plane."
     );
     expect(screen.getByRole("button", { name: "Save override" })).toBeDisabled();
 

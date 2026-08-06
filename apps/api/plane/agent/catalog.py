@@ -42,13 +42,7 @@ MODEL_CATALOG: dict[str, ProviderDefinition] = {
         models=(
             ModelDefinition(id="gpt-5.6-sol", name="GPT-5.6 Sol", input_price=5, output_price=30),
             ModelDefinition(id="gpt-5.6-terra", name="GPT-5.6 Terra", input_price=2, output_price=12),
-            ModelDefinition(
-                id="gpt-5.6-luna",
-                name="GPT-5.6 Luna",
-                input_price=0.2,
-                output_price=1.2,
-                supports_reasoning_with_tools=False,
-            ),
+            ModelDefinition(id="gpt-5.6-luna", name="GPT-5.6 Luna", input_price=0.2, output_price=1.2),
             ModelDefinition(
                 id="gpt-5.5",
                 name="GPT-5.5",

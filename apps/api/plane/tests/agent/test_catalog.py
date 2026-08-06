@@ -37,12 +37,12 @@ class TestAgentModelCatalog:
         assert gemini.lifecycle == "preview"
         assert "above 200k" in gemini.pricing_note
 
-    def test_exposes_reasoning_with_tools_capability(self):
+    def test_current_openai_models_support_reasoning_with_tools(self):
         luna = get_model("openai", "gpt-5.6-luna")
         sol = get_model("openai", "gpt-5.6-sol")
 
         assert luna is not None
-        assert luna.supports_reasoning_with_tools is False
+        assert luna.supports_reasoning_with_tools is True
         assert sol is not None
         assert sol.supports_reasoning_with_tools is True
 

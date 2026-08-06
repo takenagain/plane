@@ -48,7 +48,7 @@ def test_obsolete_model_override_is_normalized(
 @pytest.mark.unit
 @pytest.mark.django_db
 @patch("plane.agent.service.loop.call_llm")
-def test_runtime_blocks_unsupported_model_override(
+def test_runtime_allows_luna_override_with_reasoning_and_tools(
     mock_call_llm,
     db,
     workspace,
@@ -67,6 +67,7 @@ def test_runtime_blocks_unsupported_model_override(
         user=create_user,
         title="",
     )
+    mock_call_llm.return_value = LLMResponse(content="Done.", finish_reason="stop")
 
     messages = AgentService().run(
         session=session,
@@ -76,16 +77,19 @@ def test_runtime_blocks_unsupported_model_override(
         request_user=create_user,
     )
 
-    mock_call_llm.assert_not_called()
+    mock_call_llm.assert_called_once()
+    assert mock_call_llm.call_args.kwargs["model"] == "gpt-5.6-luna"
+    assert mock_call_llm.call_args.kwargs["reasoning_level"] == "medium"
+    assert mock_call_llm.call_args.kwargs["tools"]
     assert len(messages) == 2
-    assert messages[-1].is_error is True
-    assert "does not support reasoning together with" in messages[-1].content
+    assert messages[-1].is_error is False
+    assert messages[-1].content == "Done."
 
 
 @pytest.mark.unit
 @pytest.mark.django_db
 @patch("plane.agent.service.loop.call_llm")
-def test_runtime_blocks_existing_unsupported_configuration(
+def test_runtime_allows_existing_luna_configuration_with_reasoning_and_tools(
     mock_call_llm,
     db,
     workspace,
@@ -104,6 +108,7 @@ def test_runtime_blocks_existing_unsupported_configuration(
         user=create_user,
         title="",
     )
+    mock_call_llm.return_value = LLMResponse(content="Done.", finish_reason="stop")
 
     messages = AgentService().run(
         session=session,
@@ -113,5 +118,10 @@ def test_runtime_blocks_existing_unsupported_configuration(
         request_user=create_user,
     )
 
-    mock_call_llm.assert_not_called()
+    mock_call_llm.assert_called_once()
+    assert mock_call_llm.call_args.kwargs["model"] == "gpt-5.6-luna"
+    assert mock_call_llm.call_args.kwargs["reasoning_level"] == "medium"
+    assert mock_call_llm.call_args.kwargs["tools"]
     assert len(messages) == 2
+    assert messages[-1].is_error is False
+    assert messages[-1].content == "Done."
