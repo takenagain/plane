@@ -53,7 +53,7 @@ beautifulsoup4==4.15.0
 # analytics
 posthog==7.21.2
 # crypto
-cryptography==49.0.0
+cryptography==50.0.0
 # html validator
 lxml==6.1.1
 # s3
@@ -81,7 +81,7 @@ pyotp==2.10.0
 # 2FA — WebAuthn: passkeys + FIDO2 security keys (server-side RP)
 webauthn==3.0.0
 # 2FA — pin py_webauthn transitive deps for reproducible builds
-pyOpenSSL==26.3.0
+pyOpenSSL==26.4.0
 cbor2==6.1.2
 pyasn1==0.6.3
 pyasn1-modules==0.4.2

@@ -24,6 +24,7 @@ import { test, expect } from "@playwright/test";
 import {
   BASE_URL,
   ensureE2ESeedData,
+  resolveApiContainerName,
   signInAndEnsureWorkspace,
   signInViaApi,
   waitForPageLoad,
@@ -39,46 +40,13 @@ function farFutureDateIso(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function detectRuntime(): string {
-  const envRuntime = process.env.CONTAINER_RUNTIME;
-  if (envRuntime) return envRuntime;
-  for (const runtime of ["podman", "docker"]) {
-    try {
-      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
-      return runtime;
-    } catch {
-      // not available
-    }
-  }
-  throw new Error("Neither podman nor docker is available");
-}
-
-const CONTAINER_RUNTIME = detectRuntime();
-
-function resolveApiContainerName(): string {
-  try {
-    const output = execFileSync(CONTAINER_RUNTIME, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
-    const names = output
-      .split(/\r?\n/)
-      .map((n: string) => n.trim())
-      .filter(Boolean);
-    return (
-      (names as string[]).find((n: string) => n === "api") ??
-      (names as string[]).find((n: string) => n.endsWith("-api-1")) ??
-      (names as string[]).find((n: string) => n.endsWith("_api_1")) ??
-      "api"
-    );
-  } catch {
-    return "api";
-  }
-}
-
 function runDjangoShell(script: string): string {
-  return execFileSync(
-    CONTAINER_RUNTIME,
-    ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", script],
-    { encoding: "utf-8", cwd: "/" }
-  );
+  const { runtime, container } = resolveApiContainerName();
+
+  return execFileSync(runtime, ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", script], {
+    encoding: "utf-8",
+    cwd: "/",
+  });
 }
 
 interface RecurrenceIssue {

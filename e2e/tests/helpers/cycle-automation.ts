@@ -5,7 +5,7 @@
 import { execFileSync } from "node:child_process";
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
-import { BASE_URL, signInAndEnsureWorkspace, waitForPageLoad } from "./time-tracking";
+import { BASE_URL, resolveApiContainerName, signInAndEnsureWorkspace, waitForPageLoad } from "./time-tracking";
 
 export { BASE_URL };
 
@@ -72,46 +72,13 @@ export async function resetAutomationTogglesToOff(page: Page): Promise<void> {
   }
 }
 
-function detectRuntime(): string {
-  const envRuntime = process.env.CONTAINER_RUNTIME;
-  if (envRuntime) return envRuntime;
-  for (const runtime of ["podman", "docker"]) {
-    try {
-      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
-      return runtime;
-    } catch {
-      // not available
-    }
-  }
-  throw new Error("Neither podman nor docker is available");
-}
-
-const CONTAINER_RUNTIME = detectRuntime();
-
-function resolveApiContainerName(): string {
-  try {
-    const output = execFileSync(CONTAINER_RUNTIME, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
-    const names = output
-      .split(/\r?\n/)
-      .map((n) => n.trim())
-      .filter(Boolean);
-    return (
-      names.find((n) => n === "api") ??
-      names.find((n) => n.endsWith("-api-1")) ??
-      names.find((n) => n.endsWith("_api_1")) ??
-      "api"
-    );
-  } catch {
-    return "api";
-  }
-}
-
 export function runDjangoShell(script: string): string {
-  return execFileSync(
-    CONTAINER_RUNTIME,
-    ["exec", "-w", "/", resolveApiContainerName(), "python", "/code/manage.py", "shell", "-c", script],
-    { encoding: "utf-8", cwd: "/" }
-  );
+  const { runtime, container } = resolveApiContainerName();
+
+  return execFileSync(runtime, ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", script], {
+    encoding: "utf-8",
+    cwd: "/",
+  });
 }
 
 /** Enable the Cycles module on the seed project (off by default in schema). */

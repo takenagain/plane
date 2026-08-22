@@ -1,7 +1,7 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
 import { createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { ensureE2ESeedData } from "./time-tracking";
+import { ensureE2ESeedData, resolveApiContainerName } from "./time-tracking";
 
 export {
   BASE_URL,
@@ -16,37 +16,6 @@ const E2E_SENTRY_CLIENT_ID = process.env.E2E_SENTRY_CLIENT_ID || "e2e-sentry-cli
 const E2E_SENTRY_WEBHOOK_SECRET = process.env.E2E_SENTRY_WEBHOOK_SECRET || "e2e-webhook-secret";
 const E2E_SENTRY_ORG_SLUG = process.env.E2E_SENTRY_ORG_SLUG || "e2e-org";
 const E2E_SENTRY_PROJECT_SLUG = process.env.E2E_SENTRY_PROJECT_SLUG || "backend";
-
-function detectContainerRuntime(): string {
-  const envRuntime = process.env.CONTAINER_RUNTIME;
-  if (envRuntime) return envRuntime;
-  for (const runtime of ["podman", "docker"]) {
-    try {
-      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
-      return runtime;
-    } catch {
-      // not available
-    }
-  }
-  throw new Error("Neither podman nor docker is available");
-}
-
-function resolveApiContainerName() {
-  const runtime = detectContainerRuntime();
-  const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
-  const names = output
-    .split(/\r?\n/)
-    .map((name) => name.trim())
-    .filter(Boolean);
-  return {
-    runtime,
-    container:
-      names.find((name) => name === "api") ||
-      names.find((name) => name.endsWith("-api-1")) ||
-      names.find((name) => name.endsWith("_api_1")) ||
-      "api",
-  };
-}
 
 function runApiShell(script: string): string {
   const { runtime, container } = resolveApiContainerName();

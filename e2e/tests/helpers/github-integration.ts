@@ -3,39 +3,10 @@ import { execFileSync } from "node:child_process";
 import { createHmac } from "node:crypto";
 import type { APIRequestContext, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
-import { BASE_URL, API_BASE_URL, signInViaApi, waitForPageLoad } from "./time-tracking";
+import { BASE_URL, API_BASE_URL, resolveApiContainerName, signInViaApi, waitForPageLoad } from "./time-tracking";
 
 export const E2E_GITHUB_APP_NAME = process.env.E2E_GITHUB_APP_NAME || "plane-e2e-test";
 export const E2E_GITHUB_WEBHOOK_SECRET = process.env.E2E_GITHUB_WEBHOOK_SECRET || "e2e-github-webhook-secret";
-
-function detectContainerRuntime(): string {
-  const envRuntime = process.env.CONTAINER_RUNTIME;
-  if (envRuntime) return envRuntime;
-  for (const runtime of ["podman", "docker"]) {
-    try {
-      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
-      return runtime;
-    } catch {
-      // try next runtime
-    }
-  }
-  throw new Error("Neither podman nor docker is available — required to enable GitHub E2E config");
-}
-
-function resolveApiContainerName(): { runtime: string; container: string } {
-  const runtime = detectContainerRuntime();
-  const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
-  const names = output
-    .split(/\r?\n/)
-    .map((name) => name.trim())
-    .filter(Boolean);
-  const container =
-    names.find((name) => name === "api") ||
-    names.find((name) => name.endsWith("-api-1")) ||
-    names.find((name) => name.endsWith("_api_1")) ||
-    "api";
-  return { runtime, container };
-}
 
 function runDjangoShell(script: string): string {
   const { runtime, container } = resolveApiContainerName();
