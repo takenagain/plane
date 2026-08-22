@@ -83,7 +83,7 @@ webauthn==3.0.0
 # 2FA — pin py_webauthn transitive deps for reproducible builds
 pyOpenSSL==26.4.0
 cbor2==6.1.2
-pyasn1==0.6.3
+pyasn1==0.6.4
 pyasn1-modules==0.4.2
 # 2FA — QR rendering for TOTP provisioning URIs (pure-Python; no Pillow)
 segno==1.6.6
