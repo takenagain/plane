@@ -18,7 +18,7 @@ import {
   automationToggle,
   clickToggleAndWait,
   navigateToAutomations,
-  resetAutomationTogglesToOff,
+  resetCycleAutomationBackend,
 } from "./helpers/cycle-automation";
 
 let workspaceSlug: string;
@@ -41,13 +41,12 @@ async function signInAndOpenAutomations(page: Page): Promise<void> {
 
 test.describe.serial("Cycle automation settings", () => {
   test.beforeEach(async ({ page }) => {
+    resetCycleAutomationBackend(projectId);
     await signInAndOpenAutomations(page);
-    await resetAutomationTogglesToOff(page);
   });
 
-  test.afterEach(async ({ page }) => {
-    await signInAndOpenAutomations(page);
-    await resetAutomationTogglesToOff(page);
+  test.afterEach(() => {
+    resetCycleAutomationBackend(projectId);
   });
 
   test("auto-create toggle exists and is off by default", async ({ page }) => {

@@ -45,7 +45,7 @@ import type { TPageInstance } from "@/store/pages/base-page";
 import { PageContentLoader } from "../loaders/page-content-loader";
 import { PageEditorHeaderRoot } from "./header";
 import { PageContentBrowser } from "./summary";
-import { EditorAIMenu } from "./ai";
+import { EditorAIMenu } from "./ai/menu";
 
 export type TEditorBodyConfig = {
   fileHandler: TFileHandler;
@@ -211,6 +211,11 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   );
 
   const realtimeConfig: TRealtimeConfig | undefined = useMemo(() => {
+    // The collaboration URL is derived from window.location, so it can only be
+    // built on the client. There is no socket to connect to during SSR anyway —
+    // the config is recomputed on hydration.
+    if (typeof window === "undefined") return undefined;
+
     // Construct the WebSocket Collaboration URL
     try {
       if (typeof window === "undefined") return undefined;

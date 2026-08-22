@@ -86,6 +86,7 @@ from .project import (
     ProjectListSerializer,
     ProjectLiteSerializer,
     ProjectMemberAdminSerializer,
+    ProjectMemberInvitePublicSerializer,
     ProjectMemberInviteSerializer,
     ProjectMemberLiteSerializer,
     ProjectMemberPreferenceSerializer,

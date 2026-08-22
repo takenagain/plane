@@ -13,6 +13,13 @@
     "exactOptionalPropertyTypes": false,
     "noUnusedParameters": false
   },
-  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*", "additional.d.ts"],
+  "include": [
+    "**/*",
+    "**/.server/**/*",
+    "**/.client/**/*",
+    ".react-router/types/**/*",
+    "additional.d.ts",
+    "../../packages/utils/vite/**/*"
+  ],
   "exclude": ["node_modules"]
 }

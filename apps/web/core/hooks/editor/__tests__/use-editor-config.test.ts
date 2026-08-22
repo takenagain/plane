@@ -13,13 +13,13 @@ vi.mock("@/hooks/store/use-editor-asset", () => ({
   }),
 }));
 
-vi.mock("@/plane-web/hooks/editor/use-extended-editor-config", () => ({
+vi.mock("@/hooks/editor/use-extended-editor-config", () => ({
   useExtendedEditorConfig: () => ({
     getExtendedEditorFileHandlers: hookMocks.getExtendedEditorFileHandlers,
   }),
 }));
 
-vi.mock("@/plane-web/hooks/use-file-size", () => ({
+vi.mock("@/hooks/use-file-size", () => ({
   useFileSize: () => ({
     maxFileSize: hookMocks.maxFileSize,
   }),

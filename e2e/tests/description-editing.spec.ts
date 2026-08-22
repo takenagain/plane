@@ -19,6 +19,7 @@ import {
   BASE_URL,
   WORKSPACE_NAME,
   PROJECT_NAME,
+  resolveApiContainerName,
 } from "./helpers/time-tracking";
 
 // ---------------------------------------------------------------------------
@@ -29,32 +30,9 @@ let workspaceSlug: string;
 let projectId: string;
 let freshIssueId: string;
 
-/** Detect whether docker or podman is available. */
-function detectRuntime(): string {
-  const envRuntime = process.env.CONTAINER_RUNTIME;
-  if (envRuntime) return envRuntime;
-  for (const runtime of ["podman", "docker"]) {
-    try {
-      execFileSync(runtime, ["--version"], { encoding: "utf-8", stdio: "pipe" });
-      return runtime;
-    } catch {
-      // not available
-    }
-  }
-  throw new Error("Neither podman nor docker is available");
-}
-
 /** Create a fresh issue via Django management shell. */
 function createFreshIssue(): { workspaceSlug: string; projectId: string; issueId: string } {
-  const runtime = detectRuntime();
-  const containerName = (() => {
-    const output = execFileSync(runtime, ["ps", "--format", "{{.Names}}"], { encoding: "utf-8" });
-    const names = output
-      .split(/\r?\n/)
-      .map((n) => n.trim())
-      .filter(Boolean);
-    return names.find((n) => n === "api" || n.endsWith("_api_1")) || "api";
-  })();
+  const { runtime, container } = resolveApiContainerName();
 
   const script = `
 import json, uuid
@@ -84,7 +62,7 @@ print(f"FRESH_ISSUE:{workspace.slug}|{project.id}|{issue.id}")
 
   const output = execFileSync(
     runtime,
-    ["exec", "-w", "/", containerName, "python", "/code/manage.py", "shell", "-c", script],
+    ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", script],
     {
       encoding: "utf-8",
       cwd: "/",
