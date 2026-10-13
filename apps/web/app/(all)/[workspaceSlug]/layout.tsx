@@ -9,7 +9,7 @@ import { AuthenticationWrapper } from "@/lib/wrappers/authentication-wrapper";
 import { WorkspaceContentWrapper } from "@/components/workspace/content-wrapper";
 import { AppRailVisibilityProvider } from "@/lib/app-rail";
 import { GlobalModals } from "@/components/common/modal/global";
-import { GlobalAgentRoot } from "@/components/agent";
+import { GlobalAgentRoot } from "@/core/components/agent";
 import { GlobalTimeTrackingFOBRoot } from "@/plane-web/components/issues/worklog/actions";
 import { WorkspaceAuthWrapper } from "@/layouts/auth-layout/workspace-wrapper";
 import type { Route } from "./+types/layout";

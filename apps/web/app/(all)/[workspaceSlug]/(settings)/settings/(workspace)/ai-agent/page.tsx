@@ -3,7 +3,7 @@ import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view";
 import { PageHead } from "@/components/core/page-title";
 import { SettingsContentWrapper } from "@/components/settings/content-wrapper";
-import { WorkspaceAIAgentSettings } from "@/components/settings/workspace/content/ai-agent-settings";
+import { WorkspaceAIAgentSettings } from "@/core/components/settings/workspace/content/ai-agent-settings";
 import { useUserPermissions } from "@/hooks/store/user";
 import type { Route } from "./+types/page";
 import { AIAgentWorkspaceSettingsHeader } from "./header";

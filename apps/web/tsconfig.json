@@ -2,11 +2,12 @@
   "compilerOptions": {
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
-      "@/*": ["./core/*"],
-      "@/app/*": ["./app/*"],
-      "@/helpers/*": ["./helpers/*"],
-      "@/styles/*": ["./styles/*"],
+      "@/*": ["./*"],
+      "@/components/*": ["./components/*", "./core/components/*"],
+      "@/constants/*": ["./constants/*", "./core/constants/*"],
+      "@/hooks/*": ["./hooks/*", "./core/hooks/*"],
       "@/plane-web/*": ["./extended/*"],
+      "@/store/*": ["./store/*", "./core/store/*"],
       "package.json": ["./package.json"]
     },
     "strictNullChecks": true,
