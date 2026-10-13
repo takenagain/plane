@@ -59,10 +59,6 @@ class InstanceEndpoint(BaseAPIView):
             ENABLE_MAGIC_LINK_LOGIN,
             ENABLE_EMAIL_PASSWORD,
             SLACK_CLIENT_ID,
-            ENABLE_SENTRY_SYNC,
-            SENTRY_CLIENT_ID,
-            POSTHOG_API_KEY,
-            POSTHOG_HOST,
             UNSPLASH_ACCESS_KEY,
             LLM_API_KEY,
             MFA_ENABLED,
@@ -111,22 +107,6 @@ class InstanceEndpoint(BaseAPIView):
                 {
                     "key": "SLACK_CLIENT_ID",
                     "default": os.environ.get("SLACK_CLIENT_ID", None),
-                },
-                {
-                    "key": "ENABLE_SENTRY_SYNC",
-                    "default": os.environ.get("ENABLE_SENTRY_SYNC", "0"),
-                },
-                {
-                    "key": "SENTRY_CLIENT_ID",
-                    "default": os.environ.get("SENTRY_CLIENT_ID", None),
-                },
-                {
-                    "key": "POSTHOG_API_KEY",
-                    "default": os.environ.get("POSTHOG_API_KEY", None),
-                },
-                {
-                    "key": "POSTHOG_HOST",
-                    "default": os.environ.get("POSTHOG_HOST", None),
                 },
                 {
                     "key": "UNSPLASH_ACCESS_KEY",

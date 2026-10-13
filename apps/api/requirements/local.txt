@@ -1,5 +1,0 @@
--r base.txt
-# debug toolbar
-django-debug-toolbar==7.0.0
-# formatter
-ruff==0.15.20

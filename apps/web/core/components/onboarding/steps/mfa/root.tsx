@@ -13,7 +13,7 @@ import { TwoFactorSetupContainer } from "@/components/account/two-factor/setup-c
 // hooks
 import { useInstance } from "@/hooks/store/use-instance";
 // local imports
-import { CommonOnboardingHeader } from "../common";
+import { CommonOnboardingHeader } from "@/components/onboarding/steps/common";
 
 type Props = {
   handleStepChange: (step: EOnboardingSteps, skipInvites?: boolean) => void;

@@ -21,10 +21,10 @@ export { EditorIcon, type TEditorIcon } from "@/helpers/react-compat";
 export * from "@/helpers/yjs-utils";
 
 export { CORE_EXTENSIONS } from "@/constants/extension";
-export { ADDITIONAL_EXTENSIONS } from "@/plane-editor/constants/extensions";
+export { ADDITIONAL_EXTENSIONS } from "@/constants/extensions";
 
 // types
 export * from "@/types";
 
 // additional exports
-export { TrailingNode } from "./core/extensions/trailing-node";
+export { TrailingNode } from "@/extensions/trailing-node";

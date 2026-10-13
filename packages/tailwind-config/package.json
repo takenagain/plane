@@ -13,8 +13,9 @@
     "./postcss.config.js": "./postcss.config.js"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "4.3.2",
-    "postcss": "8.5.16"
+    "@makeplane/propel": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "postcss": "catalog:"
   },
   "devDependencies": {
     "tailwindcss": "4.3.2"

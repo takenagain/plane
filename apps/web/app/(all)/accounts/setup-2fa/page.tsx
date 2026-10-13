@@ -5,7 +5,7 @@
  */
 
 // components
-import { ForcedTwoFactorSetup } from "@/components/account/two-factor/forced-setup";
+import { ForcedTwoFactorSetup } from "@/core/components/account/two-factor/forced-setup";
 // helpers
 import { EPageTypes } from "@/helpers/authentication.helper";
 // layouts
