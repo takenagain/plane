@@ -9,17 +9,17 @@ from itertools import chain
 from django.db.models import Prefetch, Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.gzip import gzip_page
-from rest_framework import status
 
 # Third Party imports
+from rest_framework import status
 from rest_framework.response import Response
-
-from plane.app.permissions import ROLE, ProjectEntityPermission, allow_permission
-from plane.app.serializers import IssueActivitySerializer, IssueCommentSerializer
-from plane.db.models import CommentReaction, IntakeIssue, IssueActivity, IssueComment
 
 # Module imports
 from .. import BaseAPIView
+from .relation import issue_in_project
+from plane.app.permissions import ProjectEntityPermission, allow_permission, ROLE
+from plane.app.serializers import IssueActivitySerializer, IssueCommentSerializer
+from plane.db.models import CommentReaction, IntakeIssue, IssueActivity, IssueComment
 
 
 class IssueActivityEndpoint(BaseAPIView):
@@ -32,6 +32,11 @@ class IssueActivityEndpoint(BaseAPIView):
         filters = {}
         if request.GET.get("created_at__gt", None) is not None:
             filters = {"created_at__gt": request.GET.get("created_at__gt")}
+
+        # The issue must belong to the URL workspace + project; the activity and comment
+        # rows below are keyed by it. Archived and intake issues keep their history.
+        if not issue_in_project(issue_id, slug, project_id, include_archived=True):
+            return Response({"error": "Issue not found"}, status=status.HTTP_404_NOT_FOUND)
 
         issue_activities = (
             IssueActivity.objects.filter(issue_id=issue_id)
