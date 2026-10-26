@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, assert } from "vitest";
-import { Effect, Duration, Either } from "effect";
+import { Effect, Duration, Result } from "effect";
 import { withTimeoutAndRetry, recoverWithDefault, tryAsync } from "@/services/pdf-export/effect-utils";
 import { PdfTimeoutError } from "@/schema/pdf-export";
 
@@ -30,11 +30,11 @@ describe("effect-utils", () => {
         maxRetries: 0,
       })(slowEffect);
 
-      const result = await Effect.runPromise(Effect.either(wrapped));
+      const result = await Effect.runPromise(Effect.result(wrapped));
 
-      assert(Either.isLeft(result), "Expected Left but got Right");
-      expect(result.left).toBeInstanceOf(PdfTimeoutError);
-      expect((result.left as PdfTimeoutError).operation).toBe("test-operation");
+      assert(Result.isFailure(result), "Expected Failure but got Success");
+      expect(result.failure).toBeInstanceOf(PdfTimeoutError);
+      expect((result.failure as PdfTimeoutError).operation).toBe("test-operation");
     });
 
     it("should retry on failure up to maxRetries times", async () => {
@@ -67,9 +67,9 @@ describe("effect-utils", () => {
         maxRetries: 2,
       })(effect);
 
-      const result = await Effect.runPromise(Effect.either(wrapped));
+      const result = await Effect.runPromise(Effect.result(wrapped));
 
-      expect(result._tag).toBe("Left");
+      expect(Result.isFailure(result)).toBe(true);
     });
   });
 
@@ -132,10 +132,10 @@ describe("effect-utils", () => {
         (err) => new Error(`wrapped: ${(err as Error).message}`)
       );
 
-      const result = await Effect.runPromise(Effect.either(effect));
+      const result = await Effect.runPromise(Effect.result(effect));
 
-      assert(Either.isLeft(result), "Expected Left but got Right");
-      expect(result.left.message).toBe("wrapped: original");
+      assert(Result.isFailure(result), "Expected Failure but got Success");
+      expect(result.failure.message).toBe("wrapped: original");
     });
 
     it("should handle synchronous throws", async () => {
@@ -146,10 +146,10 @@ describe("effect-utils", () => {
         (err) => new Error(`caught: ${(err as Error).message}`)
       );
 
-      const result = await Effect.runPromise(Effect.either(effect));
+      const result = await Effect.runPromise(Effect.result(effect));
 
-      assert(Either.isLeft(result), "Expected Left but got Right");
-      expect(result.left.message).toBe("caught: sync error");
+      assert(Result.isFailure(result), "Expected Failure but got Success");
+      expect(result.failure.message).toBe("caught: sync error");
     });
   });
 });

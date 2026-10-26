@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TCommentsOperations } from "@plane/types";
-import { CommentCreate } from "../comment-create";
+import { CommentCreate } from "@/components/comments/comment-create";
 
 const liteTextEditorMock = vi.hoisted(() =>
   vi.fn(({ id, value, editable }: { id: string; value?: string | null; editable?: boolean }) => (

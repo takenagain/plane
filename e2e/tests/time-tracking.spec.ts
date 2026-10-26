@@ -512,6 +512,14 @@ test.describe.serial("Time Tracking E2E Flow", () => {
   test("10. Browser: Floating FOB survives navigation, expands on hover, links back to the tracked work item, and hides after stop", async ({
     page,
   }) => {
+    const recurrenceRuntimeErrors: string[] = [];
+    page.on("console", (message) => {
+      const messageText = message.text();
+      if (message.type() === "error" && /(?:CustomSelect|Input) is not defined/.test(messageText)) {
+        recurrenceRuntimeErrors.push(messageText);
+      }
+    });
+
     const seeded = ensureE2ESeedData();
     workspaceSlug = seeded.workspaceSlug;
     projectId = seeded.projectId;
@@ -608,6 +616,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
     await test.step("sub-test: active FOB remains visible after navigating away from the tracked work item", async () => {
       await page.goto(`${BASE_URL}/${workspaceSlug}/projects/${projectId}/issues/`);
       await waitForPageLoad(page);
+      await page.mouse.move(0, 0);
 
       await expect(floatingFob).toBeVisible({ timeout: 15_000 });
       await expect(floatingActionButton).toHaveAttribute("aria-label", /stop time tracking/i, { timeout: 15_000 });
@@ -633,6 +642,7 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await titleLink.click();
 
       await page.waitForURL(trackedWorkItemUrl, { timeout: 15_000 });
+      expect(recurrenceRuntimeErrors).toEqual([]);
       await expect(floatingFob).toBeVisible({ timeout: 15_000 });
       await expect(floatingActionButton).toHaveAttribute("aria-label", /stop time tracking/i, { timeout: 15_000 });
     });
@@ -642,12 +652,25 @@ test.describe.serial("Time Tracking E2E Flow", () => {
       await waitForPageLoad(page);
 
       await expect(floatingFob).toBeVisible({ timeout: 15_000 });
+      await page.mouse.move(0, 0);
+      await floatingFob.hover();
+      await expect(page.getByTestId("floating-time-tracking-fob-primary-label")).toHaveText("Stop");
+      await expect(floatingActionButton).toHaveAttribute("aria-label", /stop time tracking/i, { timeout: 15_000 });
+      const activeBefore = await page.request.get(activeWorklogUrl);
+      const activeBeforeBody = activeBefore.ok() ? await activeBefore.json() : null;
+      const stopResponsePromise = page.waitForResponse(
+        (response) => response.url().includes("/worklogs/stop/") && response.request().method() === "POST",
+        { timeout: 15_000 }
+      );
       await floatingActionButton.click();
+      const stopResponse = await stopResponsePromise;
+      const stoppedWorklog = await stopResponse.json();
+      const activeAfter = await page.request.get(activeWorklogUrl);
+      expect(stopResponse.status()).toBe(200);
+      expect(stoppedWorklog.id).toBe(activeBeforeBody?.id);
+      expect(activeAfter.status()).toBe(204);
 
-      await expect(floatingFob).toHaveCount(0);
-
-      const activeWorklogResponse = await page.request.get(activeWorklogUrl);
-      expect(activeWorklogResponse.status()).toBe(204);
+      await expect(floatingFob).toHaveCount(0, { timeout: 5_000 });
     });
   });
 

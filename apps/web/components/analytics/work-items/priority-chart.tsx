@@ -4,8 +4,10 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- TanStack Table consumes these header, cell, and action render callbacks. */
+
 import { useMemo } from "react";
-import type { ColumnDef, Row, RowData, Table } from "@tanstack/react-table";
+import type { LegacyColumnDef, LegacyTable } from "@tanstack/react-table/legacy";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -19,28 +21,18 @@ import { Button } from "@makeplane/propel/components/button";
 import { Icon } from "@makeplane/propel/components/icon";
 import { BarChart } from "@plane/blocks/charts/bar-chart";
 import { EmptyStateCompact } from "@plane/blocks/empty-state";
-import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty, ChartYAxisMetric } from "@plane/types";
+import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty } from "@plane/types";
+import { ChartYAxisMetric } from "@plane/types";
 // plane web components
 import { generateExtendedColors, parseChartData } from "@/components/chart/utils";
 // hooks
 import { useAnalytics } from "@/hooks/store/use-analytics";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { AnalyticsService } from "@/services/analytics.service";
-import { exportCSV, exportTimeLoggedCsv } from "../export";
+import { exportCSV } from "../export";
 import { DataTable } from "../insight-table/data-table";
 import { ChartLoader } from "../loaders";
 import { generateBarColor } from "./utils";
-
-declare module "@tanstack/react-table" {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
-    export: {
-      key: string;
-      value: (row: Row<TData>) => string | number;
-      label?: string;
-    };
-  }
-}
 
 interface Props {
   x_axis: ChartXAxisProperty;
@@ -166,7 +158,7 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
     [props.x_axis]
   );
 
-  const defaultColumns: ColumnDef<TChartDatum>[] = useMemo(
+  const defaultColumns: LegacyColumnDef<TChartDatum>[] = useMemo(
     () => [
       {
         accessorKey: "name",
@@ -199,7 +191,7 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
     [countLabel, props.y_axis, xAxisLabel]
   );
 
-  const columns: ColumnDef<TChartDatum>[] = useMemo(
+  const columns: LegacyColumnDef<TChartDatum>[] = useMemo(
     () =>
       parsedData
         ? Object.keys(parsedData?.schema ?? {}).map((key) => ({
@@ -247,7 +239,7 @@ const AnalyticsBarChart = observer(function PriorityChart(props: Props) {
             data={parsedData.data}
             columns={[...defaultColumns, ...columns]}
             searchPlaceholder={`${parsedData.data.length} ${xAxisLabel}`}
-            actions={(table: Table<TChartDatum>) => (
+            actions={(table: LegacyTable<TChartDatum>) => (
               <Button
                 variant="secondary"
                 size="sm"

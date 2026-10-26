@@ -165,7 +165,7 @@ jobs:
 
       - id: checkout_files
         name: Checkout Files
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
 
   # Native per-architecture image builds.
   #
@@ -500,7 +500,7 @@ jobs:
       aio_build_version: ${{ steps.prepare_aio_assets.outputs.AIO_BUILD_VERSION }}
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
 
       - name: Prepare AIO Assets
         id: prepare_aio_assets
@@ -520,7 +520,7 @@ jobs:
           printf 'AIO_BUILD_VERSION=%s\n' "$aio_version" >> "$GITHUB_OUTPUT"
 
       - name: Upload AIO Assets
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           path: ./deployments/aio/community/dist
           name: aio-assets-dist
@@ -603,7 +603,7 @@ jobs:
       - branch_merge_proxy
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
 
       - name: Update Assets
         env:
@@ -622,7 +622,7 @@ jobs:
           # sed -i 's/APP_RELEASE=stable/APP_RELEASE='${REL_VERSION}'/g' deployments/cli/community/variables.env
 
       - name: Upload Assets
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: community-assets
           path: |
@@ -658,7 +658,7 @@ jobs:
       REL_VERSION: ${{ needs.branch_build_setup.outputs.release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
 
       - name: Update Assets
         run: |
@@ -668,7 +668,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v2.6.1
+        uses: softprops/action-gh-release@v3.0.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:

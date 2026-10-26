@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { observable, action, makeObservable, runInAction, computed, reaction } from "mobx";
+import { action, makeObservable, runInAction, computed, reaction, observable } from "mobx";
 
 // helpers
 import { computedFn } from "mobx-utils";

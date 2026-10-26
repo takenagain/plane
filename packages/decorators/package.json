@@ -21,13 +21,13 @@
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist"
   },
   "devDependencies": {
-    "@plane/typescript-config": "workspace:^1.3.1",
+    "@plane/typescript-config": "workspace:*",
     "@types/express": "5.0.6",
-    "@types/node": "26.1.0",
-    "@types/ws": "8.18.1",
-    "reflect-metadata": "0.2.2",
-    "tsdown": "0.22.3",
-    "typescript": "6.0.3"
+    "@types/node": "catalog:",
+    "@types/ws": "catalog:",
+    "reflect-metadata": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
   },
   "inlinedDependencies": {
     "reflect-metadata": "0.2.2"

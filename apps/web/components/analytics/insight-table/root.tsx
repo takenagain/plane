@@ -4,7 +4,9 @@
  * See the LICENSE file for details.
  */
 
-import type { ColumnDef, Row, Table } from "@tanstack/react-table";
+/* oxlint-disable react/no-unstable-nested-components -- TanStack Table consumes this actions render callback. */
+
+import type { LegacyColumnDef, LegacyRow, LegacyTable } from "@tanstack/react-table/legacy";
 import { DownloadOutline } from "@makeplane/propel/icons";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@makeplane/propel/components/button";
@@ -16,10 +18,10 @@ interface InsightTableProps<T extends Exclude<TAnalyticsTabsBase, "overview">> {
   analyticsType: T;
   data?: AnalyticsTableDataMap[T][];
   isLoading?: boolean;
-  columns: ColumnDef<AnalyticsTableDataMap[T]>[];
+  columns: LegacyColumnDef<AnalyticsTableDataMap[T]>[];
   columnsLabels?: Record<string, string>;
   headerText: string;
-  onExport?: (rows: Row<AnalyticsTableDataMap[T]>[]) => void;
+  onExport?: (rows: LegacyRow<AnalyticsTableDataMap[T]>[]) => void;
 }
 
 export function InsightTable<T extends Exclude<TAnalyticsTabsBase, "overview">>(
@@ -37,7 +39,7 @@ export function InsightTable<T extends Exclude<TAnalyticsTabsBase, "overview">>(
         columns={columns}
         data={data || []}
         searchPlaceholder={`${data?.length || 0} ${headerText}`}
-        actions={(table: Table<AnalyticsTableDataMap[T]>) => (
+        actions={(table: LegacyTable<AnalyticsTableDataMap[T]>) => (
           <Button
             variant="secondary"
             size="sm"

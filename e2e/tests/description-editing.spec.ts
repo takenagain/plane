@@ -144,7 +144,7 @@ test.describe.serial("Create New Issue – description editor", () => {
   test("description field is editable in the Create New Issue modal", async ({ page }) => {
     await navigateToProjectIssues(page, workspaceSlug, projectId);
 
-    const createBtn = page.locator('[data-ph-element="work_items_header_add_work_item_button"]');
+    const createBtn = page.getByRole("button", { name: "Add work item", exact: true });
     await expect(createBtn).toBeVisible({ timeout: 15_000 });
     await createBtn.click();
 

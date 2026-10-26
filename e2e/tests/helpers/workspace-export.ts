@@ -3,7 +3,7 @@ import { expect } from "@playwright/test";
 import { API_BASE_URL, BASE_URL, signInAndEnsureWorkspace, signInViaApi, waitForPageLoad } from "./time-tracking";
 
 export const EXPORTS_HEADING = "Exports";
-export const EXPORT_ALL_PROJECTS_LABEL = "Export all projects";
+export const EXPORT_ALL_PROJECTS_LABEL = "All projects";
 export const PREVIOUS_EXPORTS_HEADING = "Previous exports";
 export const EXPORT_SUCCESS_TITLE = "Export successful";
 
@@ -48,10 +48,11 @@ export async function waitForExportIssuesPost(page: Page, workspaceSlug: string)
 }
 
 export async function clickExportAllProjects(page: Page): Promise<void> {
-  const exportAllButton = page.getByRole("button", { name: EXPORT_ALL_PROJECTS_LABEL });
-  await expect(exportAllButton).toBeVisible({ timeout: 15_000 });
-  await expect(exportAllButton).toBeEnabled();
-  await exportAllButton.click();
+  const form = exportFormLocator(page);
+  const exportButton = form.getByRole("button", { name: "Export", exact: true });
+  await expect(page.getByRole("button", { name: EXPORT_ALL_PROJECTS_LABEL })).toBeVisible({ timeout: 15_000 });
+  await expect(exportButton).toBeEnabled();
+  await exportButton.click();
 }
 
 export async function ensureSignedIn(page: Page): Promise<void> {
@@ -73,7 +74,7 @@ function exportFormLocator(page: Page) {
 
 export async function selectExportFormat(page: Page, formatLabel: string): Promise<void> {
   const form = exportFormLocator(page);
-  const formatButton = form.getByRole("button", { name: /^(CSV|JSON|Excel)$/ }).first();
+  const formatButton = form.getByRole("combobox").first();
   await expect(formatButton).toBeVisible({ timeout: 15_000 });
   await formatButton.click();
   await page.getByRole("option", { name: formatLabel, exact: true }).click();
@@ -82,7 +83,7 @@ export async function selectExportFormat(page: Page, formatLabel: string): Promi
 
 export async function assertExportFormVisible(page: Page): Promise<void> {
   await expect(page.getByText("Exporting project", { exact: false })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Format", level: 4 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Format", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: EXPORT_ALL_PROJECTS_LABEL })).toBeVisible();
 }

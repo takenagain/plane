@@ -1,5 +1,5 @@
-import { autoUpdate, computePosition, flip, shift } from "@floating-ui/react-dom";
-import type { Placement } from "@floating-ui/react-dom";
+import { autoUpdate, computePosition, flip, shift } from "@floating-ui/dom";
+import type { Placement } from "@floating-ui/dom";
 import { useEffect, useLayoutEffect, useState } from "react";
 
 export type { Placement };

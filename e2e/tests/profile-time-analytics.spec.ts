@@ -165,7 +165,10 @@ test.describe.serial("Profile time analytics (Hours logged)", () => {
       .catch(() => false);
     if (hasEmpty) return;
 
-    const exportButton = page.getByRole("button", { name: /export as csv/i }).first();
+    const exportButton = page
+      .getByTestId("profile-time-customized-insights")
+      .getByRole("button", { name: /export as csv/i })
+      .first();
     await expect(exportButton).toBeVisible({ timeout: 15_000 });
 
     const downloadPromise = page.waitForEvent("download", { timeout: 15_000 }).catch(() => null);

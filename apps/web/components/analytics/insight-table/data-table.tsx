@@ -5,22 +5,17 @@
  */
 
 import * as React from "react";
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  Table as TanstackTable,
-} from "@tanstack/react-table";
+import type { LegacyColumnDef, LegacyTable } from "@tanstack/react-table/legacy";
+import type { ColumnFiltersState, RowData, SortingState, ColumnVisibilityState } from "@tanstack/table-core";
+import { flexRender } from "@tanstack/react-table";
 import {
-  flexRender,
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFilteredRowModel,
   getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+  useLegacyTable,
+} from "@tanstack/react-table/legacy";
 
 import { useTranslation } from "@plane/i18n";
 import { EmptyStateCompact } from "@plane/blocks/empty-state";
@@ -31,23 +26,23 @@ import { TableCell, TableHead } from "@makeplane/propel/elements/table";
 import { cn } from "@plane/utils";
 // plane web components
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData extends RowData> {
+  columns: LegacyColumnDef<TData>[];
   data: TData[];
   searchPlaceholder: string;
-  actions?: (table: TanstackTable<TData>) => React.ReactNode;
+  actions?: (table: LegacyTable<TData>) => React.ReactNode;
 }
 
-export function DataTable<TData, TValue>({ columns, data, searchPlaceholder, actions }: DataTableProps<TData, TValue>) {
+export function DataTable<TData extends RowData>({ columns, data, searchPlaceholder, actions }: DataTableProps<TData>) {
   const [rowSelection, _setRowSelection] = React.useState({});
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, _setSorting] = React.useState<SortingState>([]);
   const { t } = useTranslation();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
 
-  const table = useReactTable({
+  const table = useLegacyTable({
     data,
     columns,
     state: {

@@ -5,7 +5,7 @@ x-db-env: &db-env
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-plane}
   POSTGRES_DB: ${POSTGRES_DB:-plane}
   POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-  PGDATA: ${PGDATA:-/var/lib/postgresql/data}
+  PGDATA: ${PGDATA:-/var/lib/postgresql/18/docker}
 
 x-redis-env: &redis-env
   REDIS_HOST: ${REDIS_HOST:-plane-redis}
@@ -178,7 +178,7 @@ services:
 
   # Comment this if you already have a database running
   plane-db:
-    image: postgres:15.7-alpine
+    image: postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
     command: postgres -c 'max_connections=1000'
     deploy:
       replicas: 1
@@ -187,10 +187,10 @@ services:
     environment:
       <<: *db-env
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
 
   plane-redis:
-    image: valkey/valkey:7.2.11-alpine
+    image: valkey/valkey:9.1.2-alpine3.24@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
     deploy:
       replicas: 1
       restart_policy:
@@ -199,7 +199,7 @@ services:
       - redisdata:/data
 
   plane-mq:
-    image: rabbitmq:3.13.6-management-alpine
+    image: rabbitmq:4.2.9-management-alpine@sha256:bab245c7ac4db27a64834e3647ba4fbcbd28a970eece0d4a47a3e6d12cceeff2
     deploy:
       replicas: 1
       restart_policy:
@@ -211,7 +211,7 @@ services:
 
   # Comment this if you using any external s3 compatible storage
   plane-minio:
-    image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    image: docker.io/pgsty/silo:RELEASE.2026-10-18T00-00-00Z@sha256:2636fc4155d9a7e41ff58cdb65ddd13ba9304e67184e13c25bc5cb34016269d7
     command: server /export --console-address ":9090"
     deploy:
       replicas: 1

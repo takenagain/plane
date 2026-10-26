@@ -69,7 +69,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
   const { workspaceProjectIds, getProjectById } = useProject();
   const { t } = useTranslation();
   // form
-  const { handleSubmit, control, setValue, getValues } = useForm<FormData>({
+  const { handleSubmit, control } = useForm<FormData>({
     defaultValues: {
       provider: EXPORTERS_LIST[0],
       project: [],
@@ -91,19 +91,13 @@ export const ExportForm = observer(function ExportForm(props: Props) {
   }));
 
   // handlers
-  async function handleExportAllProjects() {
-    setValue("project", []);
-    setValue("multiple", true);
-    await ExportCSVToMail({ ...getValues(), project: [], multiple: true });
-  }
-
   async function ExportCSVToMail(formData: FormData) {
     setExportLoading(true);
     if (workspaceSlug && user) {
       const payload = {
         provider: formData.provider.provider,
         project: formData.project,
-        multiple: formData.multiple || formData.project.length > 1,
+        multiple: formData.multiple || formData.project.length !== 1,
         rich_filters: formData.filters,
       };
       try {

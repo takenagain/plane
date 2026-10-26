@@ -1,10 +1,11 @@
 # syntax=docker/dockerfile:1.7
-FROM node:22-alpine AS base
+FROM node:26.12.1-alpine3.24@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS base
 
-# Setup pnpm package manager with corepack and configure global bin directory for caching
+# Node 25+ no longer ships Corepack; install the workspace-pinned pnpm directly.
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
-RUN corepack enable
+ARG PNPM_VERSION=12.15.0
+RUN npm install --global --allow-scripts=pnpm pnpm@${PNPM_VERSION}
 
 # *****************************************************************************
 # STAGE 1: Prune the project
@@ -15,8 +16,8 @@ RUN apk update
 RUN apk add --no-cache libc6-compat
 # Set working directory
 WORKDIR /app
-ARG TURBO_VERSION=2.10.11
-RUN corepack enable pnpm && pnpm add -g turbo@${TURBO_VERSION}
+ARG TURBO_VERSION=2.11.10
+RUN pnpm add --global turbo@${TURBO_VERSION}
 COPY . .
 RUN turbo prune --scope=live --docker
 
@@ -33,8 +34,6 @@ WORKDIR /app
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN corepack enable pnpm
-
 # Copy full directory structure before fetch to ensure all package.json files are available
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json

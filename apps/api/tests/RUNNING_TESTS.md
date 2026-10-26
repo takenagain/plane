@@ -63,10 +63,10 @@ docker compose -f docker-compose-test.yml down -v
 
 | Service      | Image                                               | Purpose                                 |
 | ------------ | --------------------------------------------------- | --------------------------------------- |
-| `test-db`    | `postgres:15.7-alpine`                              | Application database                    |
-| `test-redis` | `valkey/valkey:7.2.11-alpine`                       | Cache / Celery broker                   |
-| `test-mq`    | `rabbitmq:3.13.6-management-alpine`                 | Task queue                              |
-| `test-minio` | `docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z` | S3-compatible object storage            |
+| `test-db`    | `postgres:18.6-alpine3.24`                          | Application database                    |
+| `test-redis` | `valkey/valkey:9.1.2-alpine3.24`                    | Cache / Celery broker                   |
+| `test-mq`    | `rabbitmq:4.2.9-management-alpine`                  | Task queue                              |
+| `test-minio` | `docker.io/pgsty/silo:RELEASE.2026-10-18T00-00-00Z` | S3-compatible object storage            |
 | `api-tests`  | built from `apps/api/Dockerfile.dev`                | `uv sync`s the locked deps, runs pytest |
 
 All four dependencies expose health checks; `api-tests` waits for `service_healthy` on each via `depends_on`, so pytest only starts once the stack is ready.

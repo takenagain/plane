@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Effect } from "effect";
+import { Context, Effect, Layer } from "effect";
 import sharp from "sharp";
 import { getAllDocumentFormatsFromDocumentEditorBinaryData } from "@plane/editor/lib";
 import type { PDFExportMetadata, TipTapDocument } from "@/lib/pdf";
@@ -35,269 +35,275 @@ type TipTapNode = {
 /**
  * PDF Export Service
  */
-export class PdfExportService extends Effect.Service<PdfExportService>()("PdfExportService", {
-  sync: () => ({
-    /**
-     * Determines document type
-     */
-    getDocumentType: (_input: PdfExportInput): TDocumentTypes => {
-      return "project_page";
-    },
+const pdfExportServiceImplementation = {
+  /**
+   * Determines document type
+   */
+  getDocumentType: (_input: PdfExportInput): TDocumentTypes => {
+    return "project_page";
+  },
 
-    /**
-     * Extracts image asset IDs from document content
-     */
-    extractImageAssetIds: (doc: TipTapNode): string[] => {
-      const assetIds: string[] = [];
+  /**
+   * Extracts image asset IDs from document content
+   */
+  extractImageAssetIds: (doc: TipTapNode): string[] => {
+    const assetIds: string[] = [];
 
-      const traverse = (node: TipTapNode) => {
-        if ((node.type === "imageComponent" || node.type === "image") && node.attrs?.src) {
-          const src = node.attrs.src as string;
-          if (src && !src.startsWith("http") && !src.startsWith("data:")) {
-            assetIds.push(src);
-          }
+    const traverse = (node: TipTapNode) => {
+      if ((node.type === "imageComponent" || node.type === "image") && node.attrs?.src) {
+        const src = node.attrs.src as string;
+        if (src && !src.startsWith("http") && !src.startsWith("data:")) {
+          assetIds.push(src);
         }
-        if (node.content) {
-          for (const child of node.content) {
-            traverse(child);
-          }
+      }
+      if (node.content) {
+        for (const child of node.content) {
+          traverse(child);
         }
-      };
+      }
+    };
 
-      traverse(doc);
-      return [...new Set(assetIds)];
-    },
+    traverse(doc);
+    return [...new Set(assetIds)];
+  },
 
-    /**
-     * Fetches page content (description binary) and parses it
-     */
-    fetchPageContent: (
-      pageService: ReturnType<typeof getPageService>,
-      pageId: string,
-      requestId: string
-    ): Effect.Effect<PageContent, PdfContentFetchError | PdfTimeoutError> =>
-      Effect.gen(function* () {
-        yield* Effect.logDebug("PDF_EXPORT: Fetching page content", { requestId, pageId });
+  /**
+   * Fetches page content (description binary) and parses it
+   */
+  fetchPageContent: (
+    pageService: ReturnType<typeof getPageService>,
+    pageId: string,
+    requestId: string
+  ): Effect.Effect<PageContent, PdfContentFetchError | PdfTimeoutError> =>
+    Effect.gen(function* () {
+      yield* Effect.logDebug("PDF_EXPORT: Fetching page content", { requestId, pageId });
 
-        const descriptionBinary = yield* tryAsync(
-          () => pageService.fetchDescriptionBinary(pageId),
-          (cause) =>
-            new PdfContentFetchError({
-              message: "Failed to fetch page content",
-              cause,
-            })
-        ).pipe(
-          withTimeoutAndRetry("fetch page content", {
-            timeoutMs: CONTENT_FETCH_TIMEOUT_MS,
-            maxRetries: 3,
+      const descriptionBinary = yield* tryAsync(
+        () => pageService.fetchDescriptionBinary(pageId),
+        (cause) =>
+          new PdfContentFetchError({
+            message: "Failed to fetch page content",
+            cause,
+          })
+      ).pipe(
+        withTimeoutAndRetry("fetch page content", {
+          timeoutMs: CONTENT_FETCH_TIMEOUT_MS,
+          maxRetries: 3,
+        })
+      );
+
+      if (!descriptionBinary) {
+        return yield* Effect.fail(
+          new PdfContentFetchError({
+            message: "Page content not found",
           })
         );
+      }
 
-        if (!descriptionBinary) {
-          return yield* Effect.fail(
-            new PdfContentFetchError({
-              message: "Page content not found",
-            })
-          );
-        }
+      const binaryData = new Uint8Array(descriptionBinary);
+      const { contentJSON, titleHTML } = getAllDocumentFormatsFromDocumentEditorBinaryData(binaryData, true);
 
-        const binaryData = new Uint8Array(descriptionBinary);
-        const { contentJSON, titleHTML } = getAllDocumentFormatsFromDocumentEditorBinaryData(binaryData, true);
+      return {
+        contentJSON: contentJSON as TipTapDocument,
+        titleHTML: titleHTML || null,
+        descriptionBinary,
+      };
+    }),
 
-        return {
-          contentJSON: contentJSON as TipTapDocument,
-          titleHTML: titleHTML || null,
-          descriptionBinary,
-        };
-      }),
+  /**
+   * Fetches user mentions for the page
+   */
+  fetchUserMentions: (
+    pageService: ReturnType<typeof getPageService>,
+    pageId: string,
+    requestId: string
+  ): Effect.Effect<MetadataResult> =>
+    Effect.gen(function* () {
+      yield* Effect.logDebug("PDF_EXPORT: Fetching user mentions", { requestId });
 
-    /**
-     * Fetches user mentions for the page
-     */
-    fetchUserMentions: (
-      pageService: ReturnType<typeof getPageService>,
-      pageId: string,
-      requestId: string
-    ): Effect.Effect<MetadataResult> =>
-      Effect.gen(function* () {
-        yield* Effect.logDebug("PDF_EXPORT: Fetching user mentions", { requestId });
+      const userMentionsRaw = yield* tryAsync(
+        async () => {
+          if (pageService.fetchUserMentions) {
+            return await pageService.fetchUserMentions(pageId);
+          }
+          return [];
+        },
+        () => []
+      ).pipe(recoverWithDefault([] as Array<{ id: string; display_name: string; avatar_url?: string }>));
 
-        const userMentionsRaw = yield* tryAsync(
-          async () => {
-            if (pageService.fetchUserMentions) {
-              return await pageService.fetchUserMentions(pageId);
-            }
-            return [];
-          },
-          () => []
-        ).pipe(recoverWithDefault([] as Array<{ id: string; display_name: string; avatar_url?: string }>));
+      return {
+        userMentions: userMentionsRaw.map((u) => ({
+          id: u.id,
+          display_name: u.display_name,
+          avatar_url: u.avatar_url,
+        })),
+      };
+    }),
 
-        return {
-          userMentions: userMentionsRaw.map((u) => ({
-            id: u.id,
-            display_name: u.display_name,
-            avatar_url: u.avatar_url,
-          })),
-        };
-      }),
+  /**
+   * Resolves and processes images for PDF embedding
+   */
+  processImages: (
+    pageService: ReturnType<typeof getPageService>,
+    workspaceSlug: string,
+    projectId: string | undefined,
+    assetIds: string[],
+    requestId: string
+  ): Effect.Effect<Record<string, string>> =>
+    Effect.gen(function* () {
+      if (assetIds.length === 0) {
+        return {};
+      }
 
-    /**
-     * Resolves and processes images for PDF embedding
-     */
-    processImages: (
-      pageService: ReturnType<typeof getPageService>,
-      workspaceSlug: string,
-      projectId: string | undefined,
-      assetIds: string[],
-      requestId: string
-    ): Effect.Effect<Record<string, string>> =>
-      Effect.gen(function* () {
-        if (assetIds.length === 0) {
-          return {};
-        }
+      yield* Effect.logDebug("PDF_EXPORT: Processing images", {
+        requestId,
+        count: assetIds.length,
+      });
 
-        yield* Effect.logDebug("PDF_EXPORT: Processing images", {
-          requestId,
-          count: assetIds.length,
-        });
+      // Resolve URLs first
+      const resolvedUrlMap = yield* tryAsync(
+        async () => {
+          const urlMap = new Map<string, string>();
+          for (const assetId of assetIds) {
+            // Keep URL signing sequential to avoid a burst of requests to the page service.
+            // oxlint-disable-next-line no-await-in-loop
+            const url = await pageService.resolveImageAssetUrl?.(workspaceSlug, assetId, projectId);
+            if (url) urlMap.set(assetId, url);
+          }
+          return urlMap;
+        },
+        () => new Map<string, string>()
+      ).pipe(recoverWithDefault(new Map<string, string>()));
 
-        // Resolve URLs first
-        const resolvedUrlMap = yield* tryAsync(
-          async () => {
-            const urlMap = new Map<string, string>();
-            for (const assetId of assetIds) {
-              const url = await pageService.resolveImageAssetUrl?.(workspaceSlug, assetId, projectId);
-              if (url) urlMap.set(assetId, url);
-            }
-            return urlMap;
-          },
-          () => new Map<string, string>()
-        ).pipe(recoverWithDefault(new Map<string, string>()));
+      if (resolvedUrlMap.size === 0) {
+        return {};
+      }
 
-        if (resolvedUrlMap.size === 0) {
-          return {};
-        }
-
-        // Process each image
-        const processSingleImage = ([assetId, url]: [string, string]) =>
-          Effect.gen(function* () {
-            const response = yield* tryAsync(
-              () => fetch(url),
-              (cause) =>
-                new PdfImageProcessingError({
-                  message: "Failed to fetch image",
-                  assetId,
-                  cause,
-                })
-            );
-
-            if (!response.ok) {
-              return yield* Effect.fail(
-                new PdfImageProcessingError({
-                  message: `Image fetch returned ${response.status}`,
-                  assetId,
-                })
-              );
-            }
-
-            const arrayBuffer = yield* tryAsync(
-              () => response.arrayBuffer(),
-              (cause) =>
-                new PdfImageProcessingError({
-                  message: "Failed to read image body",
-                  assetId,
-                  cause,
-                })
-            );
-
-            const processedBuffer = yield* tryAsync(
-              () =>
-                sharp(Buffer.from(arrayBuffer))
-                  .rotate()
-                  .flatten({ background: { r: 255, g: 255, b: 255 } })
-                  .resize(IMAGE_MAX_DIMENSION, IMAGE_MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
-                  .jpeg({ quality: 85 })
-                  .toBuffer(),
-              (cause) =>
-                new PdfImageProcessingError({
-                  message: "Failed to process image",
-                  assetId,
-                  cause,
-                })
-            );
-
-            const base64 = processedBuffer.toString("base64");
-            return [assetId, `data:image/jpeg;base64,${base64}`] as const;
-          }).pipe(
-            withTimeoutAndRetry(`process image ${assetId}`, {
-              timeoutMs: IMAGE_TIMEOUT_MS,
-              maxRetries: 1,
-            }),
-            Effect.tapError((error) =>
-              Effect.logWarning("PDF_EXPORT: Image processing failed", {
-                requestId,
+      // Process each image
+      const processSingleImage = ([assetId, url]: [string, string]) =>
+        Effect.gen(function* () {
+          const response = yield* tryAsync(
+            () => fetch(url),
+            (cause) =>
+              new PdfImageProcessingError({
+                message: "Failed to fetch image",
                 assetId,
-                error,
+                cause,
               })
-            ),
-            Effect.catchAll(() => Effect.succeed(null as readonly [string, string] | null))
           );
 
-        const entries = Array.from(resolvedUrlMap.entries());
-        const pairs = yield* Effect.forEach(entries, processSingleImage, {
-          concurrency: IMAGE_CONCURRENCY,
-        });
+          if (!response.ok) {
+            return yield* Effect.fail(
+              new PdfImageProcessingError({
+                message: `Image fetch returned ${response.status}`,
+                assetId,
+              })
+            );
+          }
 
-        const filtered = pairs.filter((p): p is readonly [string, string] => p !== null);
-        return Object.fromEntries(filtered);
-      }),
+          const arrayBuffer = yield* tryAsync(
+            () => response.arrayBuffer(),
+            (cause) =>
+              new PdfImageProcessingError({
+                message: "Failed to read image body",
+                assetId,
+                cause,
+              })
+          );
 
-    /**
-     * Renders document to PDF buffer
-     */
-    renderPdf: (
-      contentJSON: TipTapDocument,
-      metadata: PDFExportMetadata,
-      options: {
-        title?: string;
-        author?: string;
-        subject?: string;
-        pageSize?: "A4" | "A3" | "A2" | "LETTER" | "LEGAL" | "TABLOID";
-        pageOrientation?: "portrait" | "landscape";
-        noAssets?: boolean;
-      },
-      requestId: string
-    ): Effect.Effect<Buffer, PdfGenerationError | PdfTimeoutError> =>
-      Effect.gen(function* () {
-        yield* Effect.logDebug("PDF_EXPORT: Rendering PDF", { requestId });
+          const processedBuffer = yield* tryAsync(
+            () =>
+              sharp(Buffer.from(arrayBuffer))
+                .rotate()
+                .flatten({ background: { r: 255, g: 255, b: 255 } })
+                .resize(IMAGE_MAX_DIMENSION, IMAGE_MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
+                .jpeg({ quality: 85 })
+                .toBuffer(),
+            (cause) =>
+              new PdfImageProcessingError({
+                message: "Failed to process image",
+                assetId,
+                cause,
+              })
+          );
 
-        const pdfBuffer = yield* tryAsync(
-          () =>
-            renderPlaneDocToPdfBuffer(contentJSON, {
-              title: options.title,
-              author: options.author,
-              subject: options.subject,
-              pageSize: options.pageSize,
-              pageOrientation: options.pageOrientation,
-              metadata,
-              noAssets: options.noAssets,
-            }),
-          (cause) =>
-            new PdfGenerationError({
-              message: "Failed to render PDF",
-              cause,
+          const base64 = processedBuffer.toString("base64");
+          return [assetId, `data:image/jpeg;base64,${base64}`] as const;
+        }).pipe(
+          withTimeoutAndRetry(`process image ${assetId}`, {
+            timeoutMs: IMAGE_TIMEOUT_MS,
+            maxRetries: 1,
+          }),
+          Effect.tapError((error) =>
+            Effect.logWarning("PDF_EXPORT: Image processing failed", {
+              requestId,
+              assetId,
+              error,
             })
-        ).pipe(withTimeoutAndRetry("render PDF", { timeoutMs: PDF_RENDER_TIMEOUT_MS, maxRetries: 0 }));
+          ),
+          Effect.catch(() => Effect.succeed(null as readonly [string, string] | null))
+        );
 
-        yield* Effect.logInfo("PDF_EXPORT: PDF rendered successfully", {
-          requestId,
-          size: pdfBuffer.length,
-        });
+      const entries = Array.from(resolvedUrlMap.entries());
+      const pairs = yield* Effect.forEach(entries, processSingleImage, {
+        concurrency: IMAGE_CONCURRENCY,
+      });
 
-        return pdfBuffer;
-      }),
-  }),
-}) {}
+      const filtered = pairs.filter((p): p is readonly [string, string] => p !== null);
+      return Object.fromEntries(filtered);
+    }),
+
+  /**
+   * Renders document to PDF buffer
+   */
+  renderPdf: (
+    contentJSON: TipTapDocument,
+    metadata: PDFExportMetadata,
+    options: {
+      title?: string;
+      author?: string;
+      subject?: string;
+      pageSize?: "A4" | "A3" | "A2" | "LETTER" | "LEGAL" | "TABLOID";
+      pageOrientation?: "portrait" | "landscape";
+      noAssets?: boolean;
+    },
+    requestId: string
+  ): Effect.Effect<Buffer, PdfGenerationError | PdfTimeoutError> =>
+    Effect.gen(function* () {
+      yield* Effect.logDebug("PDF_EXPORT: Rendering PDF", { requestId });
+
+      const pdfBuffer = yield* tryAsync(
+        () =>
+          renderPlaneDocToPdfBuffer(contentJSON, {
+            title: options.title,
+            author: options.author,
+            subject: options.subject,
+            pageSize: options.pageSize,
+            pageOrientation: options.pageOrientation,
+            metadata,
+            noAssets: options.noAssets,
+          }),
+        (cause) =>
+          new PdfGenerationError({
+            message: "Failed to render PDF",
+            cause,
+          })
+      ).pipe(withTimeoutAndRetry("render PDF", { timeoutMs: PDF_RENDER_TIMEOUT_MS, maxRetries: 0 }));
+
+      yield* Effect.logInfo("PDF_EXPORT: PDF rendered successfully", {
+        requestId,
+        size: pdfBuffer.length,
+      });
+
+      return pdfBuffer;
+    }),
+};
+
+export class PdfExportService extends Context.Service<PdfExportService, typeof pdfExportServiceImplementation>()(
+  "PdfExportService"
+) {}
+
+export const PdfExportServiceLive = Layer.succeed(PdfExportService)(pdfExportServiceImplementation);
 
 /**
  * Main export pipeline - orchestrates the entire PDF export process

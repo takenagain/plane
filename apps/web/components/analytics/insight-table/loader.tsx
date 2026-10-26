@@ -5,18 +5,20 @@
  */
 
 import * as React from "react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef } from "@tanstack/react-table/legacy";
+import type { RowData } from "@tanstack/table-core";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@makeplane/propel/components/table";
 import { Loader } from "@plane/blocks/skeleton";
 
-interface TableSkeletonProps {
-  columns: ColumnDef<any>[];
+interface TableSkeletonProps<TData extends RowData> {
+  columns: LegacyColumnDef<TData>[];
   rows: number;
 }
 
-const getColumnKey = (column: ColumnDef<any>) => column.id ?? String(column.header ?? "");
+const getColumnKey = <TData extends RowData>(column: LegacyColumnDef<TData>) =>
+  column.id ?? String(column.header ?? "");
 
-export function TableLoader({ columns, rows }: TableSkeletonProps) {
+export function TableLoader<TData extends RowData>({ columns, rows }: TableSkeletonProps<TData>) {
   const rowKeys = Array.from({ length: rows }, (_, rowIndex) => `skeleton-row-${rowIndex}`);
 
   return (

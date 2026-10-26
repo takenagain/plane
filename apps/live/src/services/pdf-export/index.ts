@@ -4,6 +4,6 @@
  * See the LICENSE file for details.
  */
 
-export { PdfExportService, exportToPdf } from "./pdf-export.service";
+export { PdfExportService, PdfExportServiceLive, exportToPdf } from "./pdf-export.service";
 export * from "./effect-utils";
 export * from "./types";

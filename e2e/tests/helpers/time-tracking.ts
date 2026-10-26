@@ -315,7 +315,6 @@ export function tryEnsureE2ESeedData(): { workspaceSlug: string; projectId: stri
 }
 
 export async function waitForPageLoad(page: Page) {
-  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   await page.waitForLoadState("domcontentloaded");
 }
 
@@ -423,7 +422,7 @@ async function resolveWorkspaceSlugWithProjectAccess(page: Page, preferredSlug =
   try {
     const workspaceEndpoints = ["/api/users/me/workspaces/", "/api/workspaces/"];
     for (const endpoint of workspaceEndpoints) {
-      const workspacesResponse = await page.request.get(`${BASE_URL}${endpoint}`);
+      const workspacesResponse = await page.request.get(`${API_BASE_URL}${endpoint}`);
       if (!workspacesResponse.ok()) {
         continue;
       }
@@ -441,7 +440,7 @@ async function resolveWorkspaceSlugWithProjectAccess(page: Page, preferredSlug =
 
   for (const slug of candidateSlugs) {
     try {
-      const projectsResponse = await page.request.get(`${BASE_URL}/api/workspaces/${slug}/projects/`);
+      const projectsResponse = await page.request.get(`${API_BASE_URL}/api/workspaces/${slug}/projects/`);
       if (projectsResponse.ok()) {
         return slug;
       }

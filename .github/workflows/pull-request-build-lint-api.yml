@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - uses: ./.github/actions/authorize-pr
 
   lint-api:
@@ -42,14 +42,14 @@ jobs:
       (needs.authorize.result == 'success' || github.event_name != 'pull_request') &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           # uv version comes from [tool.uv] required-version.
           version-file: "apps/api/pyproject.toml"
           # Same patch release as the production image (python:3.12.12-alpine).
-          python-version: "3.12.12"
+          python-version: "3.15.1"
           enable-cache: true
           cache-dependency-glob: "apps/api/uv.lock"
       # Only the dev group (ruff) is needed to lint. --locked still fails the

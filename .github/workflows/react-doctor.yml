@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - uses: ./.github/actions/authorize-pr
 
   react-doctor:
@@ -56,7 +56,7 @@ jobs:
     needs: authorize
     if: always() && (needs.authorize.result == 'success' || github.event_name != 'pull_request')
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
         with:
           # React Doctor diffs the changed files against the merge base so it
           # only reports what the PR introduces. The default shallow checkout
@@ -68,7 +68,7 @@ jobs:
           # it needs, and it talks to the API through its own credentials.
           persist-credentials: false
 
-      - uses: millionco/react-doctor@v2
+      - uses: millionco/react-doctor@v2.4.0
         # Common configuration knobs — uncomment any to override the default.
         # Full reference: https://www.react.doctor/ci
         # with:

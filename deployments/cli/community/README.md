@@ -323,6 +323,41 @@ Once done, choose `8` to exit from prompt.
 
 Once done with making changes in `plane.env` file, jump on to `Start Server`
 
+#### Stateful service major upgrades
+
+This release uses PostgreSQL 18.6, Valkey 9.1.2, and RabbitMQ 4.2.9. Back up the
+instance before upgrading. PostgreSQL 18 stores its cluster under
+`/var/lib/postgresql/18/docker`; this is a new cluster path, so an older cluster
+is not upgraded automatically when the image changes.
+
+Before selecting **Upgrade**, create a logical PostgreSQL backup from the
+currently running instance:
+
+```bash
+docker compose exec -T plane-db sh -c 'pg_dumpall -U "$POSTGRES_USER"' > plane-postgres-before-18.sql
+```
+
+After the setup script downloads the new compose file, start only the new
+database, restore the dump, and then start the full Plane stack:
+
+```bash
+docker compose up -d plane-db
+docker compose exec -T plane-db sh -c 'psql -U "$POSTGRES_USER" -d postgres' < plane-postgres-before-18.sql
+./setup.sh
+```
+
+Keep the dump and the old PostgreSQL data directory until the restored database
+and application have been verified. The old cluster remains at the root of the
+existing `pgdata` volume. Rolling back requires restoring the previous image,
+volume mount path, and `PGDATA` value together.
+
+RabbitMQ also has persistent state. Its 3.13 to 4.2 upgrade must follow the
+supported RabbitMQ upgrade path, including the required feature-flag and version
+steps; do not remove or reuse its volume as an empty queue. Back up the volume
+and follow the [RabbitMQ upgrade guide](https://www.rabbitmq.com/docs/upgrade)
+before starting the new image. Keep the Valkey data volume and a backup until
+the upgraded service has passed health checks.
+
 #### Docker Swarm
 
 Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `5` to upgrade the release.

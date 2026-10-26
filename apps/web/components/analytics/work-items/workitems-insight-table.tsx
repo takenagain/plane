@@ -4,8 +4,10 @@
  * See the LICENSE file for details.
  */
 
+/* oxlint-disable react/no-unstable-nested-components -- TanStack Table consumes these header and cell render callbacks. */
+
 import { useMemo } from "react";
-import type { ColumnDef, Row, RowData } from "@tanstack/react-table";
+import type { LegacyColumnDef, LegacyRow } from "@tanstack/react-table/legacy";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
@@ -27,17 +29,6 @@ import { exportCSV } from "../export";
 import { InsightTable } from "../insight-table";
 
 const analyticsService = new AnalyticsService();
-
-declare module "@tanstack/react-table" {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
-    export: {
-      key: string;
-      value: (row: Row<TData>) => string | number;
-      label?: string;
-    };
-  }
-}
 
 const WorkItemsInsightTable = observer(function WorkItemsInsightTable() {
   // router
@@ -77,7 +68,7 @@ const WorkItemsInsightTable = observer(function WorkItemsInsightTable() {
       }),
       [t]
     );
-  const columns: ColumnDef<AnalyticsTableDataMap["work-items"]>[] = useMemo(
+  const columns: LegacyColumnDef<AnalyticsTableDataMap["work-items"]>[] = useMemo(
     () => [
       !isPeekView
         ? {
@@ -106,7 +97,7 @@ const WorkItemsInsightTable = observer(function WorkItemsInsightTable() {
         : {
             accessorKey: "display_name",
             header: () => <div className="text-left">{columnsLabels["display_name"]}</div>,
-            cell: ({ row }: { row: Row<WorkItemInsightColumns> }) => (
+            cell: ({ row }: { row: LegacyRow<WorkItemInsightColumns> }) => (
               <div className="text-left">
                 <div className="flex items-center gap-2">
                   {row.original.avatar_url && row.original.avatar_url !== "" ? (

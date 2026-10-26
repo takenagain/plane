@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, observable, makeObservable } from "mobx";
+import { action, makeObservable, observable } from "mobx";
 // root store
 import type { RootStore } from "./root.store";
 

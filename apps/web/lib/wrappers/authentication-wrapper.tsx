@@ -5,6 +5,7 @@
  */
 
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 import { useSearchParams, usePathname } from "next/navigation";
 import useSWR from "swr";
@@ -71,6 +72,23 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
   // so instances with MFA disabled/non-enforced are never blocked.
   const MFA_SETUP_ROUTE = "/accounts/setup-2fa";
   const mfaSetupRequired = Boolean(currentUser?.mfa_setup_required) || mfa.forcedSetupRequired;
+  const hasRedirectedToMfaSetup = useRef(false);
+  const shouldRedirectToMfaSetup =
+    pageType === EPageTypes.NON_AUTHENTICATED &&
+    Boolean(currentUser?.id) &&
+    mfaSetupRequired &&
+    pathname !== MFA_SETUP_ROUTE;
+
+  useEffect(() => {
+    if (!shouldRedirectToMfaSetup) {
+      hasRedirectedToMfaSetup.current = false;
+      return;
+    }
+    if (hasRedirectedToMfaSetup.current) return;
+
+    hasRedirectedToMfaSetup.current = true;
+    router.replace(MFA_SETUP_ROUTE);
+  }, [shouldRedirectToMfaSetup, router]);
 
   const getWorkspaceRedirectionUrl = (): string => {
     let redirectionRoute = "/create-workspace";
@@ -107,6 +125,7 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
   if (pageType === EPageTypes.NON_AUTHENTICATED) {
     if (!currentUser?.id) return <>{children}</>;
     else {
+      if (mfaSetupRequired) return <></>;
       if (currentUserProfile?.id && isUserOnboard) {
         const currentRedirectRoute = getWorkspaceRedirectionUrl();
         router.push(currentRedirectRoute);

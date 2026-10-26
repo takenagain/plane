@@ -610,9 +610,8 @@ describe("Select on Propel combobox", () => {
 
   it("sends the first character typed into a closed search-input field to the server search", async () => {
     const user = userEvent.setup();
-    const getValues = vi.fn(
-      (_params: SelectPaginationParams): Promise<TPaginatedResponse<Option[]>> =>
-        Promise.resolve({ results: options.slice(0, 5), next_page_results: false })
+    const getValues = vi.fn((_params: SelectPaginationParams): Promise<TPaginatedResponse<Option[]>> =>
+      Promise.resolve({ results: options.slice(0, 5), next_page_results: false })
     );
     const { field } = renderChipsField({ infinite: true, getValues });
 
@@ -1118,9 +1117,8 @@ describe("Select on Propel combobox", () => {
     const user = userEvent.setup();
     // Base UI empties the in-popup search field after every multi-select pick
     // (`input-clear`), which would otherwise read as the user clearing the query.
-    const getValues = vi.fn(
-      (_params: SelectPaginationParams): Promise<TPaginatedResponse<Option[]>> =>
-        Promise.resolve({ results: options.slice(0, 5), next_page_results: false })
+    const getValues = vi.fn((_params: SelectPaginationParams): Promise<TPaginatedResponse<Option[]>> =>
+      Promise.resolve({ results: options.slice(0, 5), next_page_results: false })
     );
 
     function MultiInfinite() {

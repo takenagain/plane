@@ -4,7 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import type { ColumnDef, Row } from "@tanstack/react-table";
+import type { LegacyColumnDef, LegacyRow } from "@tanstack/react-table/legacy";
+import type { RowData } from "@tanstack/table-core";
 import { download, generateCsv, mkConfig } from "export-to-csv";
 
 export const csvConfig = (workspaceSlug: string) =>
@@ -15,7 +16,11 @@ export const csvConfig = (workspaceSlug: string) =>
     useKeysAsHeaders: true,
   });
 
-export const exportCSV = <T>(rows: Row<T>[], columns: ColumnDef<T>[], workspaceSlug: string) => {
+export const exportCSV = <T extends RowData>(
+  rows: LegacyRow<T>[],
+  columns: LegacyColumnDef<T>[],
+  workspaceSlug: string
+) => {
   const rowData = rows.map((row) => {
     const exportColumns = columns.map((col) => col.meta?.export);
     const cells = exportColumns.reduce((acc: Record<string, string | number>, col) => {

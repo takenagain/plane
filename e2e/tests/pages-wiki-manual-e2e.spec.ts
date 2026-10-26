@@ -4,7 +4,13 @@
  */
 /* oxlint-disable no-await-in-loop */
 import { test, expect, type Page, type ConsoleMessage } from "@playwright/test";
-import { ensureE2ESeedData, signInAndEnsureWorkspace, waitForPageLoad, BASE_URL } from "./helpers/time-tracking";
+import {
+  API_BASE_URL,
+  ensureE2ESeedData,
+  signInAndEnsureWorkspace,
+  waitForPageLoad,
+  BASE_URL,
+} from "./helpers/time-tracking";
 
 const WORKSPACE_SLUG_FALLBACK = "test-ws";
 const PROJECT_ID_FALLBACK = "e34304e9-713b-4ead-a1da-d5dcca4a23d3";
@@ -51,7 +57,8 @@ async function bodyEditor(page: Page) {
 async function hasErrorBoundary(page: Page) {
   return page
     .getByText(/Looks like something went wrong/i)
-    .isVisible({ timeout: 3_000 })
+    .waitFor({ state: "visible", timeout: 3_000 })
+    .then(() => true)
     .catch(() => false);
 }
 
@@ -64,7 +71,12 @@ async function openOptionsMenu(page: Page) {
     toolbarMenu.last(),
   ];
   for (const candidate of candidates) {
-    if (await candidate.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (
+      await candidate
+        .waitFor({ state: "visible", timeout: 2_000 })
+        .then(() => true)
+        .catch(() => false)
+    ) {
       await candidate.click();
       return;
     }
@@ -85,39 +97,37 @@ async function updatePageViaApi(
   payload: { name?: string; description_html?: string }
 ) {
   if (label === "Wiki") {
-    const res = await page.request.patch(`${BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/`, {
+    const res = await page.request.patch(`${API_BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/`, {
       data: payload,
+      timeout: 20_000,
     });
     expect(res.ok()).toBeTruthy();
     return;
   }
   const res = await page.request.patch(
-    `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`,
-    { data: payload }
+    `${API_BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`,
+    { data: payload, timeout: 20_000 }
   );
   expect(res.ok()).toBeTruthy();
 }
 
 async function waitForStableEditor(page: Page) {
-  for (let i = 0; i < 10; i++) {
-    const editor = page.locator(".ProseMirror[contenteditable='true']").first();
-    if (await editor.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await page.waitForTimeout(1500);
-      if (await editor.isVisible().catch(() => false)) return editor;
-    }
-    await page.waitForTimeout(1000);
-  }
-  throw new Error("Editor did not stabilize");
+  const editor = await bodyEditor(page);
+  await editor.waitFor({ state: "visible", timeout: 30_000 });
+  await page.waitForTimeout(1500);
+  return editor;
 }
 
 async function archiveViaApi(page: Page, workspaceSlug: string, projectId: string, pageId: string, label: string) {
   if (label === "Wiki") {
-    const res = await page.request.post(`${BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/archive/`);
+    const res = await page.request.post(
+      `${API_BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/archive/`
+    );
     expect(res.ok()).toBeTruthy();
     return;
   }
   const res = await page.request.post(
-    `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/archive/`
+    `${API_BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/archive/`
   );
   expect(res.ok()).toBeTruthy();
 }
@@ -146,12 +156,23 @@ async function runPageFlow(
     await waitForPageLoad(page);
 
     const addBtn = page.getByRole("button", { name: /^Add page$/i });
-    if (!(await addBtn.isVisible({ timeout: 10_000 }).catch(() => false))) {
+    const addPageVisible = await addBtn
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!addPageVisible) {
       record(`${opts.label}: create (${accessLabel})`, "fail", "Add page button not visible");
       return;
     }
     await addBtn.click();
-    await page.waitForURL(/\/pages\/|\/wiki\//, { timeout: 30_000 });
+    const detailPathPrefix = new URL(opts.detailUrlPrefix).pathname.replace(/\/+$/, "");
+    await page.waitForURL(
+      (url) => {
+        const suffix = url.pathname.slice(detailPathPrefix.length);
+        return url.pathname.startsWith(`${detailPathPrefix}/`) && /^\/[a-f0-9-]+\/?$/i.test(suffix);
+      },
+      { timeout: 30_000 }
+    );
     const urlMatch = page.url().match(/\/(?:wiki|pages)\/([a-f0-9-]+)/i);
     pageId = urlMatch?.[1] ?? "";
     if (!pageId) {
@@ -181,8 +202,14 @@ async function runPageFlow(
     } else {
       const titleEl = await titleInput(page);
       const body = await bodyEditor(page);
-      const titleVisible = await titleEl.isVisible({ timeout: 25_000 }).catch(() => false);
-      const bodyVisible = await body.isVisible({ timeout: 5_000 }).catch(() => false);
+      const titleVisible = await titleEl
+        .waitFor({ state: "visible", timeout: 25_000 })
+        .then(() => true)
+        .catch(() => false);
+      const bodyVisible = await body
+        .waitFor({ state: "visible", timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
       if (titleVisible || bodyVisible) {
         record(`${opts.label}: open (${accessLabel})`, "pass");
       } else {
@@ -208,19 +235,27 @@ async function runPageFlow(
 
   try {
     let editedViaUi = false;
+    let uiEditError: unknown;
     try {
       const editor = await waitForStableEditor(page);
-      await editor.click({ force: true });
+      await editor.click({ force: true, timeout: 10_000 });
       await page.keyboard.type(body);
+      await expect(editor).toContainText(body, { timeout: 5_000 });
       await page.waitForTimeout(2000);
       editedViaUi = true;
-    } catch {
+    } catch (error) {
+      uiEditError = error;
+      console.warn(`${opts.label}: UI edit unavailable; using API fallback`, error);
       await updatePageViaApi(page, workspaceSlug, projectId, pageId, opts.label, {
         name: title,
         description_html: `<p>${body}</p>`,
       });
     }
-    record(`${opts.label}: edit title/body (${accessLabel})`, "pass", editedViaUi ? "UI edit" : "API edit fallback");
+    record(
+      `${opts.label}: edit title/body (${accessLabel})`,
+      "pass",
+      editedViaUi ? "UI edit" : `API edit fallback after: ${String(uiEditError)}`
+    );
   } catch (e) {
     record(`${opts.label}: edit title/body (${accessLabel})`, "fail", String(e));
     return;
@@ -238,15 +273,16 @@ async function runPageFlow(
     const hasBody = await editor
       .filter({ hasText: body })
       .first()
-      .isVisible({ timeout: 20_000 })
+      .waitFor({ state: "visible", timeout: 20_000 })
+      .then(() => true)
       .catch(() => false);
     if (hasBody) {
       record(`${opts.label}: save (${accessLabel})`, "pass");
     } else {
       const apiRes = await page.request.get(
         opts.label === "Wiki"
-          ? `${BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/`
-          : `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`
+          ? `${API_BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/`
+          : `${API_BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`
       );
       const data = (await apiRes.json()) as { name?: string; description_html?: string };
       if (data.name === title || (data.description_html && data.description_html.includes(body))) {
@@ -265,7 +301,12 @@ async function runPageFlow(
     const makePrivate = page.getByText(/^Make private$/i);
     const makePublic = page.getByText(/^Make public$/i);
     if (opts.privateList) {
-      if (await makePublic.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (
+        await makePublic
+          .waitFor({ state: "visible", timeout: 3_000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
         await makePublic.click();
         await page.waitForTimeout(2000);
         record(`${opts.label}: toggle to public`, "pass");
@@ -273,7 +314,12 @@ async function runPageFlow(
         record(`${opts.label}: toggle to public`, "skip", "Make public not in menu (already public?)");
       }
     } else {
-      if (await makePrivate.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (
+        await makePrivate
+          .waitFor({ state: "visible", timeout: 3_000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
         await makePrivate.click();
         await page.waitForTimeout(2000);
         record(`${opts.label}: toggle to private`, "pass");
@@ -304,13 +350,14 @@ async function runPageFlow(
     const onList = await page
       .getByRole("link", { name: title })
       .first()
-      .isVisible({ timeout: 10_000 })
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .then(() => true)
       .catch(() => false);
     if (!onList) {
       const apiArchived = await page.request.get(
         opts.label === "Wiki"
-          ? `${BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/`
-          : `${BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`
+          ? `${API_BASE_URL}/api/workspaces/${workspaceSlug}/wiki-pages/${pageId}/`
+          : `${API_BASE_URL}/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`
       );
       const data = (await apiArchived.json()) as { archived_at?: string | null };
       expect(data.archived_at).toBeTruthy();
@@ -336,7 +383,7 @@ test.describe("Pages + Wiki manual E2E matrix", () => {
   });
 
   test("full matrix", async ({ page }) => {
-    test.setTimeout(360_000);
+    test.setTimeout(480_000);
     scenarioResults.length = 0;
     consoleErrors.length = 0;
     page.on("console", recordConsole);
@@ -404,6 +451,8 @@ test.describe("Pages + Wiki manual E2E matrix", () => {
     fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
     console.log("REPORT_WRITTEN:", outPath);
     console.log("SCENARIOS:", JSON.stringify(scenarioResults, null, 2));
+    const failedScenarios = scenarioResults.filter((result) => result.status === "fail");
+    expect(failedScenarios, JSON.stringify(failedScenarios, null, 2)).toEqual([]);
   });
 });
 

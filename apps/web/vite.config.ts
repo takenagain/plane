@@ -2,7 +2,6 @@ import path from "node:path";
 import * as dotenv from "dotenv";
 import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { sharedAppResolveAliases } from "../../packages/utils/vite/app-resolve-aliases";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -24,8 +23,9 @@ export default defineConfig(() => ({
   build: {
     assetsInlineLimit: 0,
   },
-  plugins: [reactRouter(), tsconfigPaths({ projects: [path.resolve(__dirname, "tsconfig.json")] })],
+  plugins: [reactRouter()],
   resolve: {
+    tsconfigPaths: true,
     alias: {
       ...sharedAppResolveAliases,
       // Next.js compatibility shims used within web

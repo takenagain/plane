@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IAgentConfig, IAgentProvider } from "@plane/types";
-import { ProjectAIAgentSettings } from "../ai-agent-settings";
+import { ProjectAIAgentSettings } from "@/components/settings/project/content/ai-agent-settings";
 
 const mocks = vi.hoisted(() => ({
   getProviderCatalog: vi.fn(),

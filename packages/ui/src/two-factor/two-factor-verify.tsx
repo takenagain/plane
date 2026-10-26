@@ -188,7 +188,7 @@ export function TwoFactorVerify({
             aria-invalid={Boolean(shownError)}
             aria-describedby={shownError ? "mfa-error" : undefined}
             className={cn(
-              "font-mono text-15 placeholder:tracking-normal focus-visible:ring-accent-primary h-10 w-full rounded-md border bg-surface-1 px-3 tracking-[0.4em] text-primary placeholder:text-placeholder focus:outline-none focus-visible:ring-2",
+              "font-mono placeholder:tracking-normal focus-visible:ring-accent-primary h-10 w-full rounded-md border bg-surface-1 px-3 text-15 tracking-[0.4em] text-primary placeholder:text-placeholder focus:outline-none focus-visible:ring-2",
               shownError ? "border-danger-strong" : "border-strong"
             )}
             placeholder="123456"

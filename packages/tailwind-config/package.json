@@ -18,6 +18,6 @@
     "postcss": "catalog:"
   },
   "devDependencies": {
-    "tailwindcss": "4.3.2"
+    "tailwindcss": "catalog:"
   }
 }

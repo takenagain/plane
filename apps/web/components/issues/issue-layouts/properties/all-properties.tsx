@@ -7,6 +7,7 @@
 import type { SyntheticEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { xor } from "lodash-es";
+import { RefreshCw } from "lucide-react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
@@ -16,7 +17,8 @@ import { useTranslation } from "@plane/i18n";
 import { Tooltip } from "@makeplane/propel/components/tooltip";
 import type { DateRangeValue } from "@plane/blocks/property-select";
 import { DateRangeSelect, DateSelect } from "@plane/blocks/property-select";
-import type { TIssue, IIssueDisplayProperties, TIssuePriorities } from "@plane/types";
+import type { TIssue, IIssueDisplayProperties, TIssuePriorities, TIssueRecurrencePattern } from "@plane/types";
+import { CustomSelect, Input } from "@plane/ui";
 // ui
 import { REPEAT_OPTIONS, TEST_REPEAT_OPTIONS } from "@/core/constants/recurrence";
 import {

@@ -1,5 +1,7 @@
+import { execFileSync } from "node:child_process";
 import { expect, test, type Page } from "@playwright/test";
 import { generateE2eTotpCode } from "./helpers/totp";
+import { resolveApiContainerName } from "./helpers/time-tracking";
 
 const API_BASE_URL = process.env.E2E_API_URL ?? process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3003";
 const TEST_PASSWORD = "E2e-Test-Password-123!";
@@ -52,6 +54,30 @@ async function markUserOnboarded(page: Page) {
   expect(response.ok()).toBeTruthy();
 }
 
+function addUserToSeededWorkspace(email: string) {
+  const { runtime, container } = resolveApiContainerName();
+  const script = `
+from plane.db.models.user import User
+from plane.db.models.workspace import Workspace, WorkspaceMember
+
+user = User.objects.get(email=${JSON.stringify(email)})
+workspace = Workspace.objects.get(slug="test-ws")
+WorkspaceMember.objects.update_or_create(
+    workspace=workspace,
+    member=user,
+    defaults={"role": 20, "is_active": True},
+)
+print("MFA_E2E_WORKSPACE_OK")
+`;
+
+  const output = execFileSync(
+    runtime,
+    ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", script],
+    { encoding: "utf-8", cwd: "/" }
+  );
+  expect(output).toContain("MFA_E2E_WORKSPACE_OK");
+}
+
 test.describe("Local 2FA — forced setup", () => {
   test("sign-up, onboarding MFA enrollment, and app access", async ({ page }) => {
     const testEmail = `e2e-mfa-${Date.now()}@plane.test`;
@@ -89,6 +115,7 @@ test.describe("Local 2FA — forced setup", () => {
     expect(signUp.status()).toBeLessThan(400);
 
     await markUserOnboarded(page);
+    addUserToSeededWorkspace(email);
 
     const signOutCsrf = await page.request.get(`${API_BASE_URL}/auth/get-csrf-token/`);
     const signOutCsrfBody = await signOutCsrf.json();
@@ -103,7 +130,7 @@ test.describe("Local 2FA — forced setup", () => {
     await page.locator("#password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: /go to workspace/i }).click();
 
-    await page.waitForURL(/\/accounts\/setup-2fa/, { timeout: 60_000 });
+    await expect(page).toHaveURL(/\/accounts\/setup-2fa/, { timeout: 60_000 });
     await expect(page.getByRole("heading", { name: /set up two-factor authentication/i })).toBeVisible();
   });
 });

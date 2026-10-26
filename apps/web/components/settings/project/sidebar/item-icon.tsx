@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { LucideIcon } from "lucide-react";
+import { Sparkles, type LucideIcon } from "lucide-react";
 import {
   CyclesOutline,
   EstimateOutline,
@@ -35,4 +35,5 @@ export const PROJECT_SETTINGS_ICONS: Record<TProjectSettingsTabs, LucideIcon | R
   labels: LabelsOutline,
   estimates: EstimateOutline,
   automations: TriggerOutline,
+  ai_agent: Sparkles,
 };
