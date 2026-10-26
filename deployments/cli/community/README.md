@@ -326,30 +326,11 @@ Once done with making changes in `plane.env` file, jump on to `Start Server`
 #### Stateful service major upgrades
 
 This release uses PostgreSQL 18.6, Valkey 9.1.2, and RabbitMQ 4.2.9. Back up the
-instance before upgrading. PostgreSQL 18 stores its cluster under
-`/var/lib/postgresql/18/docker`; this is a new cluster path, so an older cluster
-is not upgraded automatically when the image changes.
-
-Before selecting **Upgrade**, create a logical PostgreSQL backup from the
-currently running instance:
-
-```bash
-docker compose exec -T plane-db sh -c 'pg_dumpall -U "$POSTGRES_USER"' > plane-postgres-before-18.sql
-```
-
-After the setup script downloads the new compose file, start only the new
-database, restore the dump, and then start the full Plane stack:
-
-```bash
-docker compose up -d plane-db
-docker compose exec -T plane-db sh -c 'psql -U "$POSTGRES_USER" -d postgres' < plane-postgres-before-18.sql
-./setup.sh
-```
-
-Keep the dump and the old PostgreSQL data directory until the restored database
-and application have been verified. The old cluster remains at the root of the
-existing `pgdata` volume. Rolling back requires restoring the previous image,
-volume mount path, and `PGDATA` value together.
+instance before upgrading. PostgreSQL 18 uses a versioned data directory and a
+new `pgdata18` volume; it does not upgrade an older cluster automatically. The
+upgrade preserves the previous `pgdata` volume. Follow the
+[PostgreSQL 18 migration guide](../../../docs/operations/postgresql-18-upgrade.md)
+before starting the Plane services on the new database.
 
 RabbitMQ also has persistent state. Its 3.13 to 4.2 upgrade must follow the
 supported RabbitMQ upgrade path, including the required feature-flag and version
@@ -518,12 +499,16 @@ Action [2]: 7
 
 In response, you can find the backup folder
 
+The PostgreSQL volume archive is specific to its PostgreSQL major version.
+For a major-version upgrade, use the logical dump procedure in the
+[PostgreSQL 18 migration guide](../../../docs/operations/postgresql-18-upgrade.md).
+
 ```bash
-Backing Up plane-app_pgdata
+Backing Up plane-app_pgdata18
 Backing Up plane-app_redisdata
 Backing Up plane-app_uploads
 
-Backup completed successfully. Backup files are stored in /....../plane-app/backup/20240502-1120
+Backup completed successfully. Backup files are stored in /....../plane-app/backup/20261026-1120
 ```
 
 ---
@@ -560,15 +545,15 @@ When you want to restore the previously backed-up data, follow the instructions 
    --------------------------------------------
    Project management tool from the future
    --------------------------------------------
-   Found /opt/plane-selfhost/plane-app/backup/20240722-0914/pgdata.tar.gz
-   .....Restoring plane-app_pgdata
-   .....Successfully restored volume plane-app_pgdata from pgdata.tar.gz
+   Found /opt/plane-selfhost/plane-app/backup/20261026-0914/pgdata18.tar.gz
+   .....Restoring plane-app_pgdata18
+   .....Successfully restored volume plane-app_pgdata18 from pgdata18.tar.gz
 
-   Found /opt/plane-selfhost/plane-app/backup/20240722-0914/redisdata.tar.gz
+   Found /opt/plane-selfhost/plane-app/backup/20261026-0914/redisdata.tar.gz
    .....Restoring plane-app_redisdata
    .....Successfully restored volume plane-app_redisdata from redisdata.tar.gz
 
-   Found /opt/plane-selfhost/plane-app/backup/20240722-0914/uploads.tar.gz
+   Found /opt/plane-selfhost/plane-app/backup/20261026-0914/uploads.tar.gz
    .....Restoring plane-app_uploads
    .....Successfully restored volume plane-app_uploads from uploads.tar.gz
 

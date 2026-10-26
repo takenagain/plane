@@ -187,7 +187,7 @@ services:
     environment:
       <<: *db-env
     volumes:
-      - pgdata:/var/lib/postgresql
+      - pgdata18:/var/lib/postgresql
 
   plane-redis:
     image: valkey/valkey:9.1.2-alpine3.24@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
@@ -251,7 +251,7 @@ services:
       - live
 
 volumes:
-  pgdata:
+  pgdata18:
   redisdata:
   uploads:
   logs_api:

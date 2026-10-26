@@ -123,7 +123,7 @@ services:
         restart: always
         command: postgres -c 'max_connections=1000'
         volumes:
-            - pgdata:/var/lib/postgresql
+            - pgdata18:/var/lib/postgresql
         env_file:
             - .env
         environment:
@@ -152,16 +152,16 @@ services:
         volumes:
             - rabbitmq_data:/var/lib/rabbitmq
 
-  plane-minio:
-    container_name: plane-minio
-    image: docker.io/pgsty/silo:RELEASE.2026-10-18T00-00-00Z@sha256:2636fc4155d9a7e41ff58cdb65ddd13ba9304e67184e13c25bc5cb34016269d7
-    restart: always
-    command: server /export --console-address ":9090"
-    volumes:
-      - uploads:/export
-    environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+    plane-minio:
+        container_name: plane-minio
+        image: docker.io/pgsty/silo:RELEASE.2026-10-18T00-00-00Z@sha256:2636fc4155d9a7e41ff58cdb65ddd13ba9304e67184e13c25bc5cb34016269d7
+        restart: always
+        command: server /export --console-address ":9090"
+        volumes:
+            - uploads:/export
+        environment:
+            MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+            MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
 
     # Comment this if you already have a reverse proxy running
     proxy:
@@ -186,7 +186,7 @@ services:
             - admin
 
 volumes:
-    pgdata:
+    pgdata18:
     redisdata:
     uploads:
     rabbitmq_data:

@@ -1,4 +1,4 @@
-ARG PLANE_VERSION=v0.27.1
+ARG PLANE_VERSION=v1.4.2
 FROM --platform=$BUILDPLATFORM tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0 AS binfmt
 
 # **************************************************
@@ -16,7 +16,7 @@ FROM makeplane/plane-proxy:${PLANE_VERSION} AS proxy-img
 # **************************************************
 #  STAGE 1: Runner
 # **************************************************
-FROM python:3.15.1-alpine3.24@sha256:54448f67d7c31c39e5cdd3ea2d6382395ce142806c284425f8e897d78a0465b3 AS runner
+FROM python:3.12.15-alpine3.24@sha256:b658b05ce9c4eb97ec6fc19424818a1f31993659c2b505a532f470e83807815d AS runner
 
 WORKDIR /app
 
@@ -60,9 +60,9 @@ COPY --from=node /usr/local/bin /usr/local/bin
 # going through npx.
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
-COPY --from=web-img /usr/share/caddy/html /app/web
+COPY --from=web-img /usr/share/nginx/html /app/web
 COPY --from=space-img /app /app/space
-COPY --from=admin-img /usr/share/caddy/html/god-mode /app/admin
+COPY --from=admin-img /usr/share/nginx/html/god-mode /app/admin
 COPY --from=live-img /app /app/live
 
 RUN rm -rf /app/space/apps/space/.next/cache
@@ -71,17 +71,17 @@ COPY --from=proxy-img /usr/bin/caddy /usr/bin/caddy
 COPY dist/Caddyfile /app/proxy/Caddyfile
 
 COPY --from=backend-img /code /app/backend
-COPY --from=backend-img /usr/local/lib/python3.15/site-packages/ /usr/local/lib/python3.15/site-packages/
+COPY --from=backend-img /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=backend-img /usr/local/bin/ /usr/local/bin/
 
-RUN pip install supervisor
+RUN pip install supervisor==4.3.0
 
 # pip is only needed for the install above. The runner base's own pip (25.0.1)
 # vendors a certifi that still trusts the compromised emSign G3 root
 # (GHSA-6q48-6c7w-9gw2), so drop it before the image ships.
-RUN rm -rf /usr/local/lib/python3.15/site-packages/pip \
-           /usr/local/lib/python3.15/site-packages/pip-*.dist-info \
-           /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.15
+RUN rm -rf /usr/local/lib/python3.12/site-packages/pip \
+           /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+           /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 RUN mkdir -p /etc/supervisor/conf.d
 
 COPY start.sh /app/start.sh

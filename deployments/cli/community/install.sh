@@ -175,6 +175,11 @@ function syncEnvFile(){
             key=$(echo "$line" | cut -d'=' -f1)
             value=$(getEnvValue "$key" "$PLANE_INSTALL_DIR/plane.env.bak")
             if [ -n "$value" ]; then
+                # PostgreSQL 18 uses a versioned data directory. Do not carry
+                # forward the old template value into the new PG18 cluster.
+                if [ "$key" == "PGDATA" ] && [ "$value" == "/var/lib/postgresql/data" ]; then
+                    continue
+                fi
                 updateEnvFile "$key" "$value" "$DOCKER_ENV_PATH"
             fi
         done < "$DOCKER_ENV_PATH"
@@ -628,7 +633,7 @@ function backupData() {
         exit 1
     fi
 
-    backup_container_dir "$BACKUP_FOLDER" "plane-db" "/var/lib/postgresql/data" "pgdata" || exit 1
+    backup_container_dir "$BACKUP_FOLDER" "plane-db" "/var/lib/postgresql" "pgdata18" || exit 1
     backup_container_dir "$BACKUP_FOLDER" "plane-minio" "/export" "uploads" || exit 1
     backup_container_dir "$BACKUP_FOLDER" "plane-mq" "/var/lib/rabbitmq" "rabbitmq_data" || exit 1
     backup_container_dir "$BACKUP_FOLDER" "plane-redis" "/data" "redisdata" || exit 1

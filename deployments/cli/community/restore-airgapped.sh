@@ -137,7 +137,7 @@ function restoreData() {
 
     # Remove stale extracted source directories from a previous run so tar
     # does not merge new files into old data
-    rm -rf "$DATA_DIR/pgdata" "$DATA_DIR/redisdata" "$DATA_DIR/uploads" "$DATA_DIR/rabbitmq_data"
+    rm -rf "$DATA_DIR/pgdata18" "$DATA_DIR/pgdata" "$DATA_DIR/redisdata" "$DATA_DIR/uploads" "$DATA_DIR/rabbitmq_data"
 
     # Extract all backup tar files
     for BACKUP_FILE in "$BACKUP_FOLDER"/*.tar.gz; do
@@ -150,10 +150,12 @@ function restoreData() {
     done
 
     # Rename extracted directories to match docker-compose volume paths
-    # Backup tars: pgdata, redisdata, uploads, rabbitmq_data
+    # Backup tars: pgdata18 (or legacy pgdata), redisdata, uploads, rabbitmq_data
     # Docker-compose expects: db, redis, minio/uploads, mq
 
-    if [ -d "$DATA_DIR/pgdata" ]; then
+    if [ -d "$DATA_DIR/pgdata18" ]; then
+        replaceDir "$DATA_DIR/pgdata18" "$DATA_DIR/db" "pgdata18 -> db"
+    elif [ -d "$DATA_DIR/pgdata" ]; then
         replaceDir "$DATA_DIR/pgdata" "$DATA_DIR/db" "pgdata -> db"
     fi
 

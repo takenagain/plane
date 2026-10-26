@@ -15,7 +15,7 @@ Cross-platform desktop client for Plane, built with [Wails](https://wails.io/) (
 
 - Go 1.24+
 - Node.js 20+ (for frontend build)
-- Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0`
+- Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0`
 - Linux: `libayatana-appindicator3-dev` and `libgtk-3-dev` for system tray
 
 ## Development

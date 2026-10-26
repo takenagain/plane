@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-WAILS_VERSION="${WAILS_VERSION:-v2.12.0}"
+WAILS_VERSION="${WAILS_VERSION:-v2.17.0}"
 PLATFORM="${1:-linux-amd64}"
 CLEAN="${CLEAN:-true}"
 
@@ -19,7 +19,7 @@ Platforms:
   macos-universal   macOS universal .app bundle (run on macOS)
 
 Environment:
-  WAILS_VERSION     Wails CLI tag (default: v2.12.0)
+  WAILS_VERSION     Wails CLI tag (default: v2.17.0)
   CLEAN             Pass -clean to wails build when true (default: true)
   VERSION           Written into dist/<artifact>/VERSION after build
 

@@ -44,8 +44,8 @@ The Plane Desktop app is now an **alpha prototype with end-to-end auth and issue
 
 | Area     | Version(s)                                                               | Build / test result                                                     |
 | -------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| Go       | 1.26.4 (module); Wails v2.12.0; systray v1.2.2                           | `go build` + `go vet` — pass in CI; Go not installed in agent env       |
-| Wails    | v2.12.0 (direct)                                                         | Wails CLI not verified locally                                          |
+| Go       | 1.27.3 (module); Wails v2.17.0; systray v1.2.2                           | `go test ./...` — pass (2026-10-26)                                     |
+| Wails    | v2.17.0 (module and CLI)                                                 | `wails version` — v2.17.0                                               |
 | Frontend | Svelte 5.56.4, Vite 8.1.3, @sveltejs/vite-plugin-svelte 7.1.2            | `npm run build` — pass (2026-07-02 integration)                         |
 | Monorepo | `vite` catalog 8.1.3; staging already merged; dev tooling at latest pins | `pnpm check` — pass in CI (60 tasks); not re-run (desktop-only changes) |
 

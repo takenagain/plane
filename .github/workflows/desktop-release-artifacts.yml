@@ -35,7 +35,7 @@ concurrency:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
-  WAILS_VERSION: "v2.12.0"
+  WAILS_VERSION: "v2.17.0"
   APP_WORKING_DIRECTORY: apps/desktop
 
 jobs:
