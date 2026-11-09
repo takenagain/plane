@@ -134,7 +134,7 @@ export const ListGroup = observer(function ListGroup(props: Props) {
     <button
       type="button"
       className={
-        "relative flex h-11 w-full cursor-pointer items-center gap-3 border border-transparent border-t-subtle-1 bg-surface-1 p-3 pl-8 text-13 font-medium text-accent-primary hover:text-accent-secondary hover:underline"
+        "relative flex h-11 cursor-pointer items-center gap-3 border border-transparent border-t-subtle-1 bg-surface-1 p-3 pl-8 text-body-xs-medium text-accent-primary hover:text-accent-secondary hover:underline"
       }
       onClick={() => loadMoreIssues(group.id)}
     >
@@ -268,7 +268,7 @@ export const ListGroup = observer(function ListGroup(props: Props) {
       })}
     >
       <Row
-        className={cn("w-full flex-shrink-0 border-b border-subtle bg-layer-1 py-1 pr-3 hover:bg-layer-1-hover", {
+        className={cn("w-full flex-shrink-0 border-b border-subtle bg-layer-1 py-1 pr-5 hover:bg-layer-1-hover", {
           "sticky top-0 z-[2]": isExpanded && groupIssueCount > 0,
         })}
       >
@@ -286,6 +286,7 @@ export const ListGroup = observer(function ListGroup(props: Props) {
           addIssuesToView={addIssuesToView}
           selectionHelpers={selectionHelpers}
           handleCollapsedGroups={handleCollapsedGroups}
+          isExpanded={shouldExpand}
           isEpic={isEpic}
         />
       </Row>

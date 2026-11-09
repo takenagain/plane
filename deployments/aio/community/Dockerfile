@@ -1,10 +1,10 @@
-ARG PLANE_VERSION=v1.4.2
-FROM --platform=$BUILDPLATFORM tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0 AS binfmt
+ARG PLANE_VERSION=v0.27.1
+FROM --platform=$BUILDPLATFORM tonistiigi/binfmt AS binfmt
 
 # **************************************************
 #  STAGE 0: Image Loading
 # **************************************************
-FROM node:26.12.1-alpine3.24@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS node
+FROM node:22-alpine AS node
 
 FROM makeplane/plane-frontend:${PLANE_VERSION} AS web-img
 FROM makeplane/plane-backend:${PLANE_VERSION} AS backend-img
@@ -16,7 +16,7 @@ FROM makeplane/plane-proxy:${PLANE_VERSION} AS proxy-img
 # **************************************************
 #  STAGE 1: Runner
 # **************************************************
-FROM python:3.12.15-alpine3.24@sha256:b658b05ce9c4eb97ec6fc19424818a1f31993659c2b505a532f470e83807815d AS runner
+FROM python:3.12.12-alpine AS runner
 
 WORKDIR /app
 
@@ -27,11 +27,11 @@ ENV GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/etc/ssl/certs/ca-certificates.crt
 # OS security updates. --available forces reinstall from the current repos;
 # bump APK_SECURITY_PATCH to bust buildx's cached layer (keyed on this command
 # string), otherwise a rebuild silently re-ships the old packages.
-ARG APK_SECURITY_PATCH=2026-10-25
+ARG APK_SECURITY_PATCH=2026-11-09
 RUN echo "apk-security-patch ${APK_SECURITY_PATCH}" && apk update && apk upgrade --no-cache --available
 
 # The node binary only links libstdc++ and libgcc_s from /usr/lib, so install
-# them from apk instead of copying node:26.12.1-alpine3.24@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797's whole /usr/lib. That copy
+# them from apk instead of copying node:22-alpine's whole /usr/lib. That copy
 # overwrote the libraries upgraded above (libcrypto, libssl, libz, libapk) with
 # node's copies from a different Alpine release, shipping unpatched versions
 # and breaking /sbin/apk.
@@ -52,7 +52,7 @@ COPY --from=node /usr/local/lib /usr/local/lib
 COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
-# The copy above re-introduces node:26.12.1-alpine3.24@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797's npm, whose bundled dependencies
+# The copy above re-introduces node:22-alpine's npm, whose bundled dependencies
 # carry known vulnerabilities (pacote, ip-address, brace-expansion, tar,
 # sigstore) -- the per-service images strip npm, so without this the AIO is the
 # only place they come back. npm is not needed at runtime: the space program in
@@ -60,9 +60,9 @@ COPY --from=node /usr/local/bin /usr/local/bin
 # going through npx.
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
-COPY --from=web-img /usr/share/nginx/html /app/web
+COPY --from=web-img /usr/share/caddy/html /app/web
 COPY --from=space-img /app /app/space
-COPY --from=admin-img /usr/share/nginx/html/god-mode /app/admin
+COPY --from=admin-img /usr/share/caddy/html/god-mode /app/admin
 COPY --from=live-img /app /app/live
 
 RUN rm -rf /app/space/apps/space/.next/cache
@@ -74,7 +74,7 @@ COPY --from=backend-img /code /app/backend
 COPY --from=backend-img /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=backend-img /usr/local/bin/ /usr/local/bin/
 
-RUN pip install supervisor==4.3.0
+RUN pip install supervisor
 
 # pip is only needed for the install above. The runner base's own pip (25.0.1)
 # vendors a certifi that still trusts the compromised emSign G3 root

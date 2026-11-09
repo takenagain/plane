@@ -1322,7 +1322,7 @@ wheels = [
 
 [[package]]
 name = "plane"
-version = "1.4.2"
+version = "1.5.0"
 source = { virtual = "." }
 default-groups = ["dev", "test"]
 dependencies = [

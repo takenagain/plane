@@ -6,7 +6,7 @@
 
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import type { Extensions } from "@tiptap/core";
-import { Placeholder } from "@tiptap/extension-placeholder";
+import { Placeholder } from "@tiptap/extensions";
 import { useEditor } from "@tiptap/react";
 import { useImperativeHandle } from "react";
 // constants
@@ -54,8 +54,8 @@ export const useTitleEditor = (props: TUseTitleEditorProps) => {
 
   const editor = useEditor(
     {
-      onUpdate: ({ editor }) => {
-        updatePageProperties?.(id, "property_updated", { name: editor?.getText() });
+      onUpdate: ({ editor: titleEditor }) => {
+        updatePageProperties?.(id, "property_updated", { name: titleEditor?.getText() });
       },
       editable,
       immediatelyRender: false,

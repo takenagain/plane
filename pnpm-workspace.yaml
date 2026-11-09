@@ -194,6 +194,17 @@ catalog:
   react-day-picker: 10.0.2
   react-popper: 2.3.0
 
+  "@effect/platform": "0.96.2"
+  "@sesamecare-oss/redlock": "1.4.0"
+  "@tiptap/extensions": "3.31.3"
+  "@tiptap/y-tiptap": "3.0.9"
+  "happy-dom": "21.0.4"
+  "hast": "1.0.0"
+  "mdast": "3.0.0"
+  "prosemirror-markdown": "1.13.4"
+  "vite-tsconfig-paths": "5.1.4"
+
+
 packageExtensions:
   # tiptap-markdown imports ProseMirror through @tiptap/pm but omits it from
   # its published peer dependencies. Make the existing editor dependency visible
@@ -256,7 +267,7 @@ overrides:
   "serialize-javascript": 7.0.7
   "ajv@6": 6.15.0
   "ajv@8": 8.20.0
-  "undici@7": 7.30.0
+  "undici@7": 7.30.1
   flatted: 3.4.2
   picomatch: 4.0.4
   "yaml@1": 1.10.3
@@ -281,7 +292,7 @@ overrides:
   fast-uri: 3.1.8
   "js-yaml@4": 4.3.2
   linkify-it: 5.0.2
-  body-parser: 1.20.6
+  body-parser: 1.20.9
   tmp: 0.2.7
   form-data: 4.0.6
   "ws@8": 8.21.0
@@ -318,8 +329,13 @@ overrides:
   "prosemirror-menu": 1.3.2
   "prosemirror-state": 1.4.4
   "prosemirror-tables": 1.8.5
-  "prosemirror-transform": 1.12.0
+  "prosemirror-transform": 1.12.3
   fast-uri@<3.1.5: 4.1.0
+
+  "@tiptap/extension-bubble-menu": "3.31.3"
+  "@tiptap/extension-floating-menu": "3.31.3"
+  "zod": "catalog:"
+
 allowBuilds:
   "@parcel/watcher": true
   "@swc/core": true
@@ -337,6 +353,9 @@ minimumReleaseAgeExclude:
   - "@storybook/react@10.4.6"
   - storybook@10.4.6
   - "@makeplane/propel@0.7.3"
+
+  - "@makeplane/propel@0.9.7"
+
 
 peerDependencyRules:
   allowedVersions:

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import StarterKit from "@tiptap/starter-kit";
+import { StarterKit } from "@tiptap/starter-kit";
 
 type TArgs = {
   enableHistory: boolean;
@@ -53,9 +53,9 @@ export const CustomStarterKitExtension = (args: TArgs) => {
       class:
         "text-tertiary transition-all motion-reduce:transition-none motion-reduce:hover:transform-none duration-200 ease-[cubic-bezier(0.165, 0.84, 0.44, 1)]",
     },
-    // StarterKit 3 renamed the `history` option to `undoRedo`; `history: false`
-    // is now silently ignored. Disable undo/redo when history is off (e.g. when
-    // Yjs collaboration provides its own history).
+    // StarterKit v3 bundles trailingNode and renames history to undoRedo.
+    // Keep our separately registered link, underline, and listKeymap extensions disabled above.
+    trailingNode: false,
     ...(enableHistory ? {} : { undoRedo: false }),
   });
 };

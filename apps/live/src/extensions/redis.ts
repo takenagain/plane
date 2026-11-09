@@ -5,10 +5,12 @@
  */
 
 import { Redis as HocuspocusRedis, type RedisInstance } from "@hocuspocus/extension-redis";
+import { Redlock } from "@sesamecare-oss/redlock";
 import { OutgoingMessage } from "@hocuspocus/server";
 import type { onConfigurePayload } from "@hocuspocus/server";
 import { logger } from "@plane/logger";
 import { AppError } from "@/lib/errors";
+import { waitForRedisReady } from "@/lib/wait-for-redis";
 import { redisManager } from "@/redis";
 import { AdminCommand } from "@/types/admin-commands";
 import type { AdminCommandData, AdminCommandHandler } from "@/types/admin-commands";
@@ -31,6 +33,11 @@ export class Redis extends HocuspocusRedis {
 
   async onConfigure(payload: onConfigurePayload) {
     await super.onConfigure(payload);
+    // The v3 lock library otherwise SELECTs DB 0 even on a non-zero Redis connection.
+    this.redlock = new Redlock([this.pub], { ...this.redlock.settings, db: getRedisClient().options.db ?? 0 });
+
+    // Subscribe only after ioredis has completed its initial ready check.
+    await waitForRedisReady(this.sub);
 
     // Subscribe to admin channel
     try {
@@ -121,8 +128,8 @@ export class Redis extends HocuspocusRedis {
 
     const message = new OutgoingMessage(documentName).writeBroadcastStateless(stringPayload);
 
-    const emptyPrefix = Buffer.concat([Buffer.from([0])]);
-    const channel = this["pubKey"](documentName);
+    const emptyPrefix = Buffer.from([0]);
+    const channel = `${this.configuration.prefix}:${documentName}`;
     const encodedMessage = Buffer.concat([emptyPrefix, Buffer.from(message.toUint8Array())]);
 
     const result = await this.pub.publish(channel, encodedMessage);

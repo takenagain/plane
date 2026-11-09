@@ -118,9 +118,10 @@ export const useEditor = (props: TEditorHookProps) => {
       onTransaction: () => {
         onTransaction?.();
       },
-      onUpdate: ({ editor: currentEditor, transaction }) => {
+      onUpdate: ({ editor: updatedEditor, transaction }) => {
+        // Check if this update is only due to migration update
         const isMigrationUpdate = transaction?.getMeta("uniqueIdOnlyChange") === true;
-        onChange?.(currentEditor.getJSON(), currentEditor.getHTML(), { isMigrationUpdate });
+        onChange?.(updatedEditor.getJSON(), updatedEditor.getHTML(), { isMigrationUpdate });
       },
       onDestroy: () => handleEditorReady?.(false),
       onFocus: () => onEditorFocus?.(),
@@ -142,10 +143,7 @@ export const useEditor = (props: TEditorHookProps) => {
       const isUploadInProgress = editor.storage.utility?.uploadInProgress;
       if (!isUploadInProgress) {
         try {
-          editor.commands.setContent(value, {
-            emitUpdate: false,
-            parseOptions: { preserveWhitespace: true },
-          });
+          editor.commands.setContent(value, { emitUpdate: false, parseOptions: { preserveWhitespace: true } });
           if (editor.state.selection) {
             const docLength = editor.state.doc.content.size;
             const relativePosition = Math.min(editor.state.selection.from, docLength - 1);

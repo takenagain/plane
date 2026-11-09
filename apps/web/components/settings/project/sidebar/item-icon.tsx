@@ -5,6 +5,7 @@
  */
 
 import { Sparkles, type LucideIcon } from "lucide-react";
+import type { IconGlyph } from "@makeplane/propel/components/icon";
 import {
   CyclesOutline,
   EstimateOutline,
@@ -23,7 +24,7 @@ import type { TProjectSettingsTabs } from "@plane/types";
 // components
 import { SettingIcon } from "@/components/icons/attachment";
 
-export const PROJECT_SETTINGS_ICONS: Record<TProjectSettingsTabs, LucideIcon | React.FC<ISvgIcons>> = {
+export const PROJECT_SETTINGS_ICONS: Record<TProjectSettingsTabs, IconGlyph | LucideIcon | React.FC<ISvgIcons>> = {
   general: SettingIcon,
   members: MembersOutline,
   features_cycles: CyclesOutline,

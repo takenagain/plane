@@ -5,12 +5,18 @@
  */
 
 import { Plug, Sparkles, type LucideIcon } from "lucide-react";
-import { BuildingOutline, ExportOutline, MembersOutline, WebhooksOutline } from "@makeplane/propel/icons";
+import type { IconGlyph } from "@makeplane/propel/components/icon";
+import {
+  BuildingOutline,
+  ExportOutline,
+  MembersOutline,
+  WebhooksOutline,
+} from "@makeplane/propel/icons";
 // plane imports
 import type { ISvgIcons } from "@plane/blocks/icons";
 import type { TWorkspaceSettingsTabs } from "@plane/types";
 
-export const WORKSPACE_SETTINGS_ICONS: Record<TWorkspaceSettingsTabs, LucideIcon | React.FC<ISvgIcons>> = {
+export const WORKSPACE_SETTINGS_ICONS: Record<TWorkspaceSettingsTabs, IconGlyph | LucideIcon | React.FC<ISvgIcons>> = {
   general: BuildingOutline,
   members: MembersOutline,
   export: ExportOutline,
