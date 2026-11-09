@@ -29,8 +29,8 @@ github.com/getlantern/hidden v0.0.0-20220104173330-f221c5a24770 h1:cSrD9ryDfTV2y
 github.com/getlantern/hidden v0.0.0-20220104173330-f221c5a24770/go.mod h1:GOQsoDnEHl6ZmNIL+5uVo+JWRFWozMEp18Izcb++H+A=
 github.com/getlantern/ops v0.0.0-20190325191751-d70cb0d6f85f/go.mod h1:D5ao98qkA6pxftxoqzibIBBrLSUli+kYnJqrgBf9cIA=
 github.com/getlantern/ops v0.0.0-20220713155959-1315d978fff7/go.mod h1:D5ao98qkA6pxftxoqzibIBBrLSUli+kYnJqrgBf9cIA=
-github.com/getlantern/ops v0.0.0-20231025133620-f368ab734534 h1:3BwvWj0JZzFEvNNiMhCu4bf60nqcIuQpTYb00Ezm1ag=
-github.com/getlantern/ops v0.0.0-20231025133620-f368ab734534/go.mod h1:ZsLfOY6gKQOTyEcPYNA9ws5/XHZQFroxqCOhHjGcs9Y=
+github.com/getlantern/ops v0.0.0-20261028165752-a48eabe17467 h1:vrKCiBTHr7cFv+VNCVhz8X78khRASVw//gX59Xc5vhk=
+github.com/getlantern/ops v0.0.0-20261028165752-a48eabe17467/go.mod h1:yvCGQU7mI2e2OPDH01qk6cGQkw7Xz2IC0LR0u2swKVU=
 github.com/getlantern/systray v1.2.2 h1:dCEHtfmvkJG7HZ8lS/sLklTH4RKUcIsKrAD9sThoEBE=
 github.com/getlantern/systray v1.2.2/go.mod h1:pXFOI1wwqwYXEhLPm9ZGjS2u/vVELeIgNMY5HvhHhcE=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
@@ -58,8 +58,8 @@ github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1/go.mod h1:alcuEE
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
-github.com/labstack/echo/v4 v4.16.2 h1:WFPVqfogOZGH4dTr1UCIB1sqjFIQ/k7vIk5ByL6oWjY=
-github.com/labstack/echo/v4 v4.16.2/go.mod h1:V/EQaTVHYJH92QhbQe7kFQ4mjgcjxLQQUQtAN87zZdw=
+github.com/labstack/echo/v4 v4.16.3 h1:wAzM49wiBxHpZJQ621lminvdxbwfd1Cn6KwRThKV6nA=
+github.com/labstack/echo/v4 v4.16.3/go.mod h1:V/EQaTVHYJH92QhbQe7kFQ4mjgcjxLQQUQtAN87zZdw=
 github.com/labstack/gommon v0.5.0 h1:6VSQ2NOzsnEJ5W6+84E0RbcaDDmgB6NIAzWCczTEe6c=
 github.com/labstack/gommon v0.5.0/go.mod h1:Rzlg7HHy1maLfzBYGg9NZcVuz1sA68HHhLjhcEllYE0=
 github.com/leaanthony/debme v1.2.1 h1:9Tgwf+kjcrbMQ4WnPcEIUcQuIZYqdWftzZkBr+i/oOc=
@@ -113,8 +113,8 @@ github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQ
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
 github.com/wailsapp/go-webview2 v1.0.23 h1:jmv8qhz1lHibCc79bMM/a/FqOnnzOGEisLav+a0b9P0=
 github.com/wailsapp/go-webview2 v1.0.23/go.mod h1:qJmWAmAmaniuKGZPWwne+uor3AHMB5PFhqiK0Bbj8kc=
-github.com/wailsapp/wails/v2 v2.17.0 h1:pJqX9ogqW4PPE/gSeCQUcYmpPghxEpHajONw9rPj1pg=
-github.com/wailsapp/wails/v2 v2.17.0/go.mod h1:WUqCTXDAPqkcYhjUawowutjzCEgx6Ri8P51E9SozpZw=
+github.com/wailsapp/wails/v2 v2.17.1 h1:RyswsftvVwjBcZy/ccfM2FuSeWRH/2WTTJUet4jlKUU=
+github.com/wailsapp/wails/v2 v2.17.1/go.mod h1:oj2ZhYZ3ob7KKOtmYtfm6v5pmacg8IKdA+qY2J1/iWQ=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/zalando/go-keyring v0.2.8 h1:6sD/Ucpl7jNq10rM2pgqTs0sZ9V3qMrqfIIy5YPccHs=
 github.com/zalando/go-keyring v0.2.8/go.mod h1:tsMo+VpRq5NGyKfxoBVjCuMrG47yj8cmakZDO5QGii0=
@@ -127,6 +127,8 @@ go.opentelemetry.io/otel/log v1.47.0 h1:cOTS1CcLbSQeZKanGJ+0JpF/+t4PELi3O3bbl2lq
 go.opentelemetry.io/otel/log v1.47.0/go.mod h1:9byitSQ5pLC6PpqwGXjqdMKya6ZTswHRZh2vvXT33nw=
 go.opentelemetry.io/otel/metric v1.47.0 h1:4PptaldXx3Eat1XjMZ68pPJEs5wrhlemctZE9a3UdWY=
 go.opentelemetry.io/otel/metric v1.47.0/go.mod h1:ADGSXxRrXM6bjbvLo535EstVFlPpPYZm4LBKixjDHwU=
+go.opentelemetry.io/otel/sdk v1.19.0 h1:6USY6zH+L8uMH8L3t1enZPR3WFEmSTADlqldyHtJi3o=
+go.opentelemetry.io/otel/sdk v1.19.0/go.mod h1:NedEbbS4w3C6zElbLdPJKOpJQOrGUJ+GfzpjUvI0v1A=
 go.opentelemetry.io/otel/trace v1.9.0/go.mod h1:2737Q0MuG8q1uILYm2YYVkAyLtOofiTNGg6VODnOiPo=
 go.opentelemetry.io/otel/trace v1.47.0 h1:JOjX/Oci8K94QHddo+bbfya/Ai/nf6/dt9ZfrFNWSrM=
 go.opentelemetry.io/otel/trace v1.47.0/go.mod h1:jNaSLa2PZEYFG6fRjJABAu+bw4FS08uDmPg28lTghu0=
@@ -152,8 +154,8 @@ golang.org/x/net v0.0.0-20190311183353-d8887717615a/go.mod h1:t9HGtf8HONx5eT2rtn
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4/go.mod h1:p54w0d4576C0XHj96bSt6lcn1PtDYWL6XObtHCRCNQM=
-golang.org/x/net v0.61.0 h1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=
-golang.org/x/net v0.61.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
+golang.org/x/net v0.62.0 h1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=
+golang.org/x/net v0.62.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
@@ -164,8 +166,8 @@ golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210510120138-977fb7262007/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.1.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.49.0 h1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=
-golang.org/x/sys v0.49.0/go.mod h1:hNLxWAXmnKAxqDtdwIYC4bM9oQPEecfsnNMuSxOs3og=
+golang.org/x/sys v0.50.0 h1:dkKZEFTEKaLr1sjhs0WiKqoi8Jj5nHbS3Njmx1UoMJs=
+golang.org/x/sys v0.50.0/go.mod h1:hNLxWAXmnKAxqDtdwIYC4bM9oQPEecfsnNMuSxOs3og=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=

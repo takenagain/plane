@@ -325,7 +325,7 @@ Once done with making changes in `plane.env` file, jump on to `Start Server`
 
 #### Stateful service major upgrades
 
-This release uses PostgreSQL 18.6, Valkey 9.1.2, and RabbitMQ 4.2.9. Back up the
+This release uses PostgreSQL 18.6, Valkey 9.1.3, and RabbitMQ 4.2.9. Back up the
 instance before upgrading. PostgreSQL 18 uses a versioned data directory and a
 new `pgdata18` volume; it does not upgrade an older cluster automatically. The
 upgrade preserves the previous `pgdata` volume. Follow the

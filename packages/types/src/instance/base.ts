@@ -63,6 +63,7 @@ export interface IInstanceConfig {
   space_base_url: string | undefined;
   admin_base_url: string | undefined;
   is_self_managed: boolean;
+  is_sentry_enabled: boolean;
   instance_changelog_url?: string;
   /** 2FA availability/enforcement flags surfaced by the backend `InstanceEndpoint` (R18). */
   is_mfa_enabled?: boolean;

@@ -116,7 +116,20 @@ describe.skipIf(!REDIS_URL)("Hocuspocus v3 with Plane's Redis extension and v2 d
       });
       servers.push(server);
       const socket = new WebSocketServer({ host: "127.0.0.1", port: 0 });
-      socket.on("connection", (ws, request) => server.handleConnection(ws, request));
+      socket.on("connection", (ws, request) => {
+        const headers = new Headers();
+        for (const [name, value] of Object.entries(request.headers)) {
+          if (value === undefined) continue;
+          headers.set(name, Array.isArray(value) ? value.join(", ") : value);
+        }
+
+        const host = request.headers.host ?? "127.0.0.1";
+        const webRequest = new Request(new URL(request.url ?? "/", `http://${host}`), {
+          method: request.method,
+          headers,
+        });
+        server.handleConnection(ws, webRequest);
+      });
       sockets.push(socket);
     }
     await Promise.all(sockets.map((socket) => once(socket, "listening")));

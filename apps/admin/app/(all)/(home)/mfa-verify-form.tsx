@@ -8,10 +8,10 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 // plane internal packages
 import { API_BASE_URL } from "@plane/constants";
+import { Banner } from "@makeplane/propel/components/banner";
 import { Button } from "@plane/propel/button";
 import { Input, Spinner } from "@plane/ui";
 // components
-import { Banner } from "@/components/common/banner";
 import { FormHeader } from "@/components/instance/form-header";
 import { AuthHeader } from "./auth-header";
 import { useAuthCsrfToken } from "./use-auth-csrf-token";
@@ -49,7 +49,7 @@ export function InstanceMfaVerifyForm({ csrfToken: initialCsrfToken }: { csrfTok
             action={`${API_BASE_URL}/auth/mfa/verify/`}
             onSubmit={() => setIsSubmitting(true)}
           >
-            {errorMessage && <Banner type="error" message={errorMessage} />}
+            {errorMessage && <Banner placement="inline" variant="danger" description={errorMessage} />}
             <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
             {nextPath && <input type="hidden" name="next_path" value={nextPath} />}
 

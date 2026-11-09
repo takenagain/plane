@@ -5,6 +5,7 @@
     "noImplicitReturns": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }

@@ -9,6 +9,7 @@ import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import { setPromiseToast } from "@plane/blocks/toast";
 import { Tooltip } from "@makeplane/propel/components/tooltip";
+import { Badge } from "@makeplane/propel/components/badge";
 import type { IProject } from "@plane/types";
 import { CyclesOutline, IntakeOutline, ModuleOutline, PagesOutline, ViewsOutline } from "@makeplane/propel/icons";
 // components
@@ -121,7 +122,7 @@ export const ProjectFeaturesList = observer(function ProjectFeaturesList(props: 
           titleAccessory={
             featureItem.isPro ? (
               <Tooltip label="Pro feature">
-                <UpgradeBadge className="rounded-sm" />
+                <Badge variant="neutral" size="sm" label="Pro" />
               </Tooltip>
             ) : undefined
           }

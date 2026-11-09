@@ -27,7 +27,6 @@ export const ProfileTimeFilters = observer(function ProfileTimeFilters({ filters
   return (
     <div className="flex flex-wrap items-center gap-3" data-testid="profile-time-filters">
       <DurationDropdown
-        buttonVariant="border-with-text"
         value={filters.dateFilter}
         onChange={(dateFilter) => onChange({ ...filters, dateFilter })}
         placeholder={t("profile.time_analytics.filters.duration")}

@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDirs": [".", "./.react-router/types"],
+    "strictNullChecks": true,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
+    "noImplicitReturns": false,
+    "noImplicitOverride": false,
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom/vitest"]
+  },
+  "include": [
+    "app/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**/*",
+    "**/*.d.ts",
+    "vite.config.ts",
+    "react-router.config.ts",
+    "vitest.config.ts",
+    ".react-router/types/**/*",
+    "../../packages/utils/vite/**/*"
+  ]
+}

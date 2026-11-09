@@ -64,7 +64,7 @@ jobs:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@v6.1.1
         with:
           version: 12.15.0
           run_install: false
@@ -125,7 +125,7 @@ jobs:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@v6.1.1
         with:
           version: 12.15.0
           run_install: false
@@ -190,7 +190,7 @@ jobs:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@v6.1.1
         with:
           version: 12.15.0
           run_install: false
@@ -255,7 +255,7 @@ jobs:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@v6.1.1
         with:
           version: 12.15.0
           run_install: false

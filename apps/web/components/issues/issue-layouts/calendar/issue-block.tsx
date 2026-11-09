@@ -134,22 +134,21 @@ export const CalendarIssueBlock = observer(
                         backgroundColor: stateColor,
                       }}
                     />
-                    {showWorkItemKey &&
-                      projectIdentifier && (
-                        // In a narrow day cell the project key truncates before the sequence number does.
-                        <span
-                          className="flex min-w-0 items-center overflow-hidden text-caption-md-medium whitespace-nowrap text-tertiary"
-                          title={workItemId}
-                        >
-                          <span aria-hidden="true" className="min-w-0 truncate">
-                            {projectIdentifier}-
-                          </span>
-                          <span aria-hidden="true" className="shrink-0 tabular-nums">
-                            {issue.sequence_id}
-                          </span>
-                          <span className="sr-only">{workItemId}</span>
+                    {showWorkItemKey && projectIdentifier && (
+                      // In a narrow day cell the project key truncates before the sequence number does.
+                      <span
+                        className="flex min-w-0 items-center overflow-hidden text-caption-md-medium whitespace-nowrap text-tertiary"
+                        title={workItemId}
+                      >
+                        <span aria-hidden="true" className="min-w-0 truncate">
+                          {projectIdentifier}-
                         </span>
-                      )}
+                        <span aria-hidden="true" className="shrink-0 tabular-nums">
+                          {issue.sequence_id}
+                        </span>
+                        <span className="sr-only">{workItemId}</span>
+                      </span>
+                    )}
                     <div className="min-w-0 flex-1 truncate text-caption-md-medium lg:text-body-xs-regular">
                       {issue.name}
                     </div>

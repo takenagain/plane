@@ -26,7 +26,7 @@
 
 services:
   test-db:
-    image: postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
+    image: postgres:18.6-alpine3.24@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
     networks:
       - test_env
     env_file:
@@ -47,7 +47,7 @@ services:
       retries: 10
 
   test-redis:
-    image: valkey/valkey:9.1.2-alpine3.24@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+    image: valkey/valkey:9.1.3-alpine3.24@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
     networks:
       - test_env
     tmpfs:
@@ -59,7 +59,7 @@ services:
       retries: 10
 
   test-mq:
-    image: rabbitmq:4.2.9-management-alpine@sha256:bab245c7ac4db27a64834e3647ba4fbcbd28a970eece0d4a47a3e6d12cceeff2
+    image: rabbitmq:4.2.9-management-alpine@sha256:77ca2ba3621a95208918e6e331199a6c81129690bf7fc570dc61b6e64726840a
     networks:
       - test_env
     env_file:
@@ -89,7 +89,7 @@ services:
       retries: 10
 
   test-minio:
-    image: docker.io/pgsty/silo:RELEASE.2026-10-18T00-00-00Z@sha256:2636fc4155d9a7e41ff58cdb65ddd13ba9304e67184e13c25bc5cb34016269d7
+    image: docker.io/pgsty/silo:RELEASE.2026-10-26T00-00-00Z@sha256:7bb2aff6b89efe1cb1303c10fc21d579447434ed06649ac9ec05a5e2dbf30ad7
     networks:
       - test_env
     env_file:

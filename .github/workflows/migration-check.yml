@@ -45,13 +45,13 @@ jobs:
           fetch-depth: 2
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           # uv version comes from [tool.uv] required-version.
           version-file: "apps/api/pyproject.toml"
-          # Same patch release as the production image (python:3.12.12-alpine);
-          # uv fetches a managed build instead of the runner's older system 3.12.
-          python-version: "3.15.1"
+          # Same patch release as the production image (Python 3.15.2);
+          # uv fetches the pinned runtime instead of the runner's system Python.
+          python-version: "3.15.2"
           enable-cache: true
           cache-dependency-glob: "apps/api/uv.lock"
 

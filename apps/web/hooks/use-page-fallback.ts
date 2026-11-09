@@ -17,6 +17,7 @@ import type { TPageInstance } from "@/store/pages/base-page";
 
 type TArgs = {
   editorRef: React.RefObject<EditorRefApi | null>;
+  editorReady: boolean;
   fetchPageDescription: () => Promise<ArrayBuffer>;
   collaborationState: CollaborationState | null;
   updatePageDescription: (data: TDocumentPayload) => Promise<void>;
@@ -38,6 +39,8 @@ export const usePageFallback = (args: TArgs) => {
   useEffect(() => {
     hasHydratedFromServerRef.current = false;
     hasShownFallbackToast.current = false;
+    // The page id intentionally triggers this reset when the MobX page instance changes.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [page.id]);
 
   const hydrateFromServer = useCallback(async () => {
@@ -118,25 +121,21 @@ export const usePageFallback = (args: TArgs) => {
   }, [editorRef, hasConnectionFailed, updatePageDescription]);
 
   // Debounced save so edits persist without waiting for the live-server store interval.
-  const debouncedSaveRef = useRef(
-    debounce(() => {
-      void saveDescription();
-    }, 1000)
-  );
+  const debouncedSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
 
   useEffect(() => {
-    debouncedSaveRef.current = debounce(() => {
-      void saveDescription();
-    }, 1000);
+    const debouncedSave = debounce(() => void saveDescription(), 1000);
+    debouncedSaveRef.current = debouncedSave;
     return () => {
-      debouncedSaveRef.current.cancel();
+      debouncedSave.cancel();
+      if (debouncedSaveRef.current === debouncedSave) debouncedSaveRef.current = null;
     };
   }, [saveDescription]);
 
   // Flush pending saves before navigation/reload so content is not lost.
   useEffect(() => {
     const flushPendingSave = () => {
-      debouncedSaveRef.current.flush();
+      debouncedSaveRef.current?.flush();
     };
 
     window.addEventListener("pagehide", flushPendingSave);
@@ -165,7 +164,7 @@ export const usePageFallback = (args: TArgs) => {
       }
 
       unsubscribe = editor.onStateChange(() => {
-        debouncedSaveRef.current();
+        debouncedSaveRef.current?.();
       });
     };
 
@@ -175,12 +174,16 @@ export const usePageFallback = (args: TArgs) => {
       cancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
       unsubscribe?.();
-      debouncedSaveRef.current.cancel();
+      debouncedSaveRef.current?.cancel();
     };
+    // The page id intentionally tears down the old editor subscription when navigating.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [editorRef, editorReady, page.id]);
 
   useEffect(() => {
     if (hasConnectionFailed) {
+      // Hydration sets the loading indicator while the async request is in flight.
+      // oxlint-disable-next-line react/set-state-in-effect
       void hydrateFromServer();
     } else {
       hasShownFallbackToast.current = false;

@@ -8,6 +8,7 @@
 import type { AxiosInstance, AxiosRequestConfig } from "axios";
 import { create } from "axios";
 import { normalizeAPIRequestURL } from "@plane/services";
+import { EAuthenticationErrorCodes } from "@/helpers/authentication.helper";
 
 export abstract class APIService {
   protected baseURL: string;

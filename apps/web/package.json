@@ -12,7 +12,7 @@
     "test:unit": "vitest run --config vitest.config.ts",
     "clean": "rm -rf .turbo && rm -rf .next && rm -rf .react-router && rm -rf node_modules && rm -rf dist && rm -rf build",
     "check:lint": "oxlint -c ../../.oxlintrc.json --max-warnings=11957 .",
-    "check:types": "react-router typegen && tsc --noEmit",
+    "check:types": "react-router typegen && tsc --noEmit --project tsconfig.check.json",
     "check:format": "oxfmt --check -c ../../.oxfmtrc.json .",
     "fix:lint": "oxlint -c ../../.oxlintrc.json --fix .",
     "fix:format": "oxfmt -c ../../.oxfmtrc.json ."
@@ -55,12 +55,14 @@
     "input-otp": "1.5.0",
     "isbot": "5.2.2",
     "lodash-es": "catalog:",
+    "lucide-react": "catalog:",
     "mobx": "catalog:",
     "mobx-react": "catalog:",
     "mobx-utils": "catalog:",
     "next-themes": "catalog:",
     "qrcode.react": "4.2.0",
     "react": "catalog:",
+    "react-color": "catalog:",
     "react-dom": "catalog:",
     "react-dropzone": "catalog:",
     "react-fast-compare": "catalog:",
@@ -89,11 +91,12 @@
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-color": "catalog:",
     "@types/react-dom": "catalog:",
     "dotenv": "catalog:",
     "happy-dom": "21.0.4",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   }
 }

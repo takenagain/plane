@@ -20,7 +20,7 @@ import { CommentCreate } from "@/components/comments/comment-create";
 // hooks
 import { useProject } from "@/hooks/store/use-project";
 // plane web components
-import { ActivityFilterRoot } from "@/plane-web/components/issues/worklog/activity/filter-root";
+import { ActivityFilterRoot, WORKLOG_FILTER_KEY } from "@/plane-web/components/issues/worklog/activity/filter-root";
 // local imports
 import { IssueActivityCommentRoot } from "./activity-comment-root";
 import type { TActivityTab } from "./activity-tabs";
@@ -42,8 +42,8 @@ const DEFAULT_ACTIVITY_TAB: TActivityTabKey = "all";
 
 /** Filters each activity tab covers; the filter menu refines within the active tab. */
 const ACTIVITY_TAB_FILTERS: Record<TActivityTabKey, TActivityFilters[]> = {
-  all: defaultActivityFilters,
-  activity: [EActivityFilterType.ACTIVITY, EActivityFilterType.STATE, EActivityFilterType.ASSIGNEE],
+  all: [...defaultActivityFilters, WORKLOG_FILTER_KEY],
+  activity: [EActivityFilterType.ACTIVITY, EActivityFilterType.STATE, EActivityFilterType.ASSIGNEE, WORKLOG_FILTER_KEY],
   comment: [EActivityFilterType.COMMENT],
 };
 

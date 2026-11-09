@@ -68,18 +68,6 @@ class ProjectInvitationsViewset(BaseViewSet):
         return super().destroy(request)
 
     @allow_permission([ROLE.ADMIN])
-    def list(self, request, slug, project_id):
-        return super().list(request, slug, project_id)
-
-    @allow_permission([ROLE.ADMIN])
-    def retrieve(self, request, slug, project_id, pk):
-        return super().retrieve(request, slug, project_id, pk)
-
-    @allow_permission([ROLE.ADMIN])
-    def destroy(self, request, slug, project_id, pk):
-        return super().destroy(request, slug, project_id, pk)
-
-    @allow_permission([ROLE.ADMIN])
     def create(self, request, slug, project_id):
         emails = request.data.get("emails", [])
 

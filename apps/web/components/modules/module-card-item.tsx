@@ -50,7 +50,7 @@ export const ModuleCardItem = observer(function ModuleCardItem(props: Props) {
   const { moduleId } = props;
   const { t } = useTranslation();
   // refs
-  const parentRef = useRef<HTMLAnchorElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId } = useParams();

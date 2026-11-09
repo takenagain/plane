@@ -10,13 +10,14 @@ export type TActivityFilterRoot = {
   toggleFilter: (filter: TActivityFilters) => void;
   projectId: string;
   isIntakeIssue?: boolean;
+  filterKeys?: TActivityFilters[];
 };
 
 // Worklog filter key — matches the activity_type "WORKLOG" used in TIssueActivityComment
-const WORKLOG_FILTER_KEY = "WORKLOG" as TActivityFilters;
+export const WORKLOG_FILTER_KEY = "WORKLOG" as TActivityFilters;
 
 export function ActivityFilterRoot(props: TActivityFilterRoot) {
-  const { selectedFilters, toggleFilter } = props;
+  const { selectedFilters, toggleFilter, filterKeys } = props;
   const hasAutoEnabled = useRef(false);
 
   // Auto-enable the WORKLOG filter if it isn\'t already in the stored selection.
@@ -37,7 +38,10 @@ export function ActivityFilterRoot(props: TActivityFilterRoot) {
     : [...selectedFilters, WORKLOG_FILTER_KEY];
 
   // Build filters from the base constant options
-  const filters: TActivityFilterOption[] = Object.entries(ACTIVITY_FILTER_TYPE_OPTIONS).map(([key, value]) => {
+  const filterEntries = Object.entries(ACTIVITY_FILTER_TYPE_OPTIONS).filter(
+    ([key]) => !filterKeys || filterKeys.includes(key as TActivityFilters)
+  );
+  const filters: TActivityFilterOption[] = filterEntries.map(([key, value]) => {
     const filterKey = key as TActivityFilters;
     return {
       key: filterKey,
@@ -48,12 +52,14 @@ export function ActivityFilterRoot(props: TActivityFilterRoot) {
   });
 
   // Append the worklog filter option (not present in the base CE constants)
-  filters.push({
-    key: WORKLOG_FILTER_KEY,
-    labelTranslationKey: "common.time_logged",
-    isSelected: effectiveSelectedFilters.includes(WORKLOG_FILTER_KEY),
-    onClick: () => toggleFilter(WORKLOG_FILTER_KEY),
-  });
+  if (!filterKeys || filterKeys.includes(WORKLOG_FILTER_KEY)) {
+    filters.push({
+      key: WORKLOG_FILTER_KEY,
+      labelTranslationKey: "common.time_logged",
+      isSelected: effectiveSelectedFilters.includes(WORKLOG_FILTER_KEY),
+      onClick: () => toggleFilter(WORKLOG_FILTER_KEY),
+    });
+  }
 
   return <ActivityFilter selectedFilters={effectiveSelectedFilters} filterOptions={filters} />;
 }

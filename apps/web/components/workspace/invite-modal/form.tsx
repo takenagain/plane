@@ -5,6 +5,7 @@
  */
 
 import { observer } from "mobx-react";
+import { cn } from "@plane/utils";
 import {
   DialogBody,
   DialogDescription,
@@ -20,13 +21,14 @@ type TInvitationFormProps = {
   children: React.ReactNode;
   onSubmit: () => void;
   actions: React.ReactNode;
+  className?: string;
 };
 
 export const InvitationForm = observer(function InvitationForm(props: TInvitationFormProps) {
-  const { title, description, children, actions, onSubmit } = props;
+  const { title, description, children, actions, onSubmit, className } = props;
 
   return (
-    <form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
+    <form className={cn("flex min-h-0 flex-1 flex-col", className)} onSubmit={onSubmit}>
       <DialogMain>
         <DialogHeader>
           <DialogHeading>

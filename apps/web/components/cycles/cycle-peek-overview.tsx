@@ -53,43 +53,42 @@ export const CyclePeekOverview = observer(function CyclePeekOverview(props: Prop
 
   return (
     <>
-      {peekCycle &&
-        projectId && (
-          // The drawer portals into this column so the peek still pushes the list instead of covering it.
-          <div
-            ref={setDrawerContainer}
-            className="fixed right-0 z-[9] h-full w-full max-w-[358px] flex-shrink-0 md:relative"
-          >
-            {drawerContainer && (
-              <Drawer
-                open
-                swipeDirection="right"
-                onOpenChange={(open, eventDetails) => {
-                  if (open) return;
-                  // keep the peek open while the list and the sidebar's own dropdowns are used
-                  if (["escape-key", "close-press", "swipe"].includes(eventDetails.reason)) handleClose();
-                  else eventDetails.cancel();
-                }}
+      {peekCycle && projectId && (
+        // The drawer portals into this column so the peek still pushes the list instead of covering it.
+        <div
+          ref={setDrawerContainer}
+          className="fixed right-0 z-[9] h-full w-full max-w-[358px] flex-shrink-0 md:relative"
+        >
+          {drawerContainer && (
+            <Drawer
+              open
+              swipeDirection="right"
+              onOpenChange={(open, eventDetails) => {
+                if (open) return;
+                // keep the peek open while the list and the sidebar's own dropdowns are used
+                if (["escape-key", "close-press", "swipe"].includes(eventDetails.reason)) handleClose();
+                else eventDetails.cancel();
+              }}
+            >
+              <DrawerPanel
+                variant="inline"
+                side="end"
+                size="sm"
+                container={drawerContainer}
+                aria-label={cycleDetails?.name ?? t("cycle.label", { count: 1 })}
               >
-                <DrawerPanel
-                  variant="inline"
-                  side="end"
-                  size="sm"
-                  container={drawerContainer}
-                  aria-label={cycleDetails?.name ?? t("cycle.label", { count: 1 })}
-                >
-                  <CycleDetailsSidebar
-                    handleClose={handleClose}
-                    isArchived={isArchived}
-                    projectId={projectId}
-                    workspaceSlug={workspaceSlug}
-                    cycleId={peekCycle}
-                  />
-                </DrawerPanel>
-              </Drawer>
-            )}
-          </div>
-        )}
+                <CycleDetailsSidebar
+                  handleClose={handleClose}
+                  isArchived={isArchived}
+                  projectId={projectId}
+                  workspaceSlug={workspaceSlug}
+                  cycleId={peekCycle}
+                />
+              </DrawerPanel>
+            </Drawer>
+          )}
+        </div>
+      )}
     </>
   );
 });

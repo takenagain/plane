@@ -89,8 +89,9 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
           {notificationTriggeredBy && (
             <Avatar
               alt={notificationTriggeredBy.display_name || notificationTriggeredBy?.first_name}
-              fallback={(notificationTriggeredBy.display_name ||
-                notificationTriggeredBy?.first_name)?.[0]?.toUpperCase()}
+              fallback={(
+                notificationTriggeredBy.display_name || notificationTriggeredBy?.first_name
+              )?.[0]?.toUpperCase()}
               src={getFileURL(notificationTriggeredBy.avatar_url)}
               size="xl"
             />
