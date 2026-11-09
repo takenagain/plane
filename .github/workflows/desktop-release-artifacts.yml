@@ -35,37 +35,38 @@ concurrency:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
-  WAILS_VERSION: "v2.17.0"
   APP_WORKING_DIRECTORY: apps/desktop
 
 jobs:
+  select-platforms:
+    name: Select desktop build platforms
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Select requested platforms
+        id: select
+        env:
+          PLATFORM: ${{ github.event_name == 'workflow_dispatch' && inputs.platform || 'all' }}
+        shell: bash
+        run: |
+          matrix='{"include":[
+            {"id":"linux-amd64","artifact_name":"plane-desktop-linux-amd64","os":"ubuntu-latest","wails_platform":"linux/amd64","nsis":false},
+            {"id":"windows-amd64","artifact_name":"plane-desktop-windows-amd64","os":"windows-latest","wails_platform":"windows/amd64","nsis":true},
+            {"id":"macos-universal","artifact_name":"plane-desktop-macos-universal","os":"macos-latest","wails_platform":"darwin/universal","nsis":false}
+          ]}'
+          selected="$(jq -ce --arg platform "$PLATFORM" '.include |= map(select($platform == "all" or .id == $platform)) | if (.include | length) > 0 then . else error("Unsupported desktop platform") end' <<< "$matrix")"
+          echo "matrix=$selected" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build ${{ matrix.artifact_name }}
+    needs: select-platforms
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - id: linux-amd64
-            artifact_name: plane-desktop-linux-amd64
-            os: ubuntu-latest
-            wails_platform: linux/amd64
-            nsis: false
-          - id: windows-amd64
-            artifact_name: plane-desktop-windows-amd64
-            os: windows-latest
-            wails_platform: windows/amd64
-            nsis: true
-          - id: macos-universal
-            artifact_name: plane-desktop-macos-universal
-            os: macos-latest
-            wails_platform: darwin/universal
-            nsis: false
-    if: |
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.platform == 'all' ||
-      github.event.inputs.platform == matrix.id
+      matrix: ${{ fromJSON(needs.select-platforms.outputs.matrix) }}
 
     steps:
       - name: Checkout
@@ -110,14 +111,8 @@ jobs:
             pkg-config \
             libgtk-3-dev \
             libayatana-appindicator3-dev \
-            gcc-aarch64-linux-gnu
-          distro="$(. /etc/os-release && echo "${VERSION_ID}")"
-          if [[ "${distro}" == "24.04" ]]; then
-            sudo apt-get install -y libwebkit2gtk-4.1-dev
-            echo "WAILS_BUILD_TAGS=webkit2_41" >> "$GITHUB_ENV"
-          else
-            sudo apt-get install -y libwebkit2gtk-4.0-dev
-          fi
+            libwebkit2gtk-4.1-dev
+          echo "WAILS_BUILD_TAGS=webkit2_41" >> "$GITHUB_ENV"
 
       - name: Install NSIS
         if: runner.os == 'Windows' && matrix.nsis == true
@@ -126,7 +121,11 @@ jobs:
 
       - name: Install Wails CLI
         shell: bash
-        run: go install "github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}"
+        working-directory: ${{ env.APP_WORKING_DIRECTORY }}
+        run: |
+          wails_version="$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)"
+          go install "github.com/wailsapp/wails/v2/cmd/wails@${wails_version}"
+          wails version
 
       - name: Build desktop app
         shell: bash

@@ -10,6 +10,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
@@ -21,20 +22,22 @@ function runCli(transform: string, source: string) {
   const fixture = join(fixtureDir, "component.tsx");
   writeFileSync(fixture, source);
   try {
-    const output = execFileSync(
-      process.execPath,
-      [
-        cli,
-        "-t",
-        join(packageDir, transform),
-        "--extensions=tsx",
-        "--parser=tsx",
-        "--dry",
-        "--print",
-        "--cpus=1",
-        fixture,
-      ],
-      { cwd: packageDir, encoding: "utf8", timeout: 20_000 }
+    const output = stripVTControlCharacters(
+      execFileSync(
+        process.execPath,
+        [
+          cli,
+          "-t",
+          join(packageDir, transform),
+          "--extensions=tsx",
+          "--parser=tsx",
+          "--dry",
+          "--print",
+          "--cpus=1",
+          fixture,
+        ],
+        { cwd: packageDir, encoding: "utf8", timeout: 20_000 }
+      )
     );
     // The CLI can exit zero after a transform error; check its counters too.
     expect(output).toMatch(/\b0 errors\b/);

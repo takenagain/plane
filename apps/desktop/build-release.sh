@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-WAILS_VERSION="${WAILS_VERSION:-v2.17.0}"
+WAILS_VERSION="${WAILS_VERSION:-}"
 PLATFORM="${1:-linux-amd64}"
 CLEAN="${CLEAN:-true}"
 
@@ -19,13 +19,13 @@ Platforms:
   macos-universal   macOS universal .app bundle (run on macOS)
 
 Environment:
-  WAILS_VERSION     Wails CLI tag (default: v2.17.0)
+  WAILS_VERSION     Wails CLI tag (default: the version pinned in go.mod)
   CLEAN             Pass -clean to wails build when true (default: true)
   VERSION           Written into dist/<artifact>/VERSION after build
 
 Linux prerequisites:
   libgtk-3-dev libayatana-appindicator3-dev
-  libwebkit2gtk-4.0-dev (Ubuntu 22.04) or libwebkit2gtk-4.1-dev (Ubuntu 24.04)
+  libwebkit2gtk-4.1-dev
 
 Windows prerequisites:
   NSIS (makensis on PATH) for -nsis installer output
@@ -37,9 +37,8 @@ EOF
 }
 
 install_wails() {
-  if ! command -v wails >/dev/null 2>&1; then
-    go install "github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}"
-  fi
+  local wails_version="${WAILS_VERSION:-$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)}"
+  go install "github.com/wailsapp/wails/v2/cmd/wails@${wails_version}"
 }
 
 install_linux_deps() {
@@ -55,17 +54,9 @@ install_linux_deps() {
     build-essential \
     pkg-config \
     libgtk-3-dev \
-    libayatana-appindicator3-dev
-  if [[ -f /etc/os-release ]]; then
-    # shellcheck disable=SC1091
-    . /etc/os-release
-    if [[ "${VERSION_ID:-}" == "24.04" ]]; then
-      sudo apt-get install -y libwebkit2gtk-4.1-dev
-      export WAILS_BUILD_TAGS="${WAILS_BUILD_TAGS:-webkit2_41}"
-    else
-      sudo apt-get install -y libwebkit2gtk-4.0-dev
-    fi
-  fi
+    libayatana-appindicator3-dev \
+    libwebkit2gtk-4.1-dev
+  export WAILS_BUILD_TAGS="${WAILS_BUILD_TAGS:-webkit2_41}"
 }
 
 stage_artifact() {
