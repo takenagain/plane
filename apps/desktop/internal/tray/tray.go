@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 	"github.com/takenagain/plane/apps/desktop/internal/timer"
 	"github.com/takenagain/plane/apps/desktop/pkg/models"
 )
 
 // Manager handles system tray functionality
 type Manager struct {
-	timerManager  *timer.Manager
-	onStop        func()
-	onStart       func(*models.Issue)
-	onShowWindow  func()
-	onSettings    func()
-	onQuit        func()
+	timerManager *timer.Manager
+	onStop       func()
+	onStart      func(*models.Issue)
+	onShowWindow func()
+	onSettings   func()
+	onQuit       func()
 
 	// Menu items
 	timerItem    *systray.MenuItem
@@ -50,9 +50,9 @@ func (m *Manager) SetCallbacks(
 	m.onQuit = onQuit
 }
 
-// Run starts the system tray (this is blocking)
+// Run starts the system tray using the platform's event loop.
 func (m *Manager) Run() {
-	systray.Run(m.onReady, m.onExit)
+	runTray(m.onReady, m.onExit)
 }
 
 // onReady is called when the systray is ready

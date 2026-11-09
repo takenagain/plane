@@ -2,7 +2,7 @@
 
 package tray
 
-// Supported reports whether the legacy getlantern systray can run on this OS.
+// Supported reports whether the system tray can run on this OS.
 func Supported() bool {
 	return true
 }

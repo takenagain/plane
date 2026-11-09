@@ -41,6 +41,8 @@ The latest parent releases still consume Babel 7 APIs. Four pinned patches adapt
 
 UI Storybook uses the existing Vite builder pattern. Its build retains all 15 indexed story entries and emits the stylesheet.
 
+Desktop uses `fyne.io/systray` 1.12.2, the maintained API-compatible fork, because the old tray library and Wails both define the Objective-C `AppDelegate` class. On macOS, the tray starts on AppKit's main thread using the external event loop API so Wails retains its application delegate. Windows builds explicitly name the output `plane-desktop.exe` to match artifact staging and the installer.
+
 ## Publication gate
 
 Commit and push the verified changes to `origin/staging`. Confirm all six GHCR image jobs succeed for that exact pushed SHA, run the API/web test workflows, and confirm remote/local branch agreement before reporting publication complete.

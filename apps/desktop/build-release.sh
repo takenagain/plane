@@ -91,7 +91,7 @@ build_windows_amd64() {
     exit 1
   fi
   install_wails
-  local args=(-platform windows/amd64 -o plane-desktop -webview2 embed -nsis)
+  local args=(-platform windows/amd64 -o plane-desktop.exe -webview2 embed -nsis)
   [[ "${CLEAN}" == "true" ]] && args=(-clean "${args[@]}")
   wails build "${args[@]}"
   local staging

@@ -134,10 +134,14 @@ jobs:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
           set -euo pipefail
+          output_name=plane-desktop
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            output_name+=.exe
+          fi
           build_args=(
             -clean
             -platform "${{ matrix.wails_platform }}"
-            -o plane-desktop
+            -o "${output_name}"
             -webview2 embed
           )
           if [[ -n "${WAILS_BUILD_TAGS:-}" ]]; then
