@@ -5,7 +5,7 @@
  */
 
 import { unset, set } from "lodash-es";
-import { makeObservable, observable, runInAction, action, reaction, computed } from "mobx";
+import { makeObservable, observable, runInAction, action, reaction, computed, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import { EUserPermissions } from "@plane/constants";
@@ -83,7 +83,7 @@ export class ProjectPageStore implements IProjectPageStore {
   constructor(private store: CoreRootStore) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       data: observable,
       error: observable,
       filters: observable,

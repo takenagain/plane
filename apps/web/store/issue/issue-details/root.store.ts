@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, computed, makeObservable, observable } from "mobx";
+import { action, computed, makeObservable, observable, observableRef } from "mobx";
 // types
 import type {
   TIssue,
@@ -172,15 +172,15 @@ export class IssueDetail implements IIssueDetail {
       issueLinkData: observable,
       issueCrudOperationState: observable,
       isCreateIssueModalOpen: observable,
-      isIssueLinkModalOpen: observable.ref,
-      isParentIssueModalOpen: observable.ref,
-      isDeleteIssueModalOpen: observable.ref,
-      isArchiveIssueModalOpen: observable.ref,
-      isRelationModalOpen: observable.ref,
-      isSubIssuesModalOpen: observable.ref,
-      attachmentDeleteModalId: observable.ref,
-      openWidgets: observable.ref,
-      lastWidgetAction: observable.ref,
+      isIssueLinkModalOpen: observableRef,
+      isParentIssueModalOpen: observableRef,
+      isDeleteIssueModalOpen: observableRef,
+      isArchiveIssueModalOpen: observableRef,
+      isRelationModalOpen: observableRef,
+      isSubIssuesModalOpen: observableRef,
+      attachmentDeleteModalId: observableRef,
+      openWidgets: observableRef,
+      lastWidgetAction: observableRef,
       // computed
       isAnyModalOpen: computed,
       isPeekOpen: computed,

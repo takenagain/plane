@@ -6,7 +6,7 @@
 
 /* eslint-disable no-useless-catch */
 import { set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 import type { IUserLite, TNotification, TNotificationData } from "@plane/types";
 // services
 import workspaceNotificationService from "@/services/workspace-notification.service";
@@ -63,29 +63,29 @@ export class Notification implements INotification {
     this.id = this.notification.id;
     makeObservable(this, {
       // observables
-      id: observable.ref,
-      title: observable.ref,
+      id: observableRef,
+      title: observableRef,
       data: observable,
-      entity_identifier: observable.ref,
-      entity_name: observable.ref,
-      message_html: observable.ref,
-      message: observable.ref,
-      message_stripped: observable.ref,
-      sender: observable.ref,
-      receiver: observable.ref,
-      triggered_by: observable.ref,
+      entity_identifier: observableRef,
+      entity_name: observableRef,
+      message_html: observableRef,
+      message: observableRef,
+      message_stripped: observableRef,
+      sender: observableRef,
+      receiver: observableRef,
+      triggered_by: observableRef,
       triggered_by_details: observable,
-      read_at: observable.ref,
-      archived_at: observable.ref,
-      snoozed_till: observable.ref,
-      is_inbox_issue: observable.ref,
-      is_mentioned_notification: observable.ref,
-      workspace: observable.ref,
-      project: observable.ref,
-      created_at: observable.ref,
-      updated_at: observable.ref,
-      created_by: observable.ref,
-      updated_by: observable.ref,
+      read_at: observableRef,
+      archived_at: observableRef,
+      snoozed_till: observableRef,
+      is_inbox_issue: observableRef,
+      is_mentioned_notification: observableRef,
+      workspace: observableRef,
+      project: observableRef,
+      created_at: observableRef,
+      updated_at: observableRef,
+      created_by: observableRef,
+      updated_by: observableRef,
       // computed
       asJson: computed,
       // actions

@@ -5,7 +5,7 @@
  */
 
 import { uniq, pull, set, debounce, update, concat } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, actionBound } from "mobx";
 import { computedFn } from "mobx-utils";
 import { v4 as uuidv4 } from "uuid";
 // types
@@ -75,7 +75,7 @@ export class IssueAttachmentStore implements IIssueAttachmentStore {
       // computed
       issueAttachments: computed,
       // actions
-      addAttachments: action.bound,
+      addAttachments: actionBound,
       fetchAttachments: action,
       createAttachment: action,
       removeAttachment: action,

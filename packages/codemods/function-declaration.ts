@@ -97,6 +97,20 @@ function copyOuterComments(source: Node, target: Node, j: JSCodeshift) {
   addComments(target, outerComments);
 }
 
+function getTypeArguments(node: Node, j: JSCodeshift) {
+  // Babel 8 renamed type instantiations; generic declarations still use
+  // typeParameters. Keep the fallback for nodes created by ast-types builders.
+  const argumentsNode =
+    "typeArguments" in node
+      ? node.typeArguments
+      : "typeParameters" in node
+        ? node.typeParameters
+        : undefined;
+  return j.TSTypeParameterInstantiation.check(argumentsNode)
+    ? argumentsNode
+    : undefined;
+}
+
 function ensureParamType(
   param: Pattern,
   propsType: TSType | null | undefined,
@@ -116,9 +130,10 @@ function ensureParamType(
 
   if (j.TSTypeReference.check(propsType) && propsType.typeName) {
     param.typeAnnotation = j.tsTypeAnnotation(
-      propsType.typeParameters
-        ? j.tsTypeReference(propsType.typeName, propsType.typeParameters)
-        : j.tsTypeReference(propsType.typeName)
+      j.tsTypeReference(
+        propsType.typeName,
+        getTypeArguments(propsType, j) ?? null
+      )
     );
     return;
   }
@@ -178,11 +193,7 @@ function extractPropsTypeFromWrapper(
     return;
   }
 
-  if (!("typeParameters" in init)) {
-    return;
-  }
-
-  const typeParameters = init.typeParameters;
+  const typeParameters = getTypeArguments(init, j);
   if (!j.TSTypeParameterInstantiation.check(typeParameters)) {
     return;
   }
@@ -198,7 +209,7 @@ function extractPropsTypeFromWrapper(
     isReactComponentType(typeParam, j)
   ) {
     // Extract the generic type from React.FC<PropsType>
-    return typeParam.typeParameters?.params?.[0];
+    return getTypeArguments(typeParam, j)?.params?.[0];
   }
 
   // Check for memo<Props>
@@ -260,11 +271,11 @@ function extractForwardRefTypes(
     return;
   }
 
-  if (!j.CallExpression.check(init) || !("typeParameters" in init)) {
+  if (!j.CallExpression.check(init)) {
     return;
   }
 
-  const typeParameters = init.typeParameters;
+  const typeParameters = getTypeArguments(init, j);
 
   // If no type parameters, we still want to apply default empty object for props
   if (
@@ -461,7 +472,7 @@ export default function transform(file: FileInfo, api: API, options: Options) {
         j.TSTypeReference.check(typeAnnotation) &&
         isReactComponentType(typeAnnotation, j)
       ) {
-        propsType = typeAnnotation.typeParameters?.params?.[0];
+        propsType = getTypeArguments(typeAnnotation, j)?.params?.[0];
       }
 
       // If no props type from variable annotation, try to extract from wrapper's type parameters

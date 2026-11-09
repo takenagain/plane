@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, observable, runInAction, makeObservable } from "mobx";
+import { action, observable, runInAction, makeObservable, observableRef } from "mobx";
 // plane internal packages
 import type { TUserStatus } from "@plane/constants";
 import { EUserStatus } from "@plane/constants";
@@ -39,9 +39,9 @@ export class UserStore implements IUserStore {
   constructor(private store: RootStore) {
     makeObservable(this, {
       // observables
-      isLoading: observable.ref,
+      isLoading: observableRef,
       userStatus: observable,
-      isUserLoggedIn: observable.ref,
+      isUserLoggedIn: observableRef,
       currentUser: observable,
       // action
       fetchCurrentUser: action,

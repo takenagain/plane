@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { observable, makeObservable, computed } from "mobx";
+import { observable, makeObservable, computed, observableRef } from "mobx";
 // types
 import type {
   IWorkspaceLite,
@@ -68,22 +68,22 @@ export class PublishStore implements IPublishStore {
 
     makeObservable(this, {
       // observables
-      anchor: observable.ref,
-      is_comments_enabled: observable.ref,
-      created_at: observable.ref,
-      created_by: observable.ref,
-      entity_identifier: observable.ref,
-      entity_name: observable.ref,
-      id: observable.ref,
+      anchor: observableRef,
+      is_comments_enabled: observableRef,
+      created_at: observableRef,
+      created_by: observableRef,
+      entity_identifier: observableRef,
+      entity_name: observableRef,
+      id: observableRef,
       inbox: observable,
-      project: observable.ref,
+      project: observableRef,
       project_details: observable,
-      is_reactions_enabled: observable.ref,
-      updated_at: observable.ref,
-      updated_by: observable.ref,
+      is_reactions_enabled: observableRef,
+      updated_at: observableRef,
+      updated_by: observableRef,
       view_props: observable,
-      is_votes_enabled: observable.ref,
-      workspace: observable.ref,
+      is_votes_enabled: observableRef,
+      workspace: observableRef,
       workspace_detail: observable,
       // computed
       workspaceSlug: computed,

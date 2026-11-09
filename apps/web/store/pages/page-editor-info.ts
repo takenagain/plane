@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 // plane imports
 import type { EditorRefApi, TEditorAsset } from "@plane/editor";
 
@@ -25,7 +25,7 @@ export class PageEditorInstance implements TPageEditorInstance {
   constructor() {
     makeObservable(this, {
       // observables
-      editorRef: observable.ref,
+      editorRef: observableRef,
       assetsList: observable,
       // actions
       setEditorRef: action,

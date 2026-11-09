@@ -5,7 +5,7 @@
  */
 
 // mobx
-import { action, observable, makeObservable, computed, runInAction } from "mobx";
+import { action, observable, makeObservable, computed, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { IWebhook } from "@plane/types";
@@ -53,7 +53,7 @@ export class WebhookStore implements IWebhookStore {
     makeObservable(this, {
       // observables
       webhooks: observable,
-      webhookSecretKey: observable.ref,
+      webhookSecretKey: observableRef,
       // computed
       currentWebhook: computed,
       // fetch actions
@@ -96,12 +96,9 @@ export class WebhookStore implements IWebhookStore {
    */
   fetchWebhooks = async (workspaceSlug: string) =>
     await this.webhookService.fetchWebhooksList(workspaceSlug).then((response) => {
-      const webHookObject: { [webhookId: string]: IWebhook } = response.reduce((accumulator, currentWebhook) => {
-        if (currentWebhook && currentWebhook.id) {
-          return { ...accumulator, [currentWebhook.id]: currentWebhook };
-        }
-        return accumulator;
-      }, {});
+      const webHookObject: { [webhookId: string]: IWebhook } = Object.fromEntries(
+        response.filter((webhook) => webhook?.id).map((webhook) => [webhook.id, webhook])
+      );
       runInAction(() => {
         this.webhooks = webHookObject;
       });
@@ -131,15 +128,15 @@ export class WebhookStore implements IWebhookStore {
    */
   createWebhook = async (workspaceSlug: string, data: Partial<IWebhook>) =>
     await this.webhookService.createWebhook(workspaceSlug, data).then((response) => {
-      const _secretKey = response?.secret_key ?? null;
+      const returnedSecretKey = response?.secret_key ?? null;
       delete response?.secret_key;
-      const _webhooks = this.webhooks;
-      if (response && response.id && _webhooks) _webhooks[response.id] = response;
+      const nextWebhooks = this.webhooks;
+      if (response && response.id && nextWebhooks) nextWebhooks[response.id] = response;
       runInAction(() => {
-        this.webhookSecretKey = _secretKey || null;
-        this.webhooks = _webhooks;
+        this.webhookSecretKey = returnedSecretKey || null;
+        this.webhooks = nextWebhooks;
       });
-      return { webHook: response, secretKey: _secretKey };
+      return { webHook: response, secretKey: returnedSecretKey };
     });
 
   /**
@@ -150,11 +147,11 @@ export class WebhookStore implements IWebhookStore {
    */
   updateWebhook = async (workspaceSlug: string, webhookId: string, data: Partial<IWebhook>) =>
     await this.webhookService.updateWebhook(workspaceSlug, webhookId, data).then((response) => {
-      let _webhooks = this.webhooks;
-      if (webhookId && _webhooks && this.webhooks)
-        _webhooks = { ..._webhooks, [webhookId]: { ...this.webhooks[webhookId], ...data } };
+      let nextWebhooks = this.webhooks;
+      if (webhookId && nextWebhooks && this.webhooks)
+        nextWebhooks = { ...nextWebhooks, [webhookId]: { ...this.webhooks[webhookId], ...data } };
       runInAction(() => {
-        this.webhooks = _webhooks;
+        this.webhooks = nextWebhooks;
       });
       return response;
     });
@@ -166,10 +163,10 @@ export class WebhookStore implements IWebhookStore {
    */
   removeWebhook = async (workspaceSlug: string, webhookId: string) =>
     await this.webhookService.deleteWebhook(workspaceSlug, webhookId).then(() => {
-      const _webhooks = this.webhooks ?? {};
-      delete _webhooks[webhookId];
+      const nextWebhooks = this.webhooks ?? {};
+      delete nextWebhooks[webhookId];
       runInAction(() => {
-        this.webhooks = _webhooks;
+        this.webhooks = nextWebhooks;
       });
     });
 
@@ -180,17 +177,17 @@ export class WebhookStore implements IWebhookStore {
    */
   regenerateSecretKey = async (workspaceSlug: string, webhookId: string) =>
     await this.webhookService.regenerateSecretKey(workspaceSlug, webhookId).then((response) => {
-      const _secretKey = response?.secret_key ?? null;
+      const returnedSecretKey = response?.secret_key ?? null;
       delete response?.secret_key;
-      const _webhooks = this.webhooks;
-      if (_webhooks && response && response.id) {
-        _webhooks[response.id] = response;
+      const nextWebhooks = this.webhooks;
+      if (nextWebhooks && response && response.id) {
+        nextWebhooks[response.id] = response;
       }
       runInAction(() => {
-        this.webhookSecretKey = _secretKey || null;
-        this.webhooks = _webhooks;
+        this.webhookSecretKey = returnedSecretKey || null;
+        this.webhooks = nextWebhooks;
       });
-      return { webHook: response, secretKey: _secretKey };
+      return { webHook: response, secretKey: returnedSecretKey };
     });
 
   /**

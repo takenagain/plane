@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, observable, makeObservable, runInAction } from "mobx";
+import { action, makeObservable, runInAction, observableRef } from "mobx";
 
 export interface IThemeStore {
   // observables
@@ -50,17 +50,17 @@ export class ThemeStore implements IThemeStore {
   constructor() {
     makeObservable(this, {
       // observable
-      isAnySidebarDropdownOpen: observable.ref,
-      sidebarCollapsed: observable.ref,
-      sidebarPeek: observable.ref,
-      isExtendedSidebarOpened: observable.ref,
-      isExtendedProjectSidebarOpened: observable.ref,
-      profileSidebarCollapsed: observable.ref,
-      workspaceAnalyticsSidebarCollapsed: observable.ref,
-      issueDetailSidebarCollapsed: observable.ref,
-      epicDetailSidebarCollapsed: observable.ref,
-      initiativesSidebarCollapsed: observable.ref,
-      projectOverviewSidebarCollapsed: observable.ref,
+      isAnySidebarDropdownOpen: observableRef,
+      sidebarCollapsed: observableRef,
+      sidebarPeek: observableRef,
+      isExtendedSidebarOpened: observableRef,
+      isExtendedProjectSidebarOpened: observableRef,
+      profileSidebarCollapsed: observableRef,
+      workspaceAnalyticsSidebarCollapsed: observableRef,
+      issueDetailSidebarCollapsed: observableRef,
+      epicDetailSidebarCollapsed: observableRef,
+      initiativesSidebarCollapsed: observableRef,
+      projectOverviewSidebarCollapsed: observableRef,
       // action
       toggleAnySidebarDropdown: action,
       toggleSidebar: action,

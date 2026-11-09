@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, actionBound } from "mobx";
 // services
 import type { EIssueServiceType } from "@plane/types";
 import { IssueService } from "@/services/issue/issue.service";
@@ -38,7 +38,7 @@ export class IssueSubscriptionStore implements IIssueSubscriptionStore {
       // observables
       subscriptionMap: observable,
       // actions
-      addSubscription: action.bound,
+      addSubscription: actionBound,
       fetchSubscriptions: action,
       createSubscription: action,
       removeSubscription: action,

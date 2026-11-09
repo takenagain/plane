@@ -1,5 +1,5 @@
 import { unset, set } from "lodash-es";
-import { makeObservable, observable, runInAction, action, reaction, computed } from "mobx";
+import { makeObservable, observable, runInAction, action, reaction, computed, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 import { EUserPermissions } from "@plane/constants";
 import type { TPage, TPageFilters, TPageNavigationTabs } from "@plane/types";
@@ -36,7 +36,7 @@ export class WikiPageStore implements IProjectPageStore {
 
   constructor(private store: RootStore) {
     makeObservable(this, {
-      loader: observable.ref,
+      loader: observableRef,
       data: observable,
       error: observable,
       filters: observable,

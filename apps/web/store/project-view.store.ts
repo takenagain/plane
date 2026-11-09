@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { observable, action, makeObservable, runInAction, computed } from "mobx";
+import { observable, action, makeObservable, runInAction, computed, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { IProjectView, TViewFilters } from "@plane/types";
@@ -64,7 +64,7 @@ export class ProjectViewStore implements IProjectViewStore {
   constructor(_rootStore: CoreRootStore) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       viewMap: observable,
       fetchedMap: observable,
       filters: observable,

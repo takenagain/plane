@@ -5,7 +5,7 @@
  */
 
 import type { ParsedUrlQuery } from "node:querystring";
-import { action, makeObservable, observable, computed, runInAction } from "mobx";
+import { makeObservable, observable, computed, runInAction, actionBound } from "mobx";
 
 import type { TProfileViews } from "@plane/types";
 export interface IRouterStore {
@@ -39,7 +39,7 @@ export class RouterStore implements IRouterStore {
       // observables
       query: observable,
       // actions
-      setQuery: action.bound,
+      setQuery: actionBound,
       //computed
       workspaceSlug: computed,
       teamspaceId: computed,

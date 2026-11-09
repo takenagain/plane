@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, computed, makeObservable, observable, reaction, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, reaction, runInAction, observableRef } from "mobx";
 // plane imports
 import { EPageAccess } from "@plane/constants";
 import type { ChangeHandlerPayload } from "@plane/blocks/emoji-icon-picker";
@@ -143,30 +143,30 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
 
     makeObservable(this, {
       // loaders
-      isSubmitting: observable.ref,
+      isSubmitting: observableRef,
       // page properties
-      id: observable.ref,
-      name: observable.ref,
-      logo_props: observable.ref,
-      description_json: observable.ref,
-      description_html: observable.ref,
-      color: observable.ref,
+      id: observableRef,
+      name: observableRef,
+      logo_props: observableRef,
+      description_json: observableRef,
+      description_html: observableRef,
+      color: observableRef,
       label_ids: observable,
-      owned_by: observable.ref,
-      access: observable.ref,
-      is_favorite: observable.ref,
-      is_locked: observable.ref,
-      archived_at: observable.ref,
-      workspace: observable.ref,
+      owned_by: observableRef,
+      access: observableRef,
+      is_favorite: observableRef,
+      is_locked: observableRef,
+      archived_at: observableRef,
+      workspace: observableRef,
       project_ids: observable,
-      created_by: observable.ref,
-      updated_by: observable.ref,
-      created_at: observable.ref,
-      updated_at: observable.ref,
-      deleted_at: observable.ref,
-      isSyncingWithServer: observable.ref,
+      created_by: observableRef,
+      updated_by: observableRef,
+      created_at: observableRef,
+      updated_at: observableRef,
+      deleted_at: observableRef,
+      isSyncingWithServer: observableRef,
       // helpers
-      oldName: observable.ref,
+      oldName: observableRef,
       setIsSubmitting: action,
       cleanup: action,
       // computed

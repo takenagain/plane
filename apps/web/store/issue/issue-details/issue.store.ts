@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { makeObservable, observable } from "mobx";
+import { makeObservable, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { TIssue, TIssueServiceType } from "@plane/types";
@@ -54,7 +54,7 @@ export class IssueStore implements IIssueStore {
 
   constructor(rootStore: IIssueDetail, serviceType: TIssueServiceType) {
     makeObservable(this, {
-      fetchingIssueDetails: observable.ref,
+      fetchingIssueDetails: observableRef,
     });
     // root store
     this.rootIssueDetailStore = rootStore;

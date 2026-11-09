@@ -1,0 +1,13 @@
+diff --git a/dist/_node-chunks/react-docgen-RDH6HQL5.js b/dist/_node-chunks/react-docgen-RDH6HQL5.js
+index 239e1afac61f9d8205241b250c176bdbbd41cadf..4cf217195be423a759889aa7880e666e68064ba0 100644
+--- a/dist/_node-chunks/react-docgen-RDH6HQL5.js
++++ b/dist/_node-chunks/react-docgen-RDH6HQL5.js
+@@ -29,7 +29,7 @@ import * as TsconfigPaths from "tsconfig-paths";
+ // src/plugins/docgen-handlers/actualNameHandler.ts
+ import { utils } from "react-docgen";
+ var { getNameOrValue, isReactForwardRefCall } = utils, actualNameHandler = function(documentation, componentDefinition) {
+-  if (documentation.set("definedInFile", componentDefinition.hub.file.opts.filename), (componentDefinition.isClassDeclaration() || componentDefinition.isFunctionDeclaration()) && componentDefinition.has("id"))
++  if (documentation.set("definedInFile", componentDefinition.hub.file.opts.filename), (componentDefinition.isClassDeclaration() || componentDefinition.isFunctionDeclaration()) && Boolean(componentDefinition.node?.id))
+     documentation.set(
+       "actualName",
+       getNameOrValue(componentDefinition.get("id"))

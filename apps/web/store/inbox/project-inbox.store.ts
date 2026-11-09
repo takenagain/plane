@@ -5,7 +5,7 @@
  */
 
 import { uniq, update, isEmpty, omit, set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 import type { EPastDurationFilters } from "@plane/constants";
 // types
@@ -100,10 +100,10 @@ export class ProjectInboxStore implements IProjectInboxStore {
 
   constructor(private store: CoreRootStore) {
     makeObservable(this, {
-      currentTab: observable.ref,
-      loader: observable.ref,
+      currentTab: observableRef,
+      loader: observableRef,
       error: observable,
-      currentInboxProjectId: observable.ref,
+      currentInboxProjectId: observableRef,
       filtersMap: observable,
       sortingMap: observable,
       inboxIssuePaginationInfo: observable,

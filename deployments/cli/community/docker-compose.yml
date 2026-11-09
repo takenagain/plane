@@ -200,7 +200,7 @@ services:
       - redisdata:/data
 
   plane-mq:
-    image: rabbitmq:4.2.9-management-alpine@sha256:77ca2ba3621a95208918e6e331199a6c81129690bf7fc570dc61b6e64726840a
+    image: rabbitmq:4.4.0-management-alpine@sha256:4841f6384ef8313c3594cd3f2e9f40c10805f8a61c45f08a9a5d9ddea8199267
     deploy:
       replicas: 1
       restart_policy:

@@ -1,0 +1,64 @@
+diff --git a/esm/CSSTransition.js b/esm/CSSTransition.js
+index fb43f53a5bd8354dfe9c3d6437c5f2c89227b628..cf6c00fec7791b46c720d3367de4b09b4c591aad 100644
+--- a/esm/CSSTransition.js
++++ b/esm/CSSTransition.js
+@@ -1,6 +1,6 @@
+-import _extends from "@babel/runtime/helpers/esm/extends";
+-import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/esm/objectWithoutPropertiesLoose";
+-import _inheritsLoose from "@babel/runtime/helpers/esm/inheritsLoose";
++import _extends from "@babel/runtime/helpers/extends";
++import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/objectWithoutPropertiesLoose";
++import _inheritsLoose from "@babel/runtime/helpers/inheritsLoose";
+ import PropTypes from 'prop-types';
+ import addOneClass from 'dom-helpers/addClass';
+ import removeOneClass from 'dom-helpers/removeClass';
+diff --git a/esm/ReplaceTransition.js b/esm/ReplaceTransition.js
+index a7678c6e10539daf50697cb16969434cbc63c7eb..1117db5a316a0b8cf9294185833f6085efdc3cc0 100644
+--- a/esm/ReplaceTransition.js
++++ b/esm/ReplaceTransition.js
+@@ -1,5 +1,5 @@
+-import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/esm/objectWithoutPropertiesLoose";
+-import _inheritsLoose from "@babel/runtime/helpers/esm/inheritsLoose";
++import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/objectWithoutPropertiesLoose";
++import _inheritsLoose from "@babel/runtime/helpers/inheritsLoose";
+ import PropTypes from 'prop-types';
+ import React from 'react';
+ import ReactDOM from 'react-dom';
+diff --git a/esm/SwitchTransition.js b/esm/SwitchTransition.js
+index 8ba2e9e38f7175d0f619072fc77b8ab5403e4c48..978e66e5588ddbaeaa4d5c658d0a7925cf339e1d 100644
+--- a/esm/SwitchTransition.js
++++ b/esm/SwitchTransition.js
+@@ -1,4 +1,4 @@
+-import _inheritsLoose from "@babel/runtime/helpers/esm/inheritsLoose";
++import _inheritsLoose from "@babel/runtime/helpers/inheritsLoose";
+ 
+ var _leaveRenders, _enterRenders;
+ 
+diff --git a/esm/Transition.js b/esm/Transition.js
+index 986d29f43ade851a1b4701a6eb857339c8cb33eb..61e22143ae2170971e8418fbe3c298a738a984e1 100644
+--- a/esm/Transition.js
++++ b/esm/Transition.js
+@@ -1,5 +1,5 @@
+-import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/esm/objectWithoutPropertiesLoose";
+-import _inheritsLoose from "@babel/runtime/helpers/esm/inheritsLoose";
++import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/objectWithoutPropertiesLoose";
++import _inheritsLoose from "@babel/runtime/helpers/inheritsLoose";
+ import PropTypes from 'prop-types';
+ import React from 'react';
+ import ReactDOM from 'react-dom';
+diff --git a/esm/TransitionGroup.js b/esm/TransitionGroup.js
+index 8e4deb3f2e5c217a8a00f57865b10e379035269e..1676b55d6b3fe54d7aabf16c99abbede1f466728 100644
+--- a/esm/TransitionGroup.js
++++ b/esm/TransitionGroup.js
+@@ -1,7 +1,7 @@
+-import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/esm/objectWithoutPropertiesLoose";
+-import _extends from "@babel/runtime/helpers/esm/extends";
+-import _assertThisInitialized from "@babel/runtime/helpers/esm/assertThisInitialized";
+-import _inheritsLoose from "@babel/runtime/helpers/esm/inheritsLoose";
++import _objectWithoutPropertiesLoose from "@babel/runtime/helpers/objectWithoutPropertiesLoose";
++import _extends from "@babel/runtime/helpers/extends";
++import _assertThisInitialized from "@babel/runtime/helpers/assertThisInitialized";
++import _inheritsLoose from "@babel/runtime/helpers/inheritsLoose";
+ import PropTypes from 'prop-types';
+ import React from 'react';
+ import TransitionGroupContext from './TransitionGroupContext';

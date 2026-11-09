@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, makeObservable, runInAction, computed, reaction, observable } from "mobx";
+import { action, makeObservable, runInAction, computed, reaction, observableRef } from "mobx";
 
 // helpers
 import { computedFn } from "mobx-utils";
@@ -53,12 +53,12 @@ export class CalendarStore implements ICalendarStore {
 
   constructor(_rootStore: IIssueRootStore) {
     makeObservable(this, {
-      loader: observable.ref,
-      error: observable.ref,
+      loader: observableRef,
+      error: observableRef,
 
       // observables
-      calendarFilters: observable.ref,
-      calendarPayload: observable.ref,
+      calendarFilters: observableRef,
+      calendarPayload: observableRef,
 
       // actions
       updateCalendarFilters: action,

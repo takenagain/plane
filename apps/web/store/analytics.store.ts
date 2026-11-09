@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { ANALYTICS_DURATION_FILTER_OPTIONS } from "@plane/constants";
 import type { TAnalyticsTabsBase } from "@plane/types";
 
@@ -43,13 +43,13 @@ export class BaseAnalyticsStore implements IBaseAnalyticsStore {
   constructor() {
     makeObservable(this, {
       // observables
-      currentTab: observable.ref,
-      selectedDuration: observable.ref,
+      currentTab: observableRef,
+      selectedDuration: observableRef,
       selectedProjects: observable,
-      selectedCycle: observable.ref,
-      selectedModule: observable.ref,
-      isPeekView: observable.ref,
-      isEpic: observable.ref,
+      selectedCycle: observableRef,
+      selectedModule: observableRef,
+      isPeekView: observableRef,
+      isEpic: observableRef,
       // computed
       selectedDurationLabel: computed,
       // actions

@@ -5,7 +5,7 @@
  */
 
 import { isEqual, set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef, actionBound } from "mobx";
 import { computedFn } from "mobx-utils";
 // components
 import type {
@@ -89,19 +89,19 @@ export class BaseTimeLineStore implements IBaseTimelineStore {
       // observables
       blocksMap: observable,
       blockIds: observable,
-      isDragging: observable.ref,
-      currentView: observable.ref,
+      isDragging: observableRef,
+      currentView: observableRef,
       currentViewData: observable,
-      activeBlockId: observable.ref,
+      activeBlockId: observableRef,
       renderView: observable,
       // actions
       setIsDragging: action,
-      setBlockIds: action.bound,
-      initGantt: action.bound,
-      updateCurrentView: action.bound,
-      updateCurrentViewData: action.bound,
-      updateActiveBlockId: action.bound,
-      updateRenderView: action.bound,
+      setBlockIds: actionBound,
+      initGantt: actionBound,
+      updateCurrentView: actionBound,
+      updateCurrentViewData: actionBound,
+      updateActiveBlockId: actionBound,
+      updateRenderView: actionBound,
     });
 
     this.initGantt();

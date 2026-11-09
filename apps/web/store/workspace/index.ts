@@ -5,7 +5,7 @@
  */
 
 import { clone, set } from "lodash-es";
-import { action, computed, observable, makeObservable, runInAction } from "mobx";
+import { action, computed, observable, makeObservable, runInAction, observableRef } from "mobx";
 // types
 import { computedFn } from "mobx-utils";
 import type {
@@ -88,7 +88,7 @@ export class BaseWorkspaceRootStore implements IWorkspaceRootStore {
 
   constructor(_rootStore: CoreRootStore) {
     makeObservable(this, {
-      loader: observable.ref,
+      loader: observableRef,
       // observables
       workspaces: observable,
       navigationPreferencesMap: observable,

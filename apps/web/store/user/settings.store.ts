@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 // plane imports
 import type { IUserSettings } from "@plane/types";
 // services
@@ -53,11 +53,11 @@ export class UserSettingsStore implements IUserSettingsStore {
   constructor() {
     makeObservable(this, {
       // observables
-      isLoading: observable.ref,
+      isLoading: observableRef,
       error: observable,
       data: observable,
-      sidebarCollapsed: observable.ref,
-      isScrolled: observable.ref,
+      sidebarCollapsed: observableRef,
+      isScrolled: observableRef,
       // actions
       fetchCurrentUserSettings: action,
       toggleSidebar: action,

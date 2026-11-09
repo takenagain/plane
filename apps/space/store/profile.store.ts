@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 // plane imports
 import { UserService } from "@plane/services";
 import type { TUserProfile } from "@plane/types";
@@ -67,7 +67,7 @@ export class ProfileStore implements IProfileStore {
   constructor(public store: RootStore) {
     makeObservable(this, {
       // observables
-      isLoading: observable.ref,
+      isLoading: observableRef,
       error: observable,
       data: observable,
       // actions

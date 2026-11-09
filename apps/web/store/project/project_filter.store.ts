@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, computed, observable, makeObservable, runInAction, reaction } from "mobx";
+import { action, computed, observable, makeObservable, runInAction, reaction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { TProjectDisplayFilters, TProjectFilters, TProjectAppliedDisplayFilterKeys } from "@plane/types";
@@ -45,7 +45,7 @@ export class ProjectFilterStore implements IProjectFilterStore {
       // observables
       displayFilters: observable,
       filters: observable,
-      searchQuery: observable.ref,
+      searchQuery: observableRef,
       // computed
       currentWorkspaceDisplayFilters: computed,
       currentWorkspaceAppliedDisplayFilters: computed,

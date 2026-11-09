@@ -325,14 +325,14 @@ Once done with making changes in `plane.env` file, jump on to `Start Server`
 
 #### Stateful service major upgrades
 
-This release uses PostgreSQL 18.6, Valkey 9.1.3, and RabbitMQ 4.2.9. Back up the
+This release uses PostgreSQL 18.6, Valkey 9.1.3, and RabbitMQ 4.4.0. Back up the
 instance before upgrading. PostgreSQL 18 uses a versioned data directory and a
 new `pgdata18` volume; it does not upgrade an older cluster automatically. The
 upgrade preserves the previous `pgdata` volume. Follow the
 [PostgreSQL 18 migration guide](../../../docs/operations/postgresql-18-upgrade.md)
 before starting the Plane services on the new database.
 
-RabbitMQ also has persistent state. Its 3.13 to 4.2 upgrade must follow the
+RabbitMQ also has persistent state. Its 3.13 to 4.4 upgrade must follow the
 supported RabbitMQ upgrade path, including the required feature-flag and version
 steps; do not remove or reuse its volume as an empty queue. Back up the volume
 and follow the [RabbitMQ upgrade guide](https://www.rabbitmq.com/docs/upgrade)

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { observable, action, makeObservable, runInAction } from "mobx";
+import { observable, action, makeObservable, runInAction, observableRef } from "mobx";
 // types
 import type { IInstance, IInstanceConfig } from "@plane/types";
 // services
@@ -40,7 +40,7 @@ export class InstanceStore implements IInstanceStore {
   constructor() {
     makeObservable(this, {
       // observable
-      isLoading: observable.ref,
+      isLoading: observableRef,
       instance: observable,
       config: observable,
       error: observable,

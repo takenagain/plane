@@ -5,7 +5,7 @@
  */
 
 import { isEmpty, set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 // base class
 import { computedFn } from "mobx-utils";
 import type { TSupportedFilterTypeForUpdate } from "@plane/constants";
@@ -67,7 +67,7 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
     super();
     makeObservable(this, {
       // observables
-      userId: observable.ref,
+      userId: observableRef,
       filters: observable,
       // computed
       issueFilters: computed,
@@ -100,9 +100,9 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
     const displayFilters = this.filters[userId] || undefined;
     if (isEmpty(displayFilters)) return undefined;
 
-    const _filters: IIssueFilters = this.computedIssueFilters(displayFilters);
+    const resolvedFilters: IIssueFilters = this.computedIssueFilters(displayFilters);
 
-    return _filters;
+    return resolvedFilters;
   }
 
   getAppliedFilters(userId: string) {
@@ -138,14 +138,21 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
 
   fetchFilters = async (workspaceSlug: string, userId: string) => {
     this.userId = userId;
-    const _filters = this.handleIssuesLocalFilters.get(EIssuesStoreType.PROFILE, workspaceSlug, userId, undefined);
+    const resolvedFilters = this.handleIssuesLocalFilters.get(
+      EIssuesStoreType.PROFILE,
+      workspaceSlug,
+      userId,
+      undefined
+    );
 
-    const richFilters: TWorkItemFilterExpression = _filters?.rich_filters;
-    const displayFilters: IIssueDisplayFilterOptions = this.computedDisplayFilters(_filters?.display_filters);
-    const displayProperties: IIssueDisplayProperties = this.computedDisplayProperties(_filters?.display_properties);
+    const richFilters: TWorkItemFilterExpression = resolvedFilters?.rich_filters;
+    const displayFilters: IIssueDisplayFilterOptions = this.computedDisplayFilters(resolvedFilters?.display_filters);
+    const displayProperties: IIssueDisplayProperties = this.computedDisplayProperties(
+      resolvedFilters?.display_properties
+    );
     const kanbanFilters = {
-      group_by: _filters?.kanban_filters?.group_by || [],
-      sub_group_by: _filters?.kanban_filters?.sub_group_by || [],
+      group_by: resolvedFilters?.kanban_filters?.group_by || [],
+      sub_group_by: resolvedFilters?.kanban_filters?.sub_group_by || [],
     };
 
     runInAction(() => {
@@ -188,7 +195,7 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
     try {
       if (isEmpty(this.filters) || isEmpty(this.filters[userId])) return;
 
-      const _filters = {
+      const resolvedFilters = {
         richFilters: this.filters[userId].richFilters,
         displayFilters: this.filters[userId].displayFilters as IIssueDisplayFilterOptions,
         displayProperties: this.filters[userId].displayProperties as IIssueDisplayProperties,
@@ -198,24 +205,24 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
       switch (type) {
         case EIssueFilterType.DISPLAY_FILTERS: {
           const updatedDisplayFilters = filters as IIssueDisplayFilterOptions;
-          _filters.displayFilters = { ..._filters.displayFilters, ...updatedDisplayFilters };
+          resolvedFilters.displayFilters = { ...resolvedFilters.displayFilters, ...updatedDisplayFilters };
 
           // set sub_group_by to null if group_by is set to null
-          if (_filters.displayFilters.group_by === null) {
-            _filters.displayFilters.sub_group_by = null;
+          if (resolvedFilters.displayFilters.group_by === null) {
+            resolvedFilters.displayFilters.sub_group_by = null;
             updatedDisplayFilters.sub_group_by = null;
           }
           // set sub_group_by to null if layout is switched to kanban group_by and sub_group_by are same
           if (
-            _filters.displayFilters.layout === "kanban" &&
-            _filters.displayFilters.group_by === _filters.displayFilters.sub_group_by
+            resolvedFilters.displayFilters.layout === "kanban" &&
+            resolvedFilters.displayFilters.group_by === resolvedFilters.displayFilters.sub_group_by
           ) {
-            _filters.displayFilters.sub_group_by = null;
+            resolvedFilters.displayFilters.sub_group_by = null;
             updatedDisplayFilters.sub_group_by = null;
           }
           // set group_by to priority if layout is switched to kanban and group_by is null
-          if (_filters.displayFilters.layout === "kanban" && _filters.displayFilters.group_by === null) {
-            _filters.displayFilters.group_by = "priority";
+          if (resolvedFilters.displayFilters.layout === "kanban" && resolvedFilters.displayFilters.group_by === null) {
+            resolvedFilters.displayFilters.group_by = "priority";
             updatedDisplayFilters.group_by = "priority";
           }
 
@@ -232,14 +239,14 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
           this.rootIssueStore.profileIssues.fetchIssuesWithExistingPagination(workspaceSlug, userId, "mutation");
 
           this.handleIssuesLocalFilters.set(EIssuesStoreType.PROFILE, type, workspaceSlug, userId, undefined, {
-            display_filters: _filters.displayFilters,
+            display_filters: resolvedFilters.displayFilters,
           });
 
           break;
         }
         case EIssueFilterType.DISPLAY_PROPERTIES: {
           const updatedDisplayProperties = filters as IIssueDisplayProperties;
-          _filters.displayProperties = { ..._filters.displayProperties, ...updatedDisplayProperties };
+          resolvedFilters.displayProperties = { ...resolvedFilters.displayProperties, ...updatedDisplayProperties };
 
           runInAction(() => {
             Object.keys(updatedDisplayProperties).forEach((_key) => {
@@ -252,19 +259,19 @@ export class ProfileIssuesFilter extends IssueFilterHelperStore implements IProf
           });
 
           this.handleIssuesLocalFilters.set(EIssuesStoreType.PROFILE, type, workspaceSlug, userId, undefined, {
-            display_properties: _filters.displayProperties,
+            display_properties: resolvedFilters.displayProperties,
           });
           break;
         }
 
         case EIssueFilterType.KANBAN_FILTERS: {
           const updatedKanbanFilters = filters as TIssueKanbanFilters;
-          _filters.kanbanFilters = { ..._filters.kanbanFilters, ...updatedKanbanFilters };
+          resolvedFilters.kanbanFilters = { ...resolvedFilters.kanbanFilters, ...updatedKanbanFilters };
 
           const currentUserId = this.rootIssueStore.currentUserId;
           if (currentUserId)
             this.handleIssuesLocalFilters.set(EIssuesStoreType.PROFILE, type, workspaceSlug, userId, undefined, {
-              kanban_filters: _filters.kanbanFilters,
+              kanban_filters: resolvedFilters.kanbanFilters,
             });
 
           runInAction(() => {

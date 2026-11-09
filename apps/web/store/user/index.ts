@@ -5,7 +5,7 @@
  */
 
 import { cloneDeep, set } from "lodash-es";
-import { action, makeObservable, observable, runInAction, computed } from "mobx";
+import { action, makeObservable, observable, runInAction, computed, observableRef } from "mobx";
 // plane imports
 import { EUserPermissions, API_BASE_URL } from "@plane/constants";
 import type { IUser, TUserPermissions } from "@plane/types";
@@ -87,8 +87,8 @@ export class UserStore implements IUserStore {
     // observables
     makeObservable(this, {
       // observables
-      isAuthenticated: observable.ref,
-      isLoading: observable.ref,
+      isAuthenticated: observableRef,
+      isLoading: observableRef,
       error: observable,
       // model observables
       data: observable,

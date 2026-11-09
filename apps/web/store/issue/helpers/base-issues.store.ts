@@ -5,7 +5,7 @@
  */
 
 import { isEqual, concat, get, indexOf, isEmpty, orderBy, pull, set, uniq, update, clone } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, actionBound } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane constants
 import { ALL_ISSUES, ISSUE_PRIORITIES } from "@plane/constants";
@@ -223,33 +223,33 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       issueGroupKey: computed,
       issueSubGroupKey: computed,
       // action
-      storePreviousPaginationValues: action.bound,
+      storePreviousPaginationValues: actionBound,
 
-      onfetchIssues: action.bound,
-      onfetchNexIssues: action.bound,
-      clear: action.bound,
-      setLoader: action.bound,
-      addIssue: action.bound,
-      removeIssueFromList: action.bound,
+      onfetchIssues: actionBound,
+      onfetchNexIssues: actionBound,
+      clear: actionBound,
+      setLoader: actionBound,
+      addIssue: actionBound,
+      removeIssueFromList: actionBound,
 
       createIssue: action,
       issueUpdate: action,
       updateIssueDates: action,
-      issueQuickAdd: action.bound,
-      removeIssue: action.bound,
-      issueArchive: action.bound,
-      removeBulkIssues: action.bound,
-      bulkArchiveIssues: action.bound,
-      bulkUpdateProperties: action.bound,
+      issueQuickAdd: actionBound,
+      removeIssue: actionBound,
+      issueArchive: actionBound,
+      removeBulkIssues: actionBound,
+      bulkArchiveIssues: actionBound,
+      bulkUpdateProperties: actionBound,
 
-      addIssueToCycle: action.bound,
-      removeIssueFromCycle: action.bound,
-      addCycleToIssue: action.bound,
-      removeCycleFromIssue: action.bound,
+      addIssueToCycle: actionBound,
+      removeIssueFromCycle: actionBound,
+      addCycleToIssue: actionBound,
+      removeCycleFromIssue: actionBound,
 
-      addIssuesToModule: action.bound,
-      removeIssuesFromModule: action.bound,
-      changeModulesInIssue: action.bound,
+      addIssuesToModule: actionBound,
+      removeIssuesFromModule: actionBound,
+      changeModulesInIssue: actionBound,
     });
     this.rootIssueStore = _rootStore;
     this.issueFilterStore = issueFilterStore;

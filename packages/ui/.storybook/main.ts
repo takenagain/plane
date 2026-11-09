@@ -4,11 +4,10 @@
  * See the LICENSE file for details.
  */
 
-import type { StorybookConfig } from "@storybook/react-webpack5";
+import type { StorybookConfig } from "@storybook/react-vite";
 
 import { createRequire } from "module";
 import { join, dirname } from "path";
-import postcss from "postcss";
 
 const require = createRequire(import.meta.url);
 
@@ -22,47 +21,14 @@ function getAbsolutePath(value: string): any {
 const config: StorybookConfig = {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
   addons: [
-    getAbsolutePath("@storybook/addon-webpack5-compiler-swc"),
     getAbsolutePath("@storybook/addon-onboarding"),
     getAbsolutePath("@storybook/addon-links"),
     getAbsolutePath("@storybook/addon-docs"),
     getAbsolutePath("@chromatic-com/storybook"),
-    {
-      name: "@storybook/addon-styling-webpack",
-      options: {
-        rules: [
-          {
-            test: /\.css$/,
-            use: [
-              "style-loader",
-              {
-                loader: "css-loader",
-                options: { importLoaders: 1 },
-              },
-              {
-                loader: "postcss-loader",
-                options: { implementation: postcss },
-              },
-            ],
-          },
-        ],
-      },
-    },
   ],
   framework: {
-    name: getAbsolutePath("@storybook/react-webpack5"),
+    name: getAbsolutePath("@storybook/react-vite"),
     options: {},
-  },
-  webpackFinal: async (config) => {
-    const babelRuntimeDir = dirname(require.resolve("@babel/runtime/package.json"));
-
-    config.resolve ??= {};
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "@babel/runtime/helpers/esm": join(babelRuntimeDir, "helpers/esm"),
-    };
-
-    return config;
   },
 };
 export default config;

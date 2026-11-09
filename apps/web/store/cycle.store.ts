@@ -6,7 +6,7 @@
 
 import { isPast, isToday } from "date-fns";
 import { sortBy, set, isEmpty } from "lodash-es";
-import { action, computed, observable, makeObservable, runInAction } from "mobx";
+import { action, computed, observable, makeObservable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type {
@@ -116,7 +116,7 @@ export class CycleStore implements ICycleStore {
   constructor(_rootStore: CoreRootStore) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       progressLoader: observable,
       cycleMap: observable,
       plotType: observable,

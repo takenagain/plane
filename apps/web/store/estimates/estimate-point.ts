@@ -7,7 +7,7 @@
 /* eslint-disable no-useless-catch */
 
 import { set } from "lodash-es";
-import { action, computed, makeObservable, runInAction, observable } from "mobx";
+import { action, computed, makeObservable, runInAction, observableRef } from "mobx";
 // types
 import type { IEstimate, IEstimatePoint as IEstimatePointType } from "@plane/types";
 // plane web services
@@ -58,19 +58,19 @@ export class EstimatePoint implements IEstimatePoint {
   ) {
     makeObservable(this, {
       // data model observables
-      id: observable.ref,
-      key: observable.ref,
-      value: observable.ref,
-      description: observable.ref,
-      workspace: observable.ref,
-      project: observable.ref,
-      estimate: observable.ref,
-      created_at: observable.ref,
-      updated_at: observable.ref,
-      created_by: observable.ref,
-      updated_by: observable.ref,
+      id: observableRef,
+      key: observableRef,
+      value: observableRef,
+      description: observableRef,
+      workspace: observableRef,
+      project: observableRef,
+      estimate: observableRef,
+      created_at: observableRef,
+      updated_at: observableRef,
+      created_by: observableRef,
+      updated_by: observableRef,
       // observables
-      error: observable.ref,
+      error: observableRef,
       // computed
       asJson: computed,
       // actions

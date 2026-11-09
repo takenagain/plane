@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, makeObservable, observable } from "mobx";
+import { action, makeObservable, observableRef } from "mobx";
 // root store
 import type { RootStore } from "./root.store";
 
@@ -30,9 +30,9 @@ export class ThemeStore implements IThemeStore {
   constructor(private store: RootStore) {
     makeObservable(this, {
       // observables
-      isNewUserPopup: observable.ref,
-      isSidebarCollapsed: observable.ref,
-      theme: observable.ref,
+      isNewUserPopup: observableRef,
+      isSidebarCollapsed: observableRef,
+      theme: observableRef,
       // action
       toggleNewUserPopup: action,
       toggleSidebar: action,

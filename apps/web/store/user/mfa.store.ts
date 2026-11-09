@@ -10,7 +10,7 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from "@simplewebauthn/browser";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 import type { IMfaDevice, IMfaStatus, IMfaTotpSetupResponse, TMfaMethod, TWebAuthnAttachment } from "@plane/types";
 // services
 import { MfaService } from "@/services/mfa.service";
@@ -71,10 +71,10 @@ export class MfaStore implements IMfaStore {
     this.mfaService = new MfaService();
     makeObservable(this, {
       // observables
-      isLoading: observable.ref,
+      isLoading: observableRef,
       error: observable,
       status: observable,
-      forcedSetupRequired: observable.ref,
+      forcedSetupRequired: observableRef,
       // computed
       isEnabled: computed,
       isLockdownEnabled: computed,

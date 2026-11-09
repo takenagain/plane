@@ -6,7 +6,7 @@
 
 import { AxiosError } from "axios";
 import { set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 // plane imports
 import { UserService } from "@plane/services";
 import type { ActorDetail, IUser } from "@plane/types";
@@ -58,8 +58,8 @@ export class UserStore implements IUserStore {
     // observables
     makeObservable(this, {
       // observables
-      isAuthenticated: observable.ref,
-      isInitializing: observable.ref,
+      isAuthenticated: observableRef,
+      isInitializing: observableRef,
       error: observable,
       // model observables
       data: observable,

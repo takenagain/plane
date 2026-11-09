@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, computed, observable, makeObservable, runInAction, reaction } from "mobx";
+import { action, computed, observable, makeObservable, runInAction, reaction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { TModuleDisplayFilters, TModuleFilters, TModuleFiltersByState } from "@plane/types";
@@ -54,8 +54,8 @@ export class ModuleFilterStore implements IModuleFilterStore {
       // observables
       displayFilters: observable,
       filters: observable,
-      searchQuery: observable.ref,
-      archivedModulesSearchQuery: observable.ref,
+      searchQuery: observableRef,
+      archivedModulesSearchQuery: observableRef,
       // computed
       currentProjectDisplayFilters: computed,
       currentProjectFilters: computed,

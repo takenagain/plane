@@ -5,7 +5,9 @@
 """``IssueActivityEndpoint`` without ``activity_type`` merges activities and comments.
 
 It used to sort raw model instances with ``instance["created_at"]`` and raise
-``TypeError: 'IssueActivity' object is not subscriptable`` (500).
+``TypeError: 'IssueActivity' object is not subscriptable`` (500). Serializing
+those dictionaries again also fails on UUID relations; serialize each row once
+and retain the nested details in the merged JSON response.
 """
 
 import pytest
@@ -21,10 +23,10 @@ def test_history_merges_activities_and_comments_sorted(session_client, workspace
     ProjectMember.objects.create(project=project, member=create_user, workspace=workspace, role=20)
     state = State.objects.create(name="Todo", project=project, group="backlog", default=True)
     issue = Issue.objects.create(name="I", workspace=workspace, project=project, state=state, created_by=create_user)
-    IssueActivity.objects.create(
+    activity = IssueActivity.objects.create(
         issue=issue, project=project, workspace=workspace, actor=create_user, verb="created", field="state"
     )
-    IssueComment.objects.create(
+    comment = IssueComment.objects.create(
         issue=issue, project=project, workspace=workspace, actor=create_user, comment_html="<p>hi</p>"
     )
 
@@ -34,3 +36,11 @@ def test_history_merges_activities_and_comments_sorted(session_client, workspace
     assert len(response.data) == 2
     created = [row["created_at"] for row in response.data]
     assert created == sorted(created)
+
+    activity_entry = next(row for row in response.json() if str(row["id"]) == str(activity.id))
+    comment_entry = next(row for row in response.json() if str(row["id"]) == str(comment.id))
+    assert str(activity_entry["actor"]) == str(create_user.id)
+    assert activity_entry["actor_detail"]["id"] == str(create_user.id)
+    assert activity_entry["issue_detail"]["id"] == str(issue.id)
+    assert comment_entry["comment_html"] == "<p>hi</p>"
+    assert comment_entry["actor_detail"]["id"] == str(create_user.id)

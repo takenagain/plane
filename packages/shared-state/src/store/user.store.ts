@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { makeObservable, observable } from "mobx";
+import { makeObservable, observable, observableRef } from "mobx";
 import type { IWorkspaceStore } from "./workspace.store";
 
 export interface IUserStore {
@@ -22,10 +22,10 @@ export class UserStore implements IUserStore {
 
   constructor() {
     makeObservable(this, {
-      user: observable.ref,
+      user: observableRef,
       workspaces: observable,
-      isLoading: observable.ref,
-      error: observable.ref,
+      isLoading: observableRef,
+      error: observableRef,
     });
   }
 }

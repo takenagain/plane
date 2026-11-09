@@ -165,7 +165,7 @@ jobs:
 
       - id: checkout_files
         name: Checkout Files
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
   # Native per-architecture image builds.
   #
@@ -191,7 +191,7 @@ jobs:
         include: ${{ fromJSON(needs.branch_build_setup.outputs.gh_build_matrix) }}
     steps:
       - name: Admin Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -219,7 +219,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_admin]
     steps:
       - name: Merge Admin Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -242,7 +242,7 @@ jobs:
         include: ${{ fromJSON(needs.branch_build_setup.outputs.gh_build_matrix) }}
     steps:
       - name: Web Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -270,7 +270,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_web]
     steps:
       - name: Merge Web Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -293,7 +293,7 @@ jobs:
         include: ${{ fromJSON(needs.branch_build_setup.outputs.gh_build_matrix) }}
     steps:
       - name: Space Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -321,7 +321,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_space]
     steps:
       - name: Merge Space Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -344,7 +344,7 @@ jobs:
         include: ${{ fromJSON(needs.branch_build_setup.outputs.gh_build_matrix) }}
     steps:
       - name: Live Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -372,7 +372,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_live]
     steps:
       - name: Merge Live Collaboration Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -395,7 +395,7 @@ jobs:
         include: ${{ fromJSON(needs.branch_build_setup.outputs.gh_build_matrix) }}
     steps:
       - name: Backend Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -423,7 +423,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_api]
     steps:
       - name: Merge API Server Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -446,7 +446,7 @@ jobs:
         include: ${{ fromJSON(needs.branch_build_setup.outputs.gh_build_matrix) }}
     steps:
       - name: Proxy Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -474,7 +474,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_proxy]
     steps:
       - name: Merge Proxy Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -500,7 +500,7 @@ jobs:
       aio_build_version: ${{ steps.prepare_aio_assets.outputs.AIO_BUILD_VERSION }}
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare AIO Assets
         id: prepare_aio_assets
@@ -520,7 +520,7 @@ jobs:
           printf 'AIO_BUILD_VERSION=%s\n' "$aio_version" >> "$GITHUB_OUTPUT"
 
       - name: Upload AIO Assets
-        uses: actions/upload-artifact@v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ./deployments/aio/community/dist
           name: aio-assets-dist
@@ -547,7 +547,7 @@ jobs:
       - branch_merge_proxy
     steps:
       - name: AIO Build and Push
-        uses: makeplane/actions/build-push@v1.6.0
+        uses: makeplane/actions/build-push@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -577,7 +577,7 @@ jobs:
     needs: [branch_build_setup, branch_build_push_aio]
     steps:
       - name: Merge AIO Manifest
-        uses: makeplane/actions/merge-manifest@v1.6.0
+        uses: makeplane/actions/merge-manifest@0aa1e844150ba4151be4e26caa15a5dfeb67a722 # v1.6.0
         with:
           build-release: ${{ needs.branch_build_setup.outputs.build_release }}
           build-prerelease: ${{ needs.branch_build_setup.outputs.build_prerelease }}
@@ -603,7 +603,7 @@ jobs:
       - branch_merge_proxy
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Update Assets
         env:
@@ -622,7 +622,7 @@ jobs:
           # sed -i 's/APP_RELEASE=stable/APP_RELEASE='${REL_VERSION}'/g' deployments/cli/community/variables.env
 
       - name: Upload Assets
-        uses: actions/upload-artifact@v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: community-assets
           path: |
@@ -658,7 +658,7 @@ jobs:
       REL_VERSION: ${{ needs.branch_build_setup.outputs.release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Update Assets
         run: |
@@ -668,7 +668,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v3.0.4
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:

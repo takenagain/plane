@@ -91,7 +91,7 @@ catalog:
   "autoprefixer": 10.6.2
   "axios": 1.21.0
   "buffer": "6.0.3"
-  "chroma-js": "3.2.0"
+  "chroma-js": "3.3.0"
   "class-variance-authority": "0.7.1"
   "clsx": "2.1.1"
   "cmdk": "1.1.1"
@@ -99,7 +99,7 @@ catalog:
   "compression": "1.8.2"
   "cors": "2.8.6"
   "date-fns": "4.4.0"
-  "dotenv": "18.0.9"
+  "dotenv": "18.0.10"
   "effect": 4.1.2
   "emoji-picker-react": 5.1.4
   "emoji-regex": "11.0.0"
@@ -116,9 +116,9 @@ catalog:
   "i18next": 27.0.1
   "i18next-icu": 2.7.0
   "i18next-resources-to-backend": 1.2.4
-  "ioredis": "5.11.1"
+  "ioredis": "6.0.0"
   "is-emoji-supported": "0.0.5"
-  "isbot": "5.2.2"
+  "isbot": "5.2.3"
   "jscodeshift": "17.4.0"
   "jsdom": 31.0.0
   "jsx-dom-cjs": "8.1.6"
@@ -127,12 +127,12 @@ catalog:
   "lodash-es": "4.18.1"
   "lowlight": "3.3.0"
   "lucide-react": 1.70.0
-  "mobx": 6.16.1
-  "mobx-react": 9.2.2
+  "mobx": "7.1.5"
+  "mobx-react": "10.0.3"
   "mobx-utils": "6.1.1"
   "next-themes": "0.4.6"
-  "oxfmt": 0.77.0
-  "oxlint": 1.92.0
+  "oxfmt": "0.78.0"
+  "oxlint": "1.93.0"
   "pdf-parse": "2.4.5"
   "postcss": 8.5.32
   "postcss-cli": "12.0.0"
@@ -140,10 +140,11 @@ catalog:
   "prosemirror-codemark": "0.4.2"
   "react": "19.3.1"
   "react-dom": "19.3.1"
+  "react-docgen": "8.0.4"
   "react-dropzone": 20.2.0
   "react-fast-compare": "3.2.2"
   "react-hook-form": "7.91.0"
-  "react-i18next": 18.0.0
+  "react-i18next": "18.0.1"
   "react-is": "19.3.1"
   "react-markdown": "10.1.0"
   "react-masonry-component": "6.3.0"
@@ -174,10 +175,10 @@ catalog:
   "use-font-face-observer": "1.3.0"
   "uuid": "14.0.3"
   # Security fix for bundled launch-editor command injection.
-  "vite": 8.3.6
+  "vite": "8.3.7"
   "vitest": 5.1.0
   "winston": "3.19.0"
-  "ws": 8.22.1
+  "ws": "8.22.2"
   "y-indexeddb": "9.0.12"
   "y-prosemirror": "1.3.7"
   "y-protocols": "1.0.7"
@@ -189,7 +190,7 @@ catalog:
   "@popperjs/core": "2.11.8"
   "@types/react-color": "3.0.13"
   "@base-ui-components/react": 1.0.0-rc.0
-  framer-motion: 14.10.1
+  framer-motion: "14.11.1"
   react-color: 2.19.3
   react-day-picker: 10.0.2
   react-popper: 2.3.0
@@ -199,7 +200,7 @@ catalog:
   "@tiptap/y-tiptap": 3.2.0
   "happy-dom": "21.0.4"
   "prosemirror-markdown": 1.13.9
-  "vite-tsconfig-paths": "5.1.4"
+  "vite-tsconfig-paths": "6.1.1"
 
 
 packageExtensions:
@@ -211,129 +212,120 @@ packageExtensions:
       "@tiptap/pm": "^3.0.1"
 
 overrides:
-  # Force a single React across the whole graph. With node-linker=isolated,
-  # auto-install-peers and resolution-mode=highest, a dependency still declaring a
-  # React 18 peer can otherwise pull in a second copy, which surfaces as an invalid
-  # hook call rather than as an install error. The vite `resolve.dedupe` entries only
-  # cover the three app client bundles, not the SSR build, the tsdown package builds
-  # or Storybook.
-  react: "catalog:"
-  react-dom: "catalog:"
-  react-is: "catalog:"
+  # Keep shared runtime singletons and indirect dependencies on the staging pins.
+  "react": "catalog:"
+  "react-dom": "catalog:"
+  "react-is": "catalog:"
   "@types/react": "catalog:"
   "@types/react-dom": "catalog:"
-  # @makeplane/propel and @plane/blocks must share one Base UI copy: two copies mean
-  # two React contexts, so a blocks part rendered inside a propel root cannot see it.
   "@base-ui/react": "catalog:"
   "@tiptap/starter-kit": "catalog:"
-  express: "catalog:"
-  # @react-router/serve v8 needs Express 5 — it mounts with the Express 5 path syntax
-  # `app.all("/{*splat}")`, which Express 4 silently fails to match, 404ing every route.
-  # The catalog stays on Express 4 for apps/live, which depends on express-ws (Express 4 only).
-  "@react-router/serve>express": "^5.2.1"
-  mdast-util-to-hast: 13.2.1
-  valibot: 1.4.2
-  glob: 13.0.6
-  # EXACT pin, bump the number. Stack-exhaustion DoS (CVE-2026-102276, -102278, fixed
-  # 5.0.11) reachable via serve>serve-handler>minimatch.
-  brace-expansion: 5.0.12
-  nanoid: 5.1.16
-  esbuild: 0.28.1
-  "@babel/core": 8.0.1
-  "@babel/helpers": 8.0.0
-  "@babel/runtime": 7.29.7
-  chokidar: 5.0.0
-  # EXACT pin, bump the number. CVE-2026-104847 fixed in 1.42.3; 1.42.6 needs
-  # prosemirror-model ^1.25.12, pinned below so the graph keeps one model copy
-  # (two copies break ProseMirror's instanceof checks).
-  prosemirror-view: 1.42.6
-  prosemirror-model: 1.25.12
-  "@types/express": 5.0.6
-  typescript: "catalog:"
-  vite: "catalog:"
-  qs: 6.16.0
-  diff: 9.0.0
-  "webpack": 5.108.3
-  lodash-es: "catalog:"
-  lodash: 4.18.1
-  # CVE-2026-111758 (DoS via unclosed link reference definitions) fixed in 14.3.3.
-  markdown-it: 14.3.3
-  "rollup": 4.62.2
-  "minimatch@3": 3.1.5
-  "minimatch@10": 10.2.5
-  "serialize-javascript": 7.0.7
-  "ajv@6": 6.15.0
-  "ajv@8": 8.20.0
-  "undici@7": 7.30.1
-  flatted: 3.4.2
-  picomatch: 4.0.4
-  "yaml@1": 1.10.3
-  "yaml@2": 2.9.0
-  # Pinned for Express 4 (apps/live), which needs path-to-regexp ~0.1.12.
-  path-to-regexp: 0.1.13
-  # Express 5's router needs path-to-regexp 8; the pin above would otherwise reach it
-  # and break route matching at startup with `pathRegexp.match is not a function`.
-  "router>path-to-regexp": "^8.4.2"
-  "defu": 6.1.7
-  postcss: 8.5.32
-  # No 6.x fix for CVE-2026-104844 (fixed 7.1.6). @tailwindcss/typography pins
-  # 6.0.10 but only uses parser()/selector(); 7.0.0's sole break is safe insertion.
-  postcss-selector-parser: 7.1.6
-  axios: "catalog:"
-  # CVE-2026-111755 / CVE-2026-111756 fixed in 1.16.1.
-  follow-redirects: "1.16.1"
-  uuid: "catalog:"
-  # EXACT pin: bump the number, never widen -- 4.x breaks ajv's ^3.0.1 (the only
-  # consumer here). Floor is 3.1.8, not 3.1.7: it also fixes GHSA-hrr3-gc8f-f4qj,
-  # which is MEDIUM so the HIGH/CRITICAL scan won't catch a slip back.
-  fast-uri: 3.1.8
-  "js-yaml@4": 4.3.2
-  linkify-it: 5.0.2
-  body-parser: 1.20.9
-  tmp: 0.2.7
-  form-data: 4.0.6
-  "ws@8": 8.21.0
-  "ws@7": 7.5.11
-  "@opentelemetry/core": 2.8.0
-  "@opentelemetry/resources": 2.8.0
-  "@opentelemetry/sdk-trace-base": 2.8.0
-  morgan: 1.12.1
-  # Prototype pollution and unbounded query-cache growth, both reachable as DoS
-  # (CVE-2026-73088 / CVE-2026-73089). browserslist is build tooling only
-  # (babel/postcss/vite), but the runtime images copy node_modules wholesale, so
-  # it lands in the scanned surface.
-  browserslist: ">=4.28.7"
-  # CVE-2026-114141/114143/114144 cover all toml <= 5.0.0. Version 5 keeps
-  # the only used API (Toml.parse()) and stops silently rounding unsafe integers.
-  toml: ">=5.0.1 <6"
-  # The lockfile predates the 2026-10-05 advisories below.
-  # serve 14.2.5 pins compression 1.8.1 exactly; CVE-2026-87776 fixed in 1.8.2.
-  compression: "catalog:"
-  # express ~2.0.7 / ^2.0.7 already allow it; CVE-2026-90711 (critical) fixed in 2.0.8.
-  proxy-addr: ">=2.0.8 <3"
-  # postcss and friends; CVE-2026-93749 fixed in 1.2.2.
-  source-map-js: ">=1.2.2 <2"
-  # oxfmt 0.35.0 pins tinypool 2.1.0 exactly; CVE-2026-104848/104849 (critical) fixed in 2.1.2.
-  "tinypool@2": ">=2.1.2 <3"
-
-  "js-yaml": 5.2.0
-  "happy-dom": 21.0.4
-  "tar-fs": 3.1.3
-  "prosemirror-changeset": 2.4.1
-  "prosemirror-history": 1.5.0
-  "prosemirror-inputrules": 1.5.1
-  "prosemirror-markdown": 1.13.9
-  "prosemirror-menu": 1.3.2
-  "prosemirror-state": 1.4.4
-  "prosemirror-tables": 1.8.5
-  "prosemirror-transform": 1.12.3
-  fast-uri@<3.1.5: 4.1.0
-
+  "express": "5.3.0"
+  "mdast-util-to-hast": "13.2.1"
+  "valibot": "1.5.0"
+  "glob": "14.0.4"
+  "brace-expansion": "5.0.12"
+  "nanoid": "6.0.2"
+  "esbuild": "0.28.2"
+  "@babel/core": "8.1.0"
+  "@babel/helpers": "8.1.0"
+  "@babel/runtime": "8.1.0"
+  "chokidar": "6.0.0"
+  "prosemirror-view": "1.42.9"
+  "prosemirror-model": "1.25.13"
+  "@types/express": "5.0.6"
+  "typescript": "catalog:"
+  "vite": "8.3.7"
+  "qs": "6.17.1"
+  "diff": "9.0.0"
+  "webpack": "5.112.2"
+  "lodash-es": "catalog:"
+  "lodash": "4.18.1"
+  "markdown-it": "15.0.3"
+  "rollup": "4.68.2"
+  "minimatch": "11.0.5"
+  "serialize-javascript": "7.1.4"
+  "ajv": "8.20.0"
+  "undici": "8.12.4"
+  "flatted": "3.4.4"
+  "picomatch": "4.0.7"
+  "yaml": "2.9.1"
+  "path-to-regexp": "9.0.0"
+  "defu": "6.1.7"
+  "postcss": "8.5.32"
+  "postcss-selector-parser": "7.2.0"
+  "axios": "catalog:"
+  "follow-redirects": "1.16.3"
+  "uuid": "catalog:"
+  "fast-uri": "4.2.3"
+  "js-yaml": "5.5.0"
+  "linkify-it": "6.1.0"
+  "body-parser": "2.4.0"
+  "tmp": "0.2.7"
+  "form-data": "4.0.6"
+  "ws": "catalog:"
+  "@opentelemetry/core": "3.1.0"
+  "@opentelemetry/resources": "3.1.0"
+  "@opentelemetry/sdk-trace-base": "2.12.0"
+  "morgan": "1.12.1"
+  "browserslist": "4.29.5"
+  "toml": "5.0.1"
+  "compression": "catalog:"
+  "proxy-addr": "2.0.8"
+  "source-map-js": "1.2.2"
+  "tinypool": "2.2.0"
+  "happy-dom": "21.0.4"
+  "tar-fs": "3.1.3"
+  "prosemirror-changeset": "2.4.6"
+  "prosemirror-history": "1.5.1"
+  "prosemirror-inputrules": "1.5.1"
+  "prosemirror-markdown": "1.13.9"
+  "prosemirror-menu": "1.3.2"
+  "prosemirror-state": "1.4.4"
+  "prosemirror-tables": "1.8.5"
+  "prosemirror-transform": "1.12.5"
   "@tiptap/extension-bubble-menu": "3.33.0"
   "@tiptap/extension-floating-menu": "3.33.0"
-  # Hocuspocus 4.8 and redlock 1.4 support ioredis 5; align their nested copies to latest 5.x.
-  "ioredis@5": "5.11.1"
+  "ioredis": "catalog:"
   "zod": "catalog:"
+  "mobx": "catalog:"
+  "mobx-react": "catalog:"
+
+  # Keep the Babel toolchain on the same major as its core and runtime.
+  "@babel/code-frame": "8.0.6"
+  "@babel/generator": "8.1.0"
+  "@babel/helper-annotate-as-pure": "8.0.0"
+  "@babel/helper-create-class-features-plugin": "8.0.10"
+  "@babel/helper-globals": "8.0.6"
+  "@babel/helper-member-expression-to-functions": "8.0.5"
+  "@babel/helper-module-imports": "8.0.0"
+  "@babel/helper-module-transforms": "8.1.0"
+  "@babel/helper-optimise-call-expression": "8.0.0"
+  "@babel/helper-plugin-utils": "8.0.1"
+  "@babel/helper-replace-supers": "8.0.1"
+  "@babel/helper-skip-transparent-expression-wrappers": "8.1.0"
+  "@babel/helper-string-parser": "8.0.8"
+  "@babel/helper-validator-identifier": "8.0.6"
+  "@babel/helper-validator-option": "8.0.0"
+  "@babel/parser": "8.1.0"
+  "@babel/plugin-syntax-flow": "8.0.1"
+  "@babel/plugin-syntax-jsx": "8.0.1"
+  "@babel/plugin-syntax-typescript": "8.0.3"
+  "@babel/plugin-transform-class-properties": "8.0.1"
+  "@babel/plugin-transform-flow-strip-types": "8.0.1"
+  "@babel/plugin-transform-modules-commonjs": "8.0.1"
+  "@babel/plugin-transform-nullish-coalescing-operator": "8.0.1"
+  "@babel/plugin-transform-optional-chaining": "8.0.5"
+  "@babel/plugin-transform-private-methods": "8.0.1"
+  "@babel/plugin-transform-typescript": "8.0.6"
+  "@babel/preset-flow": "8.0.1"
+  "@babel/preset-typescript": "8.0.7"
+  "@babel/register": "8.0.6"
+  "@babel/template": "8.0.0"
+  "@babel/traverse": "8.1.0"
+  "@babel/types": "8.1.0"
+  # The Webpack TypeScript checker uses the schema-utils validate API retained in v4.
+  "schema-utils": "4.8.3"
 
 allowBuilds:
   "@parcel/watcher": true
@@ -351,16 +343,87 @@ minimumReleaseAgeExclude:
   - "@storybook/react-vite@10.4.6"
   - "@storybook/react@10.4.6"
   - storybook@10.4.6
-  - "@makeplane/propel@0.7.3"
-
-  - "@makeplane/propel@0.9.7"
+  - "@makeplane/propel@0.7.3 || 0.9.7"
+  - "@oxfmt/binding-android-arm-eabi@0.78.0"
+  - "@oxfmt/binding-android-arm64@0.78.0"
+  - "@oxfmt/binding-darwin-arm64@0.78.0"
+  - "@oxfmt/binding-darwin-x64@0.78.0"
+  - "@oxfmt/binding-freebsd-x64@0.78.0"
+  - "@oxfmt/binding-linux-arm-gnueabihf@0.78.0"
+  - "@oxfmt/binding-linux-arm-musleabihf@0.78.0"
+  - "@oxfmt/binding-linux-arm64-gnu@0.78.0"
+  - "@oxfmt/binding-linux-arm64-musl@0.78.0"
+  - "@oxfmt/binding-linux-ppc64-gnu@0.78.0"
+  - "@oxfmt/binding-linux-riscv64-gnu@0.78.0"
+  - "@oxfmt/binding-linux-riscv64-musl@0.78.0"
+  - "@oxfmt/binding-linux-s390x-gnu@0.78.0"
+  - "@oxfmt/binding-linux-x64-gnu@0.78.0"
+  - "@oxfmt/binding-linux-x64-musl@0.78.0"
+  - "@oxfmt/binding-openharmony-arm64@0.78.0"
+  - "@oxfmt/binding-win32-arm64-msvc@0.78.0"
+  - "@oxfmt/binding-win32-ia32-msvc@0.78.0"
+  - "@oxfmt/binding-win32-x64-msvc@0.78.0"
+  - "@oxlint/binding-android-arm-eabi@1.93.0"
+  - "@oxlint/binding-android-arm64@1.93.0"
+  - "@oxlint/binding-darwin-arm64@1.93.0"
+  - "@oxlint/binding-darwin-x64@1.93.0"
+  - "@oxlint/binding-freebsd-x64@1.93.0"
+  - "@oxlint/binding-linux-arm-gnueabihf@1.93.0"
+  - "@oxlint/binding-linux-arm-musleabihf@1.93.0"
+  - "@oxlint/binding-linux-arm64-gnu@1.93.0"
+  - "@oxlint/binding-linux-arm64-musl@1.93.0"
+  - "@oxlint/binding-linux-ppc64-gnu@1.93.0"
+  - "@oxlint/binding-linux-riscv64-gnu@1.93.0"
+  - "@oxlint/binding-linux-riscv64-musl@1.93.0"
+  - "@oxlint/binding-linux-s390x-gnu@1.93.0"
+  - "@oxlint/binding-linux-x64-gnu@1.93.0"
+  - "@oxlint/binding-linux-x64-musl@1.93.0"
+  - "@oxlint/binding-openharmony-arm64@1.93.0"
+  - "@oxlint/binding-win32-arm64-msvc@1.93.0"
+  - "@oxlint/binding-win32-ia32-msvc@1.93.0"
+  - "@oxlint/binding-win32-x64-msvc@1.93.0"
+  - "@rolldown/binding-android-arm-eabi@1.2.18"
+  - "@rolldown/binding-android-arm64@1.2.18"
+  - "@rolldown/binding-darwin-arm64@1.2.18"
+  - "@rolldown/binding-darwin-x64@1.2.18"
+  - "@rolldown/binding-freebsd-x64@1.2.18"
+  - "@rolldown/binding-linux-arm-gnueabihf@1.2.18"
+  - "@rolldown/binding-linux-arm64-gnu@1.2.18"
+  - "@rolldown/binding-linux-arm64-musl@1.2.18"
+  - "@rolldown/binding-linux-ppc64-gnu@1.2.18"
+  - "@rolldown/binding-linux-s390x-gnu@1.2.18"
+  - "@rolldown/binding-linux-x64-gnu@1.2.18"
+  - "@rolldown/binding-linux-x64-musl@1.2.18"
+  - "@rolldown/binding-openharmony-arm64@1.2.18"
+  - "@rolldown/binding-win32-arm64-msvc@1.2.18"
+  - "@rolldown/binding-win32-x64-msvc@1.2.18"
+  - chroma-js@3.3.0
+  - dotenv@18.0.10
+  - follow-redirects@1.16.3
+  - framer-motion@14.11.1
+  - isbot@5.2.3
+  - motion-dom@14.11.1
+  - oxfmt@0.78.0
+  - oxlint@1.93.0
+  - postcss-selector-parser@7.2.0
+  - react-i18next@18.0.1
+  - rolldown@1.2.18
+  - vite@8.3.7
 
 
 peerDependencyRules:
   allowedVersions:
+    # computedFn uses APIs retained by MobX 7; covered by the compatibility regression.
+    "mobx-utils>mobx": "7"
     # Peer ranges predate React 19, but neither package uses anything React 19 removed
     # (no findDOMNode, no string refs, no element.ref reads). Recorded here so the
     # acceptance is explicit rather than hidden behind the global
     # strict-peer-dependencies=false.
     "react-masonry-component>react": "19"
     "use-font-face-observer>react": "19"
+
+patchedDependencies:
+  '@storybook/react-vite@10.6.6': patches/@storybook__react-vite@10.6.6.patch
+  jscodeshift@17.4.0: patches/jscodeshift@17.4.0.patch
+  react-docgen@8.0.4: patches/react-docgen@8.0.4.patch
+  react-transition-group@4.4.5: patches/react-transition-group@4.4.5.patch

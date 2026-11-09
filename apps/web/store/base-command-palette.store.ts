@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { observable, action, computed, makeObservable, runInAction } from "mobx";
+import { observable, action, computed, makeObservable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane imports
 import type { TCreateModalStoreTypes, TCreatePageModal } from "@plane/constants";
@@ -71,13 +71,13 @@ export class BaseCommandPaletteStore implements IBaseCommandPaletteStore {
   constructor() {
     makeObservable(this, {
       // observable
-      isCreateProjectModalOpen: observable.ref,
-      isCreateCycleModalOpen: observable.ref,
-      isCreateModuleModalOpen: observable.ref,
-      isCreateViewModalOpen: observable.ref,
-      isCreateIssueModalOpen: observable.ref,
-      isDeleteIssueModalOpen: observable.ref,
-      isBulkDeleteIssueModalOpen: observable.ref,
+      isCreateProjectModalOpen: observableRef,
+      isCreateCycleModalOpen: observableRef,
+      isCreateModuleModalOpen: observableRef,
+      isCreateViewModalOpen: observableRef,
+      isCreateIssueModalOpen: observableRef,
+      isDeleteIssueModalOpen: observableRef,
+      isBulkDeleteIssueModalOpen: observableRef,
       createPageModal: observable,
       createIssueStoreType: observable,
       createWorkItemAllowedProjectIds: observable,

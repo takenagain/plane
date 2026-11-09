@@ -5,7 +5,7 @@
  */
 
 import { concat, get, set, uniq, update } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { makeObservable, observable, runInAction, actionBound } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane imports
 import { ALL_ISSUES } from "@plane/constants";
@@ -92,12 +92,12 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
       paginationOptions: observable,
       // action
-      storePreviousPaginationValues: action.bound,
+      storePreviousPaginationValues: actionBound,
 
-      onfetchIssues: action.bound,
-      onfetchNexIssues: action.bound,
-      clear: action.bound,
-      setLoader: action.bound,
+      onfetchIssues: actionBound,
+      onfetchNexIssues: actionBound,
+      clear: actionBound,
+      setLoader: actionBound,
     });
     this.rootIssueStore = _rootStore;
     this.issueService = new SitesIssueService();

@@ -5,7 +5,7 @@
  */
 
 import { orderBy, isEmpty, update, set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane imports
 import type { TNotificationTab } from "@plane/constants";
@@ -87,10 +87,10 @@ export class WorkspaceNotificationStore implements IWorkspaceNotificationStore {
   constructor(protected store: CoreRootStore) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       unreadNotificationsCount: observable,
       notifications: observable,
-      currentNotificationTab: observable.ref,
+      currentNotificationTab: observableRef,
       currentSelectedNotificationId: observable,
       paginationInfo: observable,
       filters: observable,

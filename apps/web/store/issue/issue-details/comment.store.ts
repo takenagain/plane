@@ -5,7 +5,7 @@
  */
 
 import { pull, concat, update, uniq, set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 // Plane Imports
 import type { TIssueComment, TIssueCommentMap, TIssueCommentIdMap, TIssueServiceType } from "@plane/types";
 // services
@@ -62,7 +62,7 @@ export class IssueCommentStore implements IIssueCommentStore {
   constructor(rootStore: IIssueDetail, serviceType: TIssueServiceType) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       comments: observable,
       commentMap: observable,
       // actions
@@ -98,19 +98,19 @@ export class IssueCommentStore implements IIssueCommentStore {
     this.loader = loaderType;
 
     let props = {};
-    const _commentIds = this.getCommentsByIssueId(issueId);
-    if (_commentIds && _commentIds.length > 0) {
-      const _comment = this.getCommentById(_commentIds[_commentIds.length - 1]);
-      if (_comment) props = { created_at__gt: _comment.created_at };
+    const existingCommentIds = this.getCommentsByIssueId(issueId);
+    if (existingCommentIds && existingCommentIds.length > 0) {
+      const latestComment = this.getCommentById(existingCommentIds[existingCommentIds.length - 1]);
+      if (latestComment) props = { created_at__gt: latestComment.created_at };
     }
 
     const comments = await this.issueCommentService.getIssueComments(workspaceSlug, projectId, issueId, props);
 
     const commentIds = comments.map((comment) => comment.id);
     runInAction(() => {
-      update(this.comments, issueId, (_commentIds) => {
-        if (!_commentIds) return commentIds;
-        return uniq(concat(_commentIds, commentIds));
+      update(this.comments, issueId, (existingCommentIds) => {
+        if (!existingCommentIds) return commentIds;
+        return uniq(concat(existingCommentIds, commentIds));
       });
       comments.forEach((comment) => {
         this.rootIssueDetail.commentReaction.applyCommentReactions(comment.id, comment?.comment_reactions || []);
@@ -126,9 +126,9 @@ export class IssueCommentStore implements IIssueCommentStore {
     const response = await this.issueCommentService.createIssueComment(workspaceSlug, projectId, issueId, data);
 
     runInAction(() => {
-      update(this.comments, issueId, (_commentIds) => {
-        if (!_commentIds) return [response.id];
-        return uniq(concat(_commentIds, [response.id]));
+      update(this.comments, issueId, (existingCommentIds) => {
+        if (!existingCommentIds) return [response.id];
+        return uniq(concat(existingCommentIds, [response.id]));
       });
       set(this.commentMap, response.id, response);
     });

@@ -1,4 +1,4 @@
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 import type { IActiveWorklog, IWorklog, IWorklogCreatePayload, IWorklogUpdatePayload } from "@plane/types";
 import { WorklogService } from "@plane/services";
 
@@ -82,7 +82,7 @@ export class WorklogStore implements IWorklogStore {
       worklogsByIssue: observable,
       totalByIssue: observable,
       activeWorklog: observable,
-      currentWorklogTarget: observable.ref,
+      currentWorklogTarget: observableRef,
       activeWorklogError: observable,
       isBootstrappingActiveWorklog: observable,
       hasBootstrappedActiveWorklog: observable,

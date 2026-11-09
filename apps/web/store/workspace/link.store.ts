@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, actionBound } from "mobx";
 // types
 import type { TLink, TLinkIdMap, TLinkMap } from "@plane/types";
 // services
@@ -49,7 +49,7 @@ export class WorkspaceLinkStore implements IWorkspaceLinkStore {
       linkData: observable,
       isLinkModalOpen: observable,
       // actions
-      addLinks: action.bound,
+      addLinks: actionBound,
       fetchLinks: action,
       createLink: action,
       updateLink: action,

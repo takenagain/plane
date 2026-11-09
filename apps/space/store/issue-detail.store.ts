@@ -5,7 +5,7 @@
  */
 
 import { isEmpty, set } from "lodash-es";
-import { makeObservable, observable, action, runInAction } from "mobx";
+import { makeObservable, observable, action, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 import { v4 as uuidv4 } from "uuid";
 // plane imports
@@ -67,11 +67,11 @@ export class IssueDetailStore implements IIssueDetailStore {
 
   constructor(_rootStore: RootStore) {
     makeObservable(this, {
-      loader: observable.ref,
-      error: observable.ref,
+      loader: observableRef,
+      error: observableRef,
       // observables
-      peekId: observable.ref,
-      peekMode: observable.ref,
+      peekId: observableRef,
+      peekMode: observableRef,
       details: observable,
       // actions
       setPeekId: action,

@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type {
@@ -85,7 +85,7 @@ export class DashboardStore implements IDashboardStore {
       // error states
       widgetStatsError: observable,
       // observables
-      homeDashboardId: observable.ref,
+      homeDashboardId: observableRef,
       widgetDetails: observable,
       widgetStats: observable,
       // computed

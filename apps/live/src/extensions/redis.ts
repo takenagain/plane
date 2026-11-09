@@ -24,24 +24,29 @@ const getRedisClient = () => {
 };
 
 export class Redis extends HocuspocusRedis {
+  private readonly adminSub: RedisInstance;
   private adminHandlers = new Map<AdminCommand, AdminCommandHandler>();
   private readonly ADMIN_CHANNEL = "hocuspocus:admin";
 
   constructor() {
-    super({ redis: getRedisClient() as unknown as RedisInstance });
+    const client = getRedisClient();
+    super({ redis: client });
+    // Hocuspocus decodes every messageBuffer on its subscriber as a binary
+    // collaboration frame. Keep JSON admin messages on a dedicated connection.
+    this.adminSub = client.duplicate();
   }
 
   async onConfigure(payload: onConfigurePayload) {
     await super.onConfigure(payload);
-    // The v3 lock library otherwise SELECTs DB 0 even on a non-zero Redis connection.
+    // The lock library otherwise SELECTs DB 0 even on a non-zero Redis connection.
     this.redlock = new Redlock([this.pub], { ...this.redlock.settings, db: getRedisClient().options.db ?? 0 });
 
     // Subscribe only after ioredis has completed its initial ready check.
-    await waitForRedisReady(this.sub);
+    await waitForRedisReady(this.adminSub);
 
     // Subscribe to admin channel
     try {
-      await this.sub.subscribe(this.ADMIN_CHANNEL);
+      await this.adminSub.subscribe(this.ADMIN_CHANNEL);
       logger.info(`[Redis] Subscribed to admin channel: ${this.ADMIN_CHANNEL}`);
     } catch (error) {
       logger.error(`[Redis] Failed to subscribe to admin channel:`, error);
@@ -49,7 +54,7 @@ export class Redis extends HocuspocusRedis {
     }
 
     // Listen for admin messages
-    this.sub.on("message", this.handleAdminMessage);
+    this.adminSub.on("message", this.handleAdminMessage);
     logger.info(`[Redis] Attached admin message listener`);
   }
 
@@ -107,15 +112,16 @@ export class Redis extends HocuspocusRedis {
   async onDestroy() {
     // Unsubscribe from admin channel
     try {
-      await this.sub.unsubscribe(this.ADMIN_CHANNEL);
+      await this.adminSub.unsubscribe(this.ADMIN_CHANNEL);
     } catch (error) {
       logger.error(`[Redis] Error unsubscribing from admin channel:`, error);
     }
 
     // Remove the message listener to prevent memory leaks
-    this.sub.removeListener("message", this.handleAdminMessage);
+    this.adminSub.removeListener("message", this.handleAdminMessage);
     logger.info(`[Redis] Removed admin message listener`);
 
+    this.adminSub.disconnect();
     await super.onDestroy();
   }
 

@@ -1,0 +1,327 @@
+diff --git a/dist/babelParser.js b/dist/babelParser.js
+index f843cec9592c06a84849cc5ac05b9932bc45274f..e4e373e043a0e3f0af7779b2d7ff3c762b30929d 100644
+--- a/dist/babelParser.js
++++ b/dist/babelParser.js
+@@ -1,4 +1,4 @@
+-import { loadPartialConfig, parseSync } from '@babel/core';
++import { loadPartialConfigSync, parseSync } from '@babel/core';
+ import { extname } from 'path';
+ const TYPESCRIPT_EXTS = new Set(['.cts', '.mts', '.ts', '.tsx']);
+ function getDefaultPlugins(options) {
+@@ -8,18 +8,14 @@ function getDefaultPlugins(options) {
+             ? 'typescript'
+             : 'flow',
+         'asyncDoExpressions',
+-        'decimal',
+         ['decorators', { decoratorsBeforeExport: false }],
+         'decoratorAutoAccessors',
+         'destructuringPrivate',
+         'doExpressions',
+         'exportDefaultFrom',
+         'functionBind',
+-        'importAssertions',
+         'moduleBlocks',
+         'partialApplication',
+-        ['pipelineOperator', { proposal: 'minimal' }],
+-        ['recordAndTuple', { syntaxType: 'bar' }],
+         'regexpUnicodeSets',
+         'throwExpressions',
+     ];
+@@ -31,7 +27,7 @@ function buildPluginList(options) {
+     }
+     // Let's check if babel finds a config file for this source file
+     // If babel does find a config file we do not apply our defaults
+-    const partialConfig = loadPartialConfig(options);
++    const partialConfig = loadPartialConfigSync(options);
+     if (plugins.length === 0 &&
+         partialConfig &&
+         !partialConfig.hasFilesystemConfig()) {
+diff --git a/dist/handlers/codeTypeHandler.js b/dist/handlers/codeTypeHandler.js
+index 7caf409d9f9c4168cb45194fcdf876df3a5260dc..824e0b2579d5a8298db3a1e9520fcf348de4e9c9 100644
+--- a/dist/handlers/codeTypeHandler.js
++++ b/dist/handlers/codeTypeHandler.js
+@@ -25,7 +25,7 @@ function setPropDescriptor(documentation, path, typeParams) {
+                 setPropDescriptor(documentation, propertyPath, innerTypeParams);
+             }, typeParams);
+         }
+-        else if (!argument.has('typeParameters')) {
++        else if (!Boolean(argument.node?.typeParameters)) {
+             documentation.addComposes(id.node.name);
+         }
+     }
+diff --git a/dist/handlers/displayNameHandler.js b/dist/handlers/displayNameHandler.js
+index 1f11849d6a212cca2ee17a3cd20aaf4bab95b3f1..aaac19ae330d93344318375f4bbd188ff51bac66 100644
+--- a/dist/handlers/displayNameHandler.js
++++ b/dist/handlers/displayNameHandler.js
+@@ -10,7 +10,7 @@ const displayNameHandler = function (documentation, componentDefinition) {
+         // function / class is the displayName
+         if ((componentDefinition.isClassDeclaration() ||
+             componentDefinition.isFunctionDeclaration()) &&
+-            componentDefinition.has('id')) {
++            Boolean(componentDefinition.node?.id)) {
+             documentation.set('displayName', getNameOrValue(componentDefinition.get('id')));
+         }
+         else if (componentDefinition.isArrowFunctionExpression() ||
+diff --git a/dist/importer/makeFsImporter.js b/dist/importer/makeFsImporter.js
+index bffb4eb4c32bc85c02e140e6b1c40e19938ec3b2..b1b85274ec433902788ff51652d4d01248b899b9 100644
+--- a/dist/importer/makeFsImporter.js
++++ b/dist/importer/makeFsImporter.js
+@@ -139,12 +139,12 @@ export default function makeFsImporter(lookupModule = defaultLookupModule, { par
+                     }
+                 }
+                 else if (declaration.hasNode() &&
+-                    declaration.has('id') &&
++                    Boolean(declaration.node?.id) &&
+                     declaration.get('id').isIdentifier({ name })) {
+                     // export function/class/type/interface/enum ...
+                     state.resultPath = declaration;
+                 }
+-                else if (path.has('specifiers')) {
++                else if (Boolean(path.node?.specifiers?.length)) {
+                     // export { ... } or export x from ... or export * as x from ...
+                     for (const specifierPath of path.get('specifiers')) {
+                         if (specifierPath.isExportNamespaceSpecifier()) {
+@@ -153,7 +153,7 @@ export default function makeFsImporter(lookupModule = defaultLookupModule, { par
+                         const exported = specifierPath.get('exported');
+                         if (exported.isIdentifier({ name })) {
+                             // export ... from ''
+-                            if (path.has('source')) {
++                            if (Boolean(path.node?.source)) {
+                                 const local = specifierPath.isExportSpecifier()
+                                     ? specifierPath.node.local.name
+                                     : 'default';
+diff --git a/dist/utils/getFlowType.js b/dist/utils/getFlowType.js
+index ef828d914dd4e3dd950b9d7edaec1a6e6082f5e7..6225d3c653ba1cac2c96dddc15c6a08d31198e15 100644
+--- a/dist/utils/getFlowType.js
++++ b/dist/utils/getFlowType.js
+@@ -100,7 +100,7 @@ function handleGenericTypeAnnotation(path, typeParams) {
+         type = { name: id.node.name };
+     }
+     const resolvedPath = (typeParams && typeParams[type.name]) || resolveToValue(path.get('id'));
+-    if (typeParameters.hasNode() && resolvedPath.has('typeParameters')) {
++    if (typeParameters.hasNode() && Boolean(resolvedPath.node?.typeParameters)) {
+         typeParams = getTypeParameters(resolvedPath.get('typeParameters'), typeParameters, typeParams);
+     }
+     const resolvedTypeParam = typeParams?.[type.name];
+@@ -110,7 +110,7 @@ function handleGenericTypeAnnotation(path, typeParams) {
+     if (resolvedTypeParam) {
+         type = getFlowTypeWithResolvedTypes(resolvedPath, typeParams);
+     }
+-    if (resolvedPath && resolvedPath.has('right')) {
++    if (resolvedPath && Boolean(resolvedPath.node?.right)) {
+         type = getFlowTypeWithResolvedTypes(resolvedPath.get('right'), typeParams);
+     }
+     else if (typeParameters.hasNode()) {
+diff --git a/dist/utils/getPropertyName.js b/dist/utils/getPropertyName.js
+index d92bf749a2290807c97350bb5aae7515c8605324..dd3b635c437681008c8afd44bb3050e73f9396af 100644
+--- a/dist/utils/getPropertyName.js
++++ b/dist/utils/getPropertyName.js
+@@ -14,7 +14,7 @@ export default function getPropertyName(propertyPath) {
+         }
+         return null;
+     }
+-    else if (propertyPath.has('computed')) {
++    else if (Boolean(propertyPath.node?.computed)) {
+         const key = propertyPath.get('key');
+         // Try to resolve variables and member expressions
+         if (key.isIdentifier() || key.isMemberExpression()) {
+diff --git a/dist/utils/getTSType.js b/dist/utils/getTSType.js
+index 2f4dc719e0e59604fcc7c73b089b73d3a7765516..d7d004676ee5618952350460e5c6597830fb4172 100644
+--- a/dist/utils/getTSType.js
++++ b/dist/utils/getTSType.js
+@@ -70,7 +70,7 @@ function handleTSTypeReference(path, typeParams) {
+     }
+     const resolvedPath = (typeParams && typeParams[type.name]) ||
+         resolveToValue(path.get('typeName'));
+-    const typeParameters = path.get('typeParameters');
++    const typeParameters = path.get('typeArguments');
+     const resolvedTypeParameters = resolvedPath.get('typeParameters');
+     if (typeParameters.hasNode() && resolvedTypeParameters.hasNode()) {
+         typeParams = getTypeParameters(resolvedTypeParameters, typeParameters, typeParams);
+@@ -107,7 +107,7 @@ function handleTSTypeLiteral(path, typeParams) {
+         signature: { properties: [] },
+     };
+     path.get('members').forEach((param) => {
+-        const typeAnnotation = param.get('typeAnnotation');
++        const typeAnnotation = param.get(param.isTSMethodSignature() ? 'returnType' : 'typeAnnotation');
+         if ((param.isTSPropertySignature() || param.isTSMethodSignature()) &&
+             typeAnnotation.hasNode()) {
+             const propName = getPropertyName(param);
+@@ -170,7 +170,7 @@ function handleTSIntersectionType(path, typeParams) {
+ }
+ // type OptionsFlags<Type> = { [Property in keyof Type]; };
+ function handleTSMappedType(path, typeParams) {
+-    const key = getTSTypeWithResolvedTypes(path.get('typeParameter').get('constraint'), typeParams);
++    const key = getTSTypeWithResolvedTypes(path.get('constraint'), typeParams);
+     key.required = !path.node.optional;
+     const typeAnnotation = path.get('typeAnnotation');
+     let value;
+@@ -196,7 +196,7 @@ function handleTSMappedType(path, typeParams) {
+ }
+ function handleTSFunctionType(path, typeParams) {
+     let returnType;
+-    const annotation = path.get('typeAnnotation');
++    const annotation = path.get('returnType');
+     if (annotation.hasNode()) {
+         returnType = getTSTypeWithResolvedTypes(annotation, typeParams);
+     }
+@@ -209,7 +209,7 @@ function handleTSFunctionType(path, typeParams) {
+             return: returnType,
+         },
+     };
+-    path.get('parameters').forEach((param) => {
++    path.get('params').forEach((param) => {
+         const typeAnnotation = getTypeAnnotation(param);
+         const arg = {
+             type: typeAnnotation
+@@ -253,7 +253,7 @@ function handleTSTypeQuery(path, typeParams) {
+     const exprName = path.get('exprName');
+     if (exprName.isIdentifier()) {
+         const resolvedPath = resolveToValue(path.get('exprName'));
+-        if (resolvedPath.has('typeAnnotation')) {
++        if (Boolean(resolvedPath.node?.typeAnnotation)) {
+             return getTSTypeWithResolvedTypes(resolvedPath.get('typeAnnotation'), typeParams);
+         }
+         return { name: exprName.node.name };
+diff --git a/dist/utils/getTypeAnnotation.js b/dist/utils/getTypeAnnotation.js
+index 5ae9104f11ed740b41f6ca81ef42baf124488e7c..14f9bba0030be4f9fc6e9968c2645b5c31ba687f 100644
+--- a/dist/utils/getTypeAnnotation.js
++++ b/dist/utils/getTypeAnnotation.js
+@@ -3,12 +3,12 @@
+  * can be found null is returned
+  */
+ export default function getTypeAnnotation(path) {
+-    if (!path.has('typeAnnotation'))
++    if (!Boolean(path.node?.typeAnnotation))
+         return null;
+     let resultPath = path;
+     do {
+         resultPath = resultPath.get('typeAnnotation');
+-    } while (resultPath.has('typeAnnotation') &&
++    } while (Boolean(resultPath.node?.typeAnnotation) &&
+         !resultPath.isFlowType() &&
+         !resultPath.isTSType());
+     return resultPath;
+diff --git a/dist/utils/getTypeFromReactComponent.js b/dist/utils/getTypeFromReactComponent.js
+index fa5b22d13affed77fb81ea270f25bdd49f790031..2b44aaaf79740bd86e1fb023aee13802c5e04ef3 100644
+--- a/dist/utils/getTypeFromReactComponent.js
++++ b/dist/utils/getTypeFromReactComponent.js
+@@ -14,7 +14,7 @@ function getStatelessPropsPath(componentDefinition) {
+     return componentDefinition.get('params')[0];
+ }
+ function getForwardRefGenericsType(componentDefinition) {
+-    const typeParameters = componentDefinition.get('typeParameters');
++    const typeParameters = componentDefinition.get('typeArguments');
+     if (typeParameters && typeParameters.hasNode()) {
+         const params = typeParameters.get('params');
+         return params[1] ?? null;
+@@ -34,7 +34,7 @@ function findAssignedVariableType(componentDefinition) {
+             isReactBuiltinReference(typeName, 'FC') ||
+             isReactBuiltinReference(typeName, 'VoidFunctionComponent') ||
+             isReactBuiltinReference(typeName, 'VFC')) {
+-            const typeParameters = typeAnnotation.get('typeParameters');
++            const typeParameters = typeAnnotation.get('typeArguments');
+             if (typeParameters.hasNode()) {
+                 return typeParameters.get('params')[0] ?? null;
+             }
+@@ -51,7 +51,7 @@ function findAssignedVariableType(componentDefinition) {
+ export default (componentDefinition) => {
+     const typePaths = [];
+     if (isReactComponentClass(componentDefinition)) {
+-        const superTypes = componentDefinition.get('superTypeParameters');
++        const superTypes = componentDefinition.get('superTypeArguments');
+         if (superTypes.hasNode()) {
+             const params = superTypes.get('params');
+             if (params.length >= 1) {
+@@ -146,9 +146,9 @@ function applyExtends(documentation, path, callback, typeParams, visited) {
+     classExtends.forEach((extendsPath) => {
+         const resolvedPath = resolveGenericTypeAnnotation(extendsPath);
+         if (resolvedPath) {
+-            if (resolvedPath.has('typeParameters') &&
+-                extendsPath.node.typeParameters) {
+-                typeParams = getTypeParameters(resolvedPath.get('typeParameters'), extendsPath.get('typeParameters'), typeParams);
++            const argumentsPath = extendsPath.get(extendsPath.isInterfaceExtends() ? 'typeParameters' : 'typeArguments');
++            if (Boolean(resolvedPath.node?.typeParameters) && argumentsPath.hasNode()) {
++                typeParams = getTypeParameters(resolvedPath.get('typeParameters'), argumentsPath, typeParams);
+             }
+             applyToTypeProperties(documentation, resolvedPath, callback, typeParams, visited);
+         }
+diff --git a/dist/utils/getTypeIdentifier.js b/dist/utils/getTypeIdentifier.js
+index 35ec9869cecda7cda3537225078a85c64b23c7eb..0f6092b0c7ae48d59dd9a284fdab35b66bb6c95e 100644
+--- a/dist/utils/getTypeIdentifier.js
++++ b/dist/utils/getTypeIdentifier.js
+@@ -1,11 +1,11 @@
+ export default function getTypeIdentifier(path) {
+-    if (path.has('id')) {
++    if (Boolean(path.node?.id)) {
+         return path.get('id');
+     }
+     else if (path.isTSTypeReference()) {
+         return path.get('typeName');
+     }
+-    else if (path.isTSExpressionWithTypeArguments()) {
++    else if (path.isTSInterfaceHeritage() || path.isTSClassImplements()) {
+         return path.get('expression');
+     }
+     return null;
+diff --git a/dist/utils/getTypeParameters.js b/dist/utils/getTypeParameters.js
+index 81f0b97aa190125de342a3420722df5c8c32713d..3b7f5941eff3cac7c0271844f479295cacbdd8a4 100644
+--- a/dist/utils/getTypeParameters.js
++++ b/dist/utils/getTypeParameters.js
+@@ -6,7 +6,7 @@ export default function getTypeParameters(declaration, instantiation, inputParam
+     declaration
+         .get('params')
+         .forEach((paramPath) => {
+-        const key = paramPath.node.name;
++        const key = paramPath.isTSTypeParameter() ? paramPath.node.name.name : paramPath.node.name;
+         const defaultProp = paramPath.get('default');
+         const defaultTypePath = defaultProp.hasNode() ? defaultProp : null;
+         const typePath = i < numInstantiationParams
+diff --git a/dist/utils/normalizeClassDefinition.js b/dist/utils/normalizeClassDefinition.js
+index ab303dea58bd499646561b2bdd1e63727dfe6143..048fff7689537e1cdb2a00be340c7e95cb3d4987 100644
+--- a/dist/utils/normalizeClassDefinition.js
++++ b/dist/utils/normalizeClassDefinition.js
+@@ -14,7 +14,7 @@ const explodedVisitors = visitors.explode({
+             if (first.isIdentifier({ name: state.variableName })) {
+                 const [member] = getMembers(left);
+                 if (member &&
+-                    !member.path.has('computed') &&
++                    !Boolean(member.path.node?.computed) &&
+                     !member.path.isPrivateName()) {
+                     const property = classProperty(member.path.node, path.node.right, null, null, false, true);
+                     inheritsComments(property, path.node);
+diff --git a/dist/utils/resolveExportDeclaration.js b/dist/utils/resolveExportDeclaration.js
+index 067be6ee93d59dfa8a0e48bd3c5a686f65f8373e..a7447f7273669b1ec74f814ae5936f8d8adb6256 100644
+--- a/dist/utils/resolveExportDeclaration.js
++++ b/dist/utils/resolveExportDeclaration.js
+@@ -5,7 +5,7 @@ export default function resolveExportDeclaration(path) {
+         definitions.push(path.get('declaration'));
+     }
+     else if (path.isExportNamedDeclaration()) {
+-        if (path.has('declaration')) {
++        if (Boolean(path.node?.declaration)) {
+             const declaration = path.get('declaration');
+             if (declaration.isVariableDeclaration()) {
+                 declaration
+@@ -16,7 +16,7 @@ export default function resolveExportDeclaration(path) {
+                 definitions.push(declaration);
+             }
+         }
+-        else if (path.has('specifiers')) {
++        else if (Boolean(path.node?.specifiers?.length)) {
+             path.get('specifiers').forEach((specifier) => {
+                 if (specifier.isExportSpecifier()) {
+                     definitions.push(specifier.get('local'));
+diff --git a/dist/utils/unwrapBuiltinTSPropTypes.js b/dist/utils/unwrapBuiltinTSPropTypes.js
+index a1f0fd1112c93405e51bb092326f6bfda3b1d274..a124405650db0b5ef0d487f43b2d3e2edd4c0ea3 100644
+--- a/dist/utils/unwrapBuiltinTSPropTypes.js
++++ b/dist/utils/unwrapBuiltinTSPropTypes.js
+@@ -10,7 +10,7 @@ export default function unwrapBuiltinTSPropTypes(typePath) {
+         if (isReactBuiltinReference(typeName, 'PropsWithoutRef') ||
+             isReactBuiltinReference(typeName, 'PropsWithRef') ||
+             isReactBuiltinReference(typeName, 'PropsWithChildren')) {
+-            const typeParameters = typePath.get('typeParameters');
++            const typeParameters = typePath.get('typeArguments');
+             if (typeParameters.hasNode()) {
+                 const innerType = typeParameters.get('params')[0];
+                 if (innerType) {

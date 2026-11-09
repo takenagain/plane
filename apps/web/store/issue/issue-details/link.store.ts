@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, actionBound } from "mobx";
 // services
 import type { TIssueLink, TIssueLinkMap, TIssueLinkIdMap, TIssueServiceType } from "@plane/types";
 import { IssueService } from "@/services/issue";
@@ -60,7 +60,7 @@ export class IssueLinkStore implements IIssueLinkStore {
       // computed
       issueLinks: computed,
       // actions
-      addLinks: action.bound,
+      addLinks: actionBound,
       fetchLinks: action,
       createLink: action,
       updateLink: action,

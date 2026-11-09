@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { makeObservable, observable } from "mobx";
+import { makeObservable, observable, observableRef } from "mobx";
 // types
 import type { IUserAccount } from "@plane/types";
 // services
@@ -32,20 +32,20 @@ export class AccountStore implements IAccountStore {
   userService: UserService;
   constructor(
     private store: CoreRootStore,
-    private _account: IUserAccount
+    private accountData: IUserAccount
   ) {
     makeObservable(this, {
       // observables
-      isLoading: observable.ref,
+      isLoading: observableRef,
       error: observable,
       // model observables
-      provider_account_id: observable.ref,
-      provider: observable.ref,
+      provider_account_id: observableRef,
+      provider: observableRef,
     });
     // service
     this.userService = new UserService();
     // set account data
-    Object.entries(this._account).forEach(([key, value]) => {
+    Object.entries(this.accountData).forEach(([key, value]) => {
       set(this, [key], value ?? undefined);
     });
   }

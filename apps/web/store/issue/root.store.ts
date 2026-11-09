@@ -5,7 +5,7 @@
  */
 
 import { isEmpty } from "lodash-es";
-import { autorun, makeObservable, observable } from "mobx";
+import { autorun, makeObservable, observable, observableRef } from "mobx";
 // types
 import type { ICycle, IIssueLabel, IModule, IProject, IState, IUserLite, TIssueServiceType } from "@plane/types";
 import { EIssueServiceType } from "@plane/types";
@@ -177,14 +177,14 @@ export class IssueRootStore implements IIssueRootStore {
 
   constructor(rootStore: RootStore, serviceType: TIssueServiceType = EIssueServiceType.ISSUES) {
     makeObservable(this, {
-      workspaceSlug: observable.ref,
-      teamspaceId: observable.ref,
-      projectId: observable.ref,
-      cycleId: observable.ref,
-      moduleId: observable.ref,
-      viewId: observable.ref,
-      userId: observable.ref,
-      globalViewId: observable.ref,
+      workspaceSlug: observableRef,
+      teamspaceId: observableRef,
+      projectId: observableRef,
+      cycleId: observableRef,
+      moduleId: observableRef,
+      viewId: observableRef,
+      userId: observableRef,
+      globalViewId: observableRef,
       stateMap: observable,
       stateDetails: observable,
       workspaceStateDetails: observable,

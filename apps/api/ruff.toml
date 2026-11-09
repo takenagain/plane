@@ -25,7 +25,7 @@ exclude = [
 ]
 
 # Matches requires-python in pyproject.toml.
-target-version = "py312"
+target-version = "py315"
 
 # Same as Black.
 line-length = 120

@@ -5,7 +5,7 @@
  */
 
 import { orderBy, set } from "lodash-es";
-import { action, computed, makeObservable, observable, runInAction } from "mobx";
+import { action, computed, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type {
@@ -64,19 +64,19 @@ export class Estimate implements IEstimate {
   ) {
     makeObservable(this, {
       // data model observables
-      id: observable.ref,
-      name: observable.ref,
-      description: observable.ref,
-      type: observable.ref,
-      workspace: observable.ref,
-      project: observable.ref,
-      last_used: observable.ref,
-      created_at: observable.ref,
-      updated_at: observable.ref,
-      created_by: observable.ref,
-      updated_by: observable.ref,
+      id: observableRef,
+      name: observableRef,
+      description: observableRef,
+      type: observableRef,
+      workspace: observableRef,
+      project: observableRef,
+      last_used: observableRef,
+      created_at: observableRef,
+      updated_at: observableRef,
+      created_by: observableRef,
+      updated_by: observableRef,
       // observables
-      error: observable.ref,
+      error: observableRef,
       estimatePoints: observable,
       // computed
       asJson: computed,

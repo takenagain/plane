@@ -5,7 +5,7 @@
  */
 
 import { unset, set } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane imports
 import type { TUserPermissions, TUserPermissionsLevel } from "@plane/constants";
@@ -75,7 +75,7 @@ export class BaseUserPermissionStore implements IBaseUserPermissionStore {
   constructor(protected store: RootStore) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       workspaceUserInfo: observable,
       projectUserInfo: observable,
       workspaceProjectsPermissions: observable,

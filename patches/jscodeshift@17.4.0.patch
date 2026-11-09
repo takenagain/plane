@@ -1,0 +1,122 @@
+diff --git a/dist/Worker.js b/dist/Worker.js
+index 0f2591df3850d3ac9640a27d0b6c0456707a56e4..3a1e9859218f48e7238598b4545a30216df6f93c 100644
+--- a/dist/Worker.js
++++ b/dist/Worker.js
+@@ -20,7 +20,7 @@ const jscodeshift = require('./core');
+ 
+ let presetEnv;
+ try {
+-  presetEnv = require('@babel/preset-env');
++  presetEnv = require.resolve('@babel/preset-env');
+ } catch (_) {}
+ 
+ let emitter;
+@@ -56,26 +56,26 @@ function setup(tr, babel) {
+     const presets = [];
+     if (presetEnv) {
+       presets.push([
+-        presetEnv.default,
++        presetEnv,
+         {targets: {node: true}},
+       ]);
+     }
+     presets.push(
+       /\.tsx?$/.test(tr) ?
+-        require('@babel/preset-typescript').default :
+-        require('@babel/preset-flow').default
++        require.resolve('@babel/preset-typescript') :
++        require.resolve('@babel/preset-flow')
+     );
+ 
+-    require('@babel/register')({
++    require('@babel/register').default({
+       configFile: false,
+       babelrc: false,
+       presets,
+       plugins: [
+-        require('@babel/plugin-transform-class-properties').default,
+-        require('@babel/plugin-transform-nullish-coalescing-operator').default,
+-        require('@babel/plugin-transform-optional-chaining').default,
+-        require('@babel/plugin-transform-modules-commonjs').default,
+-        require('@babel/plugin-transform-private-methods').default,
++        require.resolve('@babel/plugin-transform-class-properties'),
++        require.resolve('@babel/plugin-transform-nullish-coalescing-operator'),
++        require.resolve('@babel/plugin-transform-optional-chaining'),
++        require.resolve('@babel/plugin-transform-modules-commonjs'),
++        require.resolve('@babel/plugin-transform-private-methods'),
+       ],
+       extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx'],
+       // By default, babel register only compiles things inside the current working directory.
+diff --git a/parser/babylon.js b/parser/babylon.js
+index d83900c2ee82c113c4cbc0685a44a7c0e9b0694c..6fbc8da31e396a5484d877888c6e42dfb8f428a4 100644
+--- a/parser/babylon.js
++++ b/parser/babylon.js
+@@ -40,7 +40,6 @@ const defaultOptions = {
+     'objectRestSpread',
+     'optionalCatchBinding',
+     'optionalChaining',
+-    ['pipelineOperator', {proposal: 'minimal'}],
+     'throwExpressions',
+   ],
+ };
+diff --git a/parser/tsOptions.js b/parser/tsOptions.js
+index 00a7b75e7444c1375b74073d3e5ca432e08b5ee5..25d32190b59dd153ed8d67d4e698801e97680733 100644
+--- a/parser/tsOptions.js
++++ b/parser/tsOptions.js
+@@ -39,7 +39,6 @@ module.exports = {
+     'objectRestSpread',
+     'optionalCatchBinding',
+     'optionalChaining',
+-    ['pipelineOperator', { proposal: 'minimal' }],
+     'throwExpressions',
+     'typescript'
+   ],
+diff --git a/src/Worker.js b/src/Worker.js
+index 0f2591df3850d3ac9640a27d0b6c0456707a56e4..3a1e9859218f48e7238598b4545a30216df6f93c 100644
+--- a/src/Worker.js
++++ b/src/Worker.js
+@@ -20,7 +20,7 @@ const jscodeshift = require('./core');
+ 
+ let presetEnv;
+ try {
+-  presetEnv = require('@babel/preset-env');
++  presetEnv = require.resolve('@babel/preset-env');
+ } catch (_) {}
+ 
+ let emitter;
+@@ -56,26 +56,26 @@ function setup(tr, babel) {
+     const presets = [];
+     if (presetEnv) {
+       presets.push([
+-        presetEnv.default,
++        presetEnv,
+         {targets: {node: true}},
+       ]);
+     }
+     presets.push(
+       /\.tsx?$/.test(tr) ?
+-        require('@babel/preset-typescript').default :
+-        require('@babel/preset-flow').default
++        require.resolve('@babel/preset-typescript') :
++        require.resolve('@babel/preset-flow')
+     );
+ 
+-    require('@babel/register')({
++    require('@babel/register').default({
+       configFile: false,
+       babelrc: false,
+       presets,
+       plugins: [
+-        require('@babel/plugin-transform-class-properties').default,
+-        require('@babel/plugin-transform-nullish-coalescing-operator').default,
+-        require('@babel/plugin-transform-optional-chaining').default,
+-        require('@babel/plugin-transform-modules-commonjs').default,
+-        require('@babel/plugin-transform-private-methods').default,
++        require.resolve('@babel/plugin-transform-class-properties'),
++        require.resolve('@babel/plugin-transform-nullish-coalescing-operator'),
++        require.resolve('@babel/plugin-transform-optional-chaining'),
++        require.resolve('@babel/plugin-transform-modules-commonjs'),
++        require.resolve('@babel/plugin-transform-private-methods'),
+       ],
+       extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx'],
+       // By default, babel register only compiles things inside the current working directory.

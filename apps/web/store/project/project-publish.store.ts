@@ -5,7 +5,7 @@
  */
 
 import { unset, set } from "lodash-es";
-import { observable, action, makeObservable, runInAction } from "mobx";
+import { observable, action, makeObservable, runInAction, observableRef } from "mobx";
 // types
 import type { TProjectPublishSettings } from "@plane/types";
 // services
@@ -51,8 +51,8 @@ export class ProjectPublishStore implements IProjectPublishStore {
   constructor(_projectRootStore: ProjectRootStore) {
     makeObservable(this, {
       // states
-      generalLoader: observable.ref,
-      fetchSettingsLoader: observable.ref,
+      generalLoader: observableRef,
+      fetchSettingsLoader: observableRef,
       // observables
       publishSettingsMap: observable,
       // actions

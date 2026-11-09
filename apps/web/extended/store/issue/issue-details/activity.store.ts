@@ -1,5 +1,5 @@
 import { concat, orderBy, set, uniq, update } from "lodash-es";
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { action, makeObservable, observable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // plane package imports
 import type { E_SORT_ORDER } from "@plane/constants";
@@ -56,7 +56,7 @@ export class IssueActivityStore implements IIssueActivityStore {
   ) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       activities: observable,
       activityMap: observable,
       // actions

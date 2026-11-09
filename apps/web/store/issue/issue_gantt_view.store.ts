@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, makeObservable, observable, runInAction } from "mobx";
+import { makeObservable, observable, runInAction, observableRef, actionBound } from "mobx";
 import { computedFn } from "mobx-utils";
 // helpers
 import type { ChartDataType, TGanttViews } from "@plane/types";
@@ -36,15 +36,15 @@ export class GanttStore implements IGanttStore {
   constructor() {
     makeObservable(this, {
       // observables
-      currentView: observable.ref,
+      currentView: observableRef,
       currentViewData: observable,
-      activeBlockId: observable.ref,
+      activeBlockId: observableRef,
       renderView: observable,
       // actions
-      updateCurrentView: action.bound,
-      updateCurrentViewData: action.bound,
-      updateActiveBlockId: action.bound,
-      updateRenderView: action.bound,
+      updateCurrentView: actionBound,
+      updateCurrentViewData: actionBound,
+      updateActiveBlockId: actionBound,
+      updateRenderView: actionBound,
     });
 
     this.initGantt();

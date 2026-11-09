@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { observable, action, computed, makeObservable, runInAction } from "mobx";
+import { observable, action, computed, makeObservable, runInAction, observableRef } from "mobx";
 // plane internal packages
 import type { TInstanceStatus } from "@plane/constants";
 import { EInstanceStatus } from "@plane/constants";
@@ -56,8 +56,8 @@ export class InstanceStore implements IInstanceStore {
   constructor(private store: RootStore) {
     makeObservable(this, {
       // observable
-      isLoading: observable.ref,
-      error: observable.ref,
+      isLoading: observableRef,
+      error: observableRef,
       instanceStatus: observable,
       instance: observable,
       instanceAdmins: observable,

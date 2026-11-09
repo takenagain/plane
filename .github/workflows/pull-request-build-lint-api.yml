@@ -1,4 +1,4 @@
-name: Build and lint API
+name: Build, lint and test API
 
 on:
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/authorize-pr
 
   lint-api:
@@ -42,9 +42,9 @@ jobs:
       (needs.authorize.result == 'success' || github.event_name != 'pull_request') &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.3
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           # uv version comes from [tool.uv] required-version.
           version-file: "apps/api/pyproject.toml"
@@ -61,3 +61,70 @@ jobs:
       - name: Lint apps/api
         working-directory: apps/api
         run: uv run --no-sync ruff check .
+
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: authorize
+    if: |
+      always() &&
+      (needs.authorize.result == 'success' || github.event_name != 'pull_request') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    services:
+      postgres:
+        image: postgres:18.6-alpine3.24@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
+        env:
+          POSTGRES_DB: plane
+          POSTGRES_USER: plane
+          POSTGRES_PASSWORD: plane_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U plane -d plane"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+      valkey:
+        image: valkey/valkey:9.1.3-alpine3.24@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      DJANGO_SETTINGS_MODULE: plane.settings.test
+      DATABASE_URL: postgresql://plane:plane_test@127.0.0.1:5432/plane
+      REDIS_URL: redis://127.0.0.1:6379/
+      AWS_ACCESS_KEY_ID: plane-test-access
+      AWS_SECRET_ACCESS_KEY: plane-test-secret
+      AWS_S3_BUCKET_NAME: uploads
+      AWS_REGION: us-east-1
+      AWS_S3_ENDPOINT_URL: http://127.0.0.1:59000
+      USE_MINIO: "0"
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version-file: apps/api/pyproject.toml
+          python-version: "3.15.2"
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+
+      - name: Install API dependencies
+        run: uv sync --locked
+
+      - name: Check Django configuration
+        run: |
+          mkdir -p plane/static-assets/collected-static
+          uv run --locked python manage.py check
+
+      - name: Run API tests
+        run: uv run --locked pytest

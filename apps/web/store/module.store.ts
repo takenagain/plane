@@ -5,7 +5,7 @@
  */
 
 import { update, concat, set, sortBy } from "lodash-es";
-import { action, computed, observable, makeObservable, runInAction } from "mobx";
+import { action, computed, observable, makeObservable, runInAction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { IModule, ILinkDetails, TModulePlotType } from "@plane/types";
@@ -103,9 +103,9 @@ export class ModulesStore implements IModuleStore {
   constructor(_rootStore: CoreRootStore) {
     makeObservable(this, {
       // observables
-      loader: observable.ref,
+      loader: observableRef,
       moduleMap: observable,
-      plotType: observable.ref,
+      plotType: observableRef,
       fetchedMap: observable,
       // computed
       projectModuleIds: computed,

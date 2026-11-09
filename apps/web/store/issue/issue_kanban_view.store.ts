@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, computed, makeObservable, observable } from "mobx";
+import { action, computed, makeObservable, observable, observableRef, actionBound } from "mobx";
 import { computedFn } from "mobx-utils";
 import { DRAG_ALLOWED_GROUPS } from "@plane/constants";
 // types
@@ -43,14 +43,14 @@ export class IssueKanBanViewStore implements IIssueKanBanViewStore {
   constructor(_rootStore: IssueRootStore) {
     makeObservable(this, {
       kanBanToggle: observable,
-      isDragging: observable.ref,
+      isDragging: observableRef,
       // computed
       canUserDragDropVertically: computed,
       canUserDragDropHorizontally: computed,
 
       // actions
       handleKanBanToggle: action,
-      setIsDragging: action.bound,
+      setIsDragging: actionBound,
     });
 
     this.rootStore = _rootStore;

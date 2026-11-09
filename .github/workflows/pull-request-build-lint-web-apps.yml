@@ -1,4 +1,4 @@
-name: Build and lint web apps
+name: Build, lint and test web apps
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/authorize-pr
 
   # Format check has no build dependencies - run immediately in parallel
@@ -42,7 +42,7 @@ jobs:
       TURBO_SCM_HEAD: ${{ github.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
           filter: blob:none
@@ -51,30 +51,30 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
-            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> $GITHUB_ENV
+            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> "$GITHUB_ENV"
           else
-            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> $GITHUB_ENV
-            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> "$GITHUB_ENV"
+            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           fi
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.1
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 12.15.0
           run_install: false
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.STORE_PATH }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -103,7 +103,7 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
           filter: blob:none
@@ -112,30 +112,30 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
-            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> $GITHUB_ENV
+            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> "$GITHUB_ENV"
           else
-            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> $GITHUB_ENV
-            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> "$GITHUB_ENV"
+            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           fi
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.1
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 12.15.0
           run_install: false
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.STORE_PATH }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -143,7 +143,7 @@ jobs:
             pnpm-store-${{ runner.os }}-
 
       - name: Restore Turbo cache
-        uses: actions/cache/restore@v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.event.pull_request.base.sha }}-${{ github.sha }}
@@ -158,7 +158,7 @@ jobs:
         run: pnpm turbo run build --affected
 
       - name: Save Turbo cache
-        uses: actions/cache/save@v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.event.pull_request.base.sha }}-${{ github.sha }}
@@ -172,35 +172,34 @@ jobs:
     if: |
       always() &&
       (needs.authorize.result == 'success' || github.event_name != 'pull_request') &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     env:
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
       TURBO_SCM_HEAD: ${{ github.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
           filter: blob:none
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.1
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 12.15.0
           run_install: false
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.STORE_PATH }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -223,17 +222,13 @@ jobs:
       always() &&
       (needs.authorize.result == 'success' || github.event_name != 'pull_request') &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
-    strategy:
-      fail-fast: false
-      matrix:
-        task: [check:lint, check:types]
     env:
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
       TURBO_SCM_HEAD: ${{ github.sha }}
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
           filter: blob:none
@@ -242,30 +237,30 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
-            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> $GITHUB_ENV
+            echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+            echo "TURBO_SCM_HEAD=${{ github.sha }}" >> "$GITHUB_ENV"
           else
-            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> $GITHUB_ENV
-            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+            echo "TURBO_SCM_BASE=$(git rev-parse HEAD^)" >> "$GITHUB_ENV"
+            echo "TURBO_SCM_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           fi
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6.1.1
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 12.15.0
           run_install: false
 
       - name: Get pnpm store directory
         shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Cache pnpm store
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.STORE_PATH }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -273,7 +268,7 @@ jobs:
             pnpm-store-${{ runner.os }}-
 
       - name: Restore Turbo cache
-        uses: actions/cache/restore@v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.event.pull_request.base.sha }}-${{ github.sha }}
@@ -283,3 +278,62 @@ jobs:
 
       - name: Run check:types
         run: pnpm turbo run check:types --affected
+
+  test:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    needs: [authorize, build]
+    timeout-minutes: 15
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      (needs.authorize.result == 'success' || github.event_name != 'pull_request') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    services:
+      valkey:
+        image: valkey/valkey:9.1.3-alpine3.24@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      TEST_REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 12.15.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm turbo run build --filter='./packages/*'
+
+      - name: Run web unit tests
+        run: pnpm --filter web test:unit
+
+      - name: Run live unit and Valkey integration tests
+        run: pnpm --filter live test
+
+      - name: Run codemod unit and CLI tests
+        run: pnpm --filter @plane/codemods test
+
+      - name: Run Storybook documentation tests
+        run: pnpm --filter @plane/ui test
+
+      - name: Build UI Storybook
+        run: pnpm --filter @plane/ui build-storybook --disable-telemetry

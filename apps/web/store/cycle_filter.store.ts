@@ -5,7 +5,7 @@
  */
 
 import { set } from "lodash-es";
-import { action, computed, observable, makeObservable, runInAction, reaction } from "mobx";
+import { action, computed, observable, makeObservable, runInAction, reaction, observableRef } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
 import type { TCycleDisplayFilters, TCycleFilters, TCycleFiltersByState } from "@plane/types";
@@ -48,8 +48,8 @@ export class CycleFilterStore implements ICycleFilterStore {
       // observables
       displayFilters: observable,
       filters: observable,
-      searchQuery: observable.ref,
-      archivedCyclesSearchQuery: observable.ref,
+      searchQuery: observableRef,
+      archivedCyclesSearchQuery: observableRef,
       // computed
       currentProjectDisplayFilters: computed,
       currentProjectFilters: computed,

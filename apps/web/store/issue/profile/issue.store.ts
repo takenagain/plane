@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { action, observable, makeObservable, computed, runInAction } from "mobx";
+import { action, makeObservable, computed, runInAction, observableRef, actionBound } from "mobx";
 // base class
 import type {
   TIssue,
@@ -72,11 +72,11 @@ export class ProfileIssues extends BaseIssuesStore implements IProfileIssues {
     super(_rootStore, issueFilterStore);
     makeObservable(this, {
       // observable
-      currentView: observable.ref,
+      currentView: observableRef,
       // computed
       viewFlags: computed,
       // action
-      setViewId: action.bound,
+      setViewId: actionBound,
       fetchIssues: action,
       fetchNextIssues: action,
       fetchIssuesWithExistingPagination: action,

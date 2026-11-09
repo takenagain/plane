@@ -5,7 +5,7 @@
  */
 
 import { cloneDeep, isEqual } from "lodash-es";
-import { action, computed, makeObservable, observable, toJS } from "mobx";
+import { action, computed, makeObservable, observable, toJS, observableStruct } from "mobx";
 import { computedFn } from "mobx-utils";
 import { v4 as uuidv4 } from "uuid";
 // plane imports
@@ -172,7 +172,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
       id: observable,
       initialFilterExpression: observable,
       expression: observable,
-      expressionOptions: observable.struct,
+      expressionOptions: observableStruct,
       adapter: observable,
       configManager: observable,
       // computed

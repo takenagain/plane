@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { makeObservable, observable } from "mobx";
+import { makeObservable, observableRef } from "mobx";
 
 export interface IWorkspaceStore {
   id: string;
@@ -21,10 +21,10 @@ export class WorkspaceStore implements IWorkspaceStore {
 
   constructor(data: IWorkspaceStore) {
     makeObservable(this, {
-      id: observable.ref,
-      name: observable.ref,
-      createdAt: observable.ref,
-      updatedAt: observable.ref,
+      id: observableRef,
+      name: observableRef,
+      createdAt: observableRef,
+      updatedAt: observableRef,
     });
     this.id = data.id;
     this.name = data.name;
