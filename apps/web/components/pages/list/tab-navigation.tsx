@@ -5,10 +5,10 @@
  */
 
 import Link from "next/link";
+import { Tab, Tabs, TabsList } from "@makeplane/propel/components/tabs";
+import { useTranslation } from "@plane/i18n";
 // types
 import type { TPageNavigationTabs } from "@plane/types";
-// helpers
-import { cn } from "@plane/utils";
 
 type TPageTabNavigation = {
   workspaceSlug: string;
@@ -35,6 +35,7 @@ const pageTabs: { key: TPageNavigationTabs; label: string }[] = [
 
 export function PageTabNavigation(props: TPageTabNavigation) {
   const { workspaceSlug, projectId, pageType, variant = "project" } = props;
+  const { t } = useTranslation();
 
   const getTabHref = (tabKey: TPageNavigationTabs) => {
     if (variant === "wiki") return `/${workspaceSlug}/wiki?type=${tabKey}`;
@@ -46,28 +47,20 @@ export function PageTabNavigation(props: TPageTabNavigation) {
   };
 
   return (
-    <div className="relative flex h-full items-center">
-      {pageTabs.map((tab) => (
-        <Link
-          key={tab.key}
-          href={getTabHref(tab.key)}
-          onClick={(e) => handleTabClick(e, tab.key)}
-          className="flex h-full flex-col"
-        >
-          <div
-            className={cn(`flex flex-1 items-center justify-center px-4 text-13 font-medium transition-all`, {
-              "text-accent-primary": tab.key === pageType,
-            })}
-          >
-            {tab.label}
-          </div>
-          <div
-            className={cn(`w-full rounded-t border-t-2 border-transparent transition-all`, {
-              "border-accent-strong": tab.key === pageType,
-            })}
-          />
-        </Link>
-      ))}
-    </div>
+    <Tabs variant="underline" value={pageType}>
+      <div className="-mb-2">
+        <TabsList aria-label={t("common.pages")}>
+          {pageTabs.map((tab) => (
+            <Tab
+              key={tab.key}
+              value={tab.key}
+              label={tab.label}
+              nativeButton={false}
+              render={<Link href={getTabHref(tab.key)} onClick={(e) => handleTabClick(e, tab.key)} />}
+            />
+          ))}
+        </TabsList>
+      </div>
+    </Tabs>
   );
 }
