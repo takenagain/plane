@@ -1,7 +1,7 @@
 # Keep in step with required-version in pyproject.toml; bump tag and digest together.
-FROM ghcr.io/astral-sh/uv:0.12.21@sha256:a7aed3216253ee804de3e2d8afa5073baa1a177335345d43845cd4165e43b711 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.7@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 AS uv
 
-FROM python:3.12.5-alpine AS backend
+FROM python:3.15.2-alpine3.24@sha256:a0f2e268f2ce8f3709611a90054ec6a8ae31f6251f5896b8648b9bb99835e30a AS backend
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -16,13 +16,12 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_NO_CACHE=1
 
 RUN apk --no-cache add \
-    "bash~=5.2" \
+    "bash~=5.3" \
     "libpq" \
     "libxslt" \
     "nodejs-current" \
     "xmlsec" \
     "libffi-dev" \
-    "bash~=5.2" \
     "g++" \
     "gcc" \
     "cargo" \

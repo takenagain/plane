@@ -378,6 +378,16 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["application/json"]
+# Preserve the broker entities created by earlier Plane versions. Queue and
+# exchange types cannot be changed in place on a persisted RabbitMQ vhost.
+CELERY_TASK_DEFAULT_QUEUE_TYPE = "classic"
+CELERY_TASK_DEFAULT_EXCHANGE_TYPE = "direct"
+CELERY_BROKER_TRANSPORT_OPTIONS = {"confirm_publish": True}
+CELERY_WORKER_DETECT_QUORUM_QUEUES = True
+CELERY_EVENT_QUEUE_DURABLE = False
+CELERY_EVENT_QUEUE_EXCLUSIVE = True
+CELERY_CONTROL_QUEUE_DURABLE = False
+CELERY_CONTROL_QUEUE_EXCLUSIVE = True
 
 
 CELERY_IMPORTS = (

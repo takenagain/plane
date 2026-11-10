@@ -16,7 +16,7 @@ FROM makeplane/plane-proxy:${PLANE_VERSION} AS proxy-img
 # **************************************************
 #  STAGE 1: Runner
 # **************************************************
-FROM python:3.12.12-alpine AS runner
+FROM python:3.15.2-alpine3.24@sha256:a0f2e268f2ce8f3709611a90054ec6a8ae31f6251f5896b8648b9bb99835e30a AS runner
 
 WORKDIR /app
 
@@ -71,7 +71,7 @@ COPY --from=proxy-img /usr/bin/caddy /usr/bin/caddy
 COPY dist/Caddyfile /app/proxy/Caddyfile
 
 COPY --from=backend-img /code /app/backend
-COPY --from=backend-img /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=backend-img /usr/local/lib/python3.15/site-packages/ /usr/local/lib/python3.15/site-packages/
 COPY --from=backend-img /usr/local/bin/ /usr/local/bin/
 
 RUN pip install supervisor
@@ -79,9 +79,9 @@ RUN pip install supervisor
 # pip is only needed for the install above. The runner base's own pip (25.0.1)
 # vendors a certifi that still trusts the compromised emSign G3 root
 # (GHSA-6q48-6c7w-9gw2), so drop it before the image ships.
-RUN rm -rf /usr/local/lib/python3.12/site-packages/pip \
-           /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
-           /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
+RUN rm -rf /usr/local/lib/python3.15/site-packages/pip \
+           /usr/local/lib/python3.15/site-packages/pip-*.dist-info \
+           /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.15
 RUN mkdir -p /etc/supervisor/conf.d
 
 COPY start.sh /app/start.sh

@@ -49,9 +49,9 @@ jobs:
         with:
           # uv version comes from [tool.uv] required-version.
           version-file: "apps/api/pyproject.toml"
-          # Same patch release as the production image (python:3.12.12-alpine);
-          # uv fetches a managed build instead of the runner's older system 3.12.
-          python-version: "3.12.12"
+          # Same patch release as the production image (python:3.15.2-alpine);
+          # uv fetches a managed build instead of the runner's older system Python.
+          python-version: "3.15.2"
           enable-cache: true
           cache-dependency-glob: "apps/api/uv.lock"
 

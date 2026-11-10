@@ -12,4 +12,5 @@ ZXCVBN_MAX_LENGTH = 128
 
 def is_password_strong(password):
     windows = {password[:ZXCVBN_MAX_LENGTH], password[-ZXCVBN_MAX_LENGTH:]}
-    return any(zxcvbn(window)["score"] >= 3 for window in windows)
+    # zxcvbn 4.5 defaults to 72; retain Plane's existing bounded windows.
+    return any(zxcvbn(window, max_length=ZXCVBN_MAX_LENGTH)["score"] >= 3 for window in windows)

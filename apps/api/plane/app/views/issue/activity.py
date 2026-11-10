@@ -97,10 +97,7 @@ class IssueActivityEndpoint(BaseAPIView):
         issue_comments = IssueCommentSerializer(issue_comments, many=True).data
 
         result_list = sorted(
-            chain(
-                IssueActivitySerializer(issue_activities, many=True).data,
-                IssueCommentSerializer(issue_comments, many=True).data,
-            ),
+            chain(issue_activities, issue_comments),
             key=lambda instance: instance["created_at"],
         )
 

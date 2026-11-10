@@ -1,4 +1,8 @@
 import importlib
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -47,3 +51,19 @@ def test_app_views_importable():
     mod = importlib.import_module("plane.app.views")
     # A minimal sanity check: the module should expose *something*.
     assert dir(mod)
+
+
+@pytest.mark.smoke
+def test_production_models_match_migration_state():
+    """Prevent production-only model changes without schema migrations."""
+    env = {**os.environ, "DEBUG": "0", "DJANGO_SETTINGS_MODULE": "plane.settings.production"}
+    result = subprocess.run(
+        [sys.executable, "manage.py", "makemigrations", "--check", "--dry-run"],
+        cwd=Path(__file__).resolve().parents[3],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
