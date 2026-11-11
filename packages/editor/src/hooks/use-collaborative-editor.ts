@@ -11,11 +11,11 @@ import Collaboration from "@tiptap/extension-collaboration";
 import type React from "react";
 import { useEffect, useMemo } from "react";
 // extensions
-import { HeadingListExtension, SideMenuExtension } from "@/extensions";
+import { HeadingListExtension, SideMenuExtension as createSideMenuExtension } from "@/extensions";
 // hooks
 import { useEditor } from "@/hooks/use-editor";
 // plane editor extensions
-import { DocumentEditorAdditionalExtensions } from "@/extensions/document-extensions";
+import { DocumentEditorAdditionalExtensions as createDocumentEditorAdditionalExtensions } from "@/extensions/document-extensions";
 // types
 import type {
   TCollaborativeEditorHookProps,
@@ -37,6 +37,9 @@ type UseCollaborativeEditorArgs = Omit<TCollaborativeEditorHookProps, "realtimeC
   };
 };
 
+const EMPTY_EXTENSIONS: Extensions = [];
+const EMPTY_EDITOR_PROPS: NonNullable<UseCollaborativeEditorArgs["editorProps"]> = {};
+
 export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
   const {
     provider,
@@ -46,9 +49,9 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
     disabledExtensions,
     editable,
     editorClassName = "",
-    editorProps = {},
+    editorProps = EMPTY_EDITOR_PROPS,
     extendedEditorProps,
-    extensions = [],
+    extensions = EMPTY_EXTENSIONS,
     fileHandler,
     flaggedExtensions,
     forwardedRef,
@@ -72,7 +75,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
   // Memoize extensions to avoid unnecessary editor recreations
   const editorExtensions = useMemo(
     () => [
-      SideMenuExtension({
+      createSideMenuExtension({
         aiEnabled: !disabledExtensions?.includes("ai"),
         dragDropEnabled,
       }),
@@ -82,7 +85,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
         field: "default",
       }),
       ...extensions,
-      ...DocumentEditorAdditionalExtensions({
+      ...createDocumentEditorAdditionalExtensions({
         disabledExtensions,
         extendedEditorProps,
         fileHandler,

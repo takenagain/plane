@@ -101,6 +101,10 @@ export const usePageFallback = (args: TArgs) => {
       const { binary, html, json } = editor.getDocument();
       if (!html?.trim()) return;
 
+      // Yjs encodes an uninitialized document as [0, 0]. Wait for its
+      // content/history before saving; the description API rejects this update.
+      if (binary?.length === 2 && binary[0] === 0 && binary[1] === 0) return;
+
       // editor.getDocument() always returns binary + json for the document
       // editor, so the fallbacks below only satisfy the TDocumentPayload type
       // and never fire in this path. This mirrors convertHTMLDocumentToAllFormats,

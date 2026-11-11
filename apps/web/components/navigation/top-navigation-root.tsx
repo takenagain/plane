@@ -13,6 +13,7 @@ import { cn } from "@plane/utils";
 import { TopNavPowerK } from "@/components/navigation";
 import { HelpMenuRoot } from "@/components/workspace/sidebar/help-section/root";
 import { UserMenuRoot } from "@/components/workspace/sidebar/user-menu-root";
+import { WorkspaceAppSwitcher } from "@/plane-web/components/workspace/app-switcher";
 import { WorkspaceMenuRoot } from "@/components/workspace/sidebar/workspace-menu-root";
 import { useAppRailPreferences } from "@/hooks/use-navigation-preferences";
 import { Tooltip } from "@makeplane/propel/components/tooltip";
@@ -61,6 +62,7 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
         <div className="shrink-0">
           <WorkspaceMenuRoot variant="top-navigation" />
         </div>
+        <WorkspaceAppSwitcher />
       </div>
       {/* Power K Search */}
       <div className="desktop-header-actions min-w-0 flex-1 md:flex-none">

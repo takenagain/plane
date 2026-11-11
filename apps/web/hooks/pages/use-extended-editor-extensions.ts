@@ -21,6 +21,8 @@ export type TExtendedEditorExtensionsHookParams = {
 
 export type TExtendedEditorExtensionsConfig = IEditorPropsExtended;
 
-export const useExtendedEditorProps = (
-  _params: TExtendedEditorExtensionsHookParams
-): TExtendedEditorExtensionsConfig => ({});
+// Keep the configuration stable so parent renders do not recreate the editor.
+const EXTENDED_EDITOR_PROPS: TExtendedEditorExtensionsConfig = Object.freeze({});
+
+export const useExtendedEditorProps = (_params: TExtendedEditorExtensionsHookParams): TExtendedEditorExtensionsConfig =>
+  EXTENDED_EDITOR_PROPS;

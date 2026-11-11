@@ -50,7 +50,9 @@ export async function waitForExportIssuesPost(page: Page, workspaceSlug: string)
 export async function clickExportAllProjects(page: Page): Promise<void> {
   const form = exportFormLocator(page);
   const exportButton = form.getByRole("button", { name: "Export", exact: true });
-  await expect(page.getByRole("button", { name: EXPORT_ALL_PROJECTS_LABEL })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("dialog").getByText(EXPORT_ALL_PROJECTS_LABEL, { exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(exportButton).toBeEnabled();
   await exportButton.click();
 }
@@ -67,14 +69,23 @@ export async function ensureSignedIn(page: Page): Promise<void> {
 }
 
 function exportFormLocator(page: Page) {
-  return page.locator("form").filter({
-    has: page.getByRole("button", { name: EXPORT_ALL_PROJECTS_LABEL }),
-  });
+  return page.getByRole("dialog").locator("form");
+}
+
+async function openExportForm(page: Page): Promise<void> {
+  if (!(await page.getByRole("dialog").isVisible())) {
+    await page.getByRole("button", { name: "Export", exact: true }).click();
+  }
+  await expect(page.getByRole("dialog")).toBeVisible();
 }
 
 export async function selectExportFormat(page: Page, formatLabel: string): Promise<void> {
+  await openExportForm(page);
   const form = exportFormLocator(page);
-  const formatButton = form.getByRole("combobox").first();
+  const formatButton = form
+    .getByRole("combobox")
+    .filter({ hasText: /CSV|Excel|JSON/i })
+    .first();
   await expect(formatButton).toBeVisible({ timeout: 15_000 });
   await formatButton.click();
   await page.getByRole("option", { name: formatLabel, exact: true }).click();
@@ -82,10 +93,11 @@ export async function selectExportFormat(page: Page, formatLabel: string): Promi
 }
 
 export async function assertExportFormVisible(page: Page): Promise<void> {
-  await expect(page.getByText("Exporting project", { exact: false })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Format", exact: true })).toBeVisible();
+  await openExportForm(page);
+  await expect(page.getByRole("dialog").getByText("Exporting project", { exact: false })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("Format", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: EXPORT_ALL_PROJECTS_LABEL })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText(EXPORT_ALL_PROJECTS_LABEL, { exact: true })).toBeVisible();
 }
 
 export async function assertExportHistorySection(page: Page): Promise<void> {

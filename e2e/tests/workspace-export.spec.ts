@@ -44,6 +44,7 @@ test.describe.serial("Workspace export settings", () => {
     await listPromise;
 
     await assertExportFormVisible(page);
+    await page.keyboard.press("Escape");
     await assertExportHistorySection(page);
   });
 

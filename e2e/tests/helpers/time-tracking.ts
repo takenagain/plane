@@ -594,6 +594,9 @@ async function completeOnboarding(page: Page) {
 }
 
 export async function signInAndEnsureWorkspace(page: Page): Promise<string> {
+  // Seeding resets credentials. Unmount the SPA before invalidating its session
+  // so a stale auth redirect cannot interrupt the next explicit navigation.
+  await page.goto("about:blank");
   tryEnsureE2ESeedData();
 
   await page.goto(BASE_URL);

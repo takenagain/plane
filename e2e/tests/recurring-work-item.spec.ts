@@ -43,7 +43,14 @@ function farFutureDateIso(): string {
 function runDjangoShell(script: string): string {
   const { runtime, container } = resolveApiContainerName();
 
-  return execFileSync(runtime, ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", script], {
+  // Test-only cadences are enabled only inside these synchronous test helpers.
+  const testScript = `from django.test.utils import override_settings
+with override_settings(DEBUG=True):
+${script
+  .split("\n")
+  .map((line) => `    ${line}`)
+  .join("\n")}`;
+  return execFileSync(runtime, ["exec", "-w", "/", container, "python", "/code/manage.py", "shell", "-c", testScript], {
     encoding: "utf-8",
     cwd: "/",
   });
